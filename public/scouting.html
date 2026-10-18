@@ -69,6 +69,16 @@ svg [data-def]{text-decoration:none}
 .pc .meta{font-size:11px;color:#9aa0a8;margin-top:3px;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
 .tag{font-family:var(--mono);font-size:9px;letter-spacing:.07em;padding:1px 5px;border-radius:3px;border:1px solid #4a4d53;color:#c9ccd2}
 .tag.new{border-color:#6b4a3a;color:#f0a27d}.tag.fr{color:#9aa0a8}
+.tag.staff{border-color:#8a8e95;color:#fff;background:#3a3d42}
+.shr{display:flex;gap:2px;margin-top:7px}
+.shr i{flex:1;font-style:normal;text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:.03em;color:#8a8e95;background:#34363b;border-radius:2px;padding:1px 0}
+.shr i.me{outline:1px solid #f2f3f4;outline-offset:1px}
+.pc .nm>span{display:flex;align-items:center;gap:6px;position:relative}
+.mv{background:#34363b;border:0;border-radius:4px;color:#cfd3d9;font:9.5px var(--mono);padding:2px 5px;cursor:pointer}
+.mv:hover{background:#4a4d53;color:#fff}
+.mvm{position:absolute;top:calc(100% + 4px);right:0;z-index:30;background:#1e1f22;border:1px solid #3a3d42;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:4px;display:grid;gap:2px;min-width:140px}
+.mvm button{background:none;border:0;text-align:left;color:#cfd3d9;font:12px var(--mono);padding:6px 10px;border-radius:5px;cursor:pointer}
+.mvm button:hover{background:#26282c;color:#fff}.mvm button.on{background:#3a3d42;color:#fff}.mvm button.auto{color:#8a8e95;border-top:1px solid #2e3034;border-radius:0 0 5px 5px}
 .mbar{height:5px;border-radius:3px;background:#34363b;margin-top:8px;overflow:hidden}
 .mbar i{display:block;height:100%}
 .pc .row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 8px;margin-top:6px;font-size:11px;color:#b9bdc4}
@@ -101,7 +111,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .lgrid .lrow{grid-template-columns:14px minmax(0,1fr) 46px 50px;gap:6px}
 .lgrid .lrow>span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-two{grid-template-columns:1fr 1fr}
-.g-two>.panel,.g-depth>.panel{min-width:0;overflow-x:auto}
+.g-two>.panel{min-width:0;overflow-x:auto}.g-depth>.panel{min-width:0}
 @media (max-width:1180px){
   .hero{grid-template-columns:1fr}
   .g-depth,.g-two{grid-template-columns:1fr}
@@ -217,7 +227,7 @@ T.uw={id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:
   <div class="cap">Players from WCC/A10/MWC get a BPM discount (−1.0 to −1.5) for the step up to the Big Ten. Gonzaga counts as high-major. Freshmen/intl: Wini Braga (6-9, 21-year-old from Brazil), Tristan Devers (Australia, NBL development player), Lat Ford (3★, Renton, WA).</div></div></div></section>`},
  foot:`Sources: KenPom (2027 preseason ratings), Barttorvik (player stats 2023-24 to 2025-26; team results; 2026-27 preseason T-Rank), ESPN roster API, UW roster release (Oct 7), Boise State athletics schedule. <b style="color:#b9bdc4">Projection method:</b> weighted average of the last 3 seasons (3/2/1 × minutes), pulled toward a bench-level prior for small samples. Then adjusted for conference level and development, with minutes assigned from the depth chart and usage normalized to the team. Mady Traore has no D-I minutes since 2023-24.`};
 
-T.bsu26={id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
+T.bsu26={posSeason:"2025-26",posTeam:"Boise St.",id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
  banner:`<b style="color:#fff">Sample tab:</b> the template run on Boise State as if scouting them after their last game (Mar 12, 2026). This shows what an opponent tab looks like once real game data exists: actual rotation, results and lineups instead of projections.`,
  game:`<div class="label">Season complete</div><span class="pill" style="background:var(--bad);margin-top:6px">FINAL · L 74-84 vs SAN JOSÉ ST.</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">MWC Tournament 1st round · Mar 12, 2026 · Las Vegas. As the 6 seed, lost to the 11 seed (8-23 before the game).</div>`,
  kpis:[["kenpom","Rankings","#60 · #54","","KenPom (Mar 2) · T-Rank final"],["adjo","Offense","118.3",GOOD,"AdjO · #52 nationally"],["adjd","Defense","103.9",GOOD,"AdjD · #77 · 3rd straight year slipping"],["","Record","20-12","","12-8 MWC · 6th seed"],
@@ -267,6 +277,66 @@ T.bsu26={id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mounta
  },
  foot:`Sources: ESPN box scores and play-by-play (32 games), Barttorvik 2023-24 to 2025-26 (D-I games only, so GP is 30), KenPom rank as of Mar 2, 2026 (KenPom's archive blocked the final-rank lookup). Lineups were rebuilt by replaying substitutions; every game's rebuilt minutes matched the box score within 2.5 min.`};
 
+// ---------- depth chart positions ----------
+// Position for each player = staff override if set, otherwise the data-based
+// estimate (share of minutes at each spot, from lineups + size), otherwise the
+// hand-entered slot.
+const SLOTS=["PG","SG","SF","PF","C"], OLD2NEW={G:"PG","G/W":"SG",W:"SF",F:"PF",C:"C",PG:"PG",SG:"SG",SF:"SF",PF:"PF"};
+let POS={p:{}},OVR={};
+const pnorm=s=>String(s||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b\.?/g,"").replace(/[^a-z]/g,"");
+// Where to look up a player's position shares: the team and season he last played.
+function posLookup(t,p){
+ let season,team;
+ if(t.mode=="proj"){const m=String(p[6]||"").match(/^(.*?)\s*'(\d\d)$/);if(!m)return null;team=m[1].trim();const y=2000+ +m[2];season=`${y-1}-${String(y).slice(2)}`;}
+ else{season=t.posSeason;team=t.posTeam;}
+ const sh=POS.p[`${season}|${team}|${pnorm(p[1])}`];
+ return sh?{shares:sh,src:`${team} ${season}`}:null;
+}
+// Projected rosters: players come from different teams, so their old spots
+// don't add up. Order the new roster by where each player played (expected
+// spot, 0 = PG ... 4 = C; height for players with no D-I data) and fill the
+// five spots with ~40 projected minutes each, smallest to biggest.
+const htIn=h=>{const m=String(h||"").match(/(\d+)-(\d+)/);return m?+m[1]*12+ +m[2]:78;};
+const htSpot=h=>{const i=htIn(h);return i<=74?0.4:i<=77?1.4:i<=79?2.3:i<=81?3.1:3.8;};
+function projFill(t){
+ if(t._fill)return t._fill;
+ const P=t.P,rows=P.map(p=>{const c=posLookup(t,p);const e=c?c.shares.reduce((a,v,i)=>a+v*i,0):htSpot(p[3]);return {p,e,m:p[9][0]||0};}).sort((a,b)=>a.e-b.e||htIn(a.p[3])-htIn(b.p[3]));
+ const total=d3.sum(rows,r=>r.m)||1,per=total/5;let acc=0;const fill=new Map();
+ for(const r of rows){const sh=[0,0,0,0,0];let left=r.m,pos=acc;
+  if(r.m<6){sh[Math.max(0,Math.min(4,Math.round(r.e)))]=1;fill.set(r.p,{shares:sh,src:"low minutes: where he played before (or height)"});continue;}
+  if(left<=0){sh[Math.min(4,Math.floor(pos/per))]=1;}
+  while(left>1e-9){const i=Math.min(4,Math.floor(pos/per+1e-9)),room=Math.min(left,(i+1)*per-pos)||left;sh[i]+=room;pos+=room;left-=room;if(i==4){sh[4]+=left;left=0;}}
+  acc+=r.m;const t2=d3.sum(sh)||1;fill.set(r.p,{shares:sh.map(v=>v/t2),src:"projected minutes, ordered by size"});}
+ return t._fill=fill;
+}
+const posInfo=(t,p)=>{const c=t.mode=="proj"?projFill(t).get(p):posLookup(t,p),o=OVR[`${t.key}|${p[1]}`]?.slot||null;
+  let auto=c&&c.shares?SLOTS[c.shares.indexOf(Math.max(...c.shares))]:OLD2NEW[p[7]]||"SF";
+  const slot=o||auto;const sec=c&&c.shares?SLOTS.filter((s,i)=>s!==slot&&c.shares[i]>=.25):[];
+  return {slot,auto,ovr:!!o,c,sec}};
+function depthHTML(t){
+ const P=t.P,mid=t.mode=="proj";const info=new Map(P.map(p=>[p,posInfo(t,p)]));
+ return `<div class="depth">${SLOTS.map(s=>{const ps=P.filter(p=>info.get(p).slot==s).sort((a,b)=>(b[8]-a[8])||((mid?b[9][0]:b[9][2])-(mid?a[9][0]:a[9][2])));const tot=d3.sum(ps,p=>mid?p[9][0]:p[9][2]);
+  return `<div class="pos"><div class="ph"><span>${s}</span><span>${tot.toFixed(0)} min</span></div>${ps.map(p=>{const I=info.get(p),mp=mid?p[9][0]:p[9][2],pp=mid?p[9][1]:p[9][3];
+   const tg=p[5]=="T"?'<span class="tag new">NEW</span>':p[5]=="F"?'<span class="tag fr">FR</span>':'';const fr=mid?(p[5]=="T"?` · ${p[6].replace(/ '\d+/,"")}`:p[5]==""?' · ret.':''):` · GS ${p[9][1]}`;
+   const shr=I.c&&I.c.shares?`<div class="shr" title="${SLOTS.map((x,i)=>`${x} ${Math.round(I.c.shares[i]*100)}%`).join(" · ")}${I.c.src?` (${I.c.src})`:""}">${SLOTS.map((x,i)=>`<i style="background:rgba(242,243,244,${(.06+.84*I.c.shares[i]).toFixed(2)});${I.c.shares[i]>.4?"color:#16171a":""}"${x==I.slot?' class="me"':''}>${x}</i>`).join("")}</div>`:"";
+   const tags=(I.ovr?'<span class="tag staff" title="Set by staff. Data says '+I.auto+'.">STAFF</span>':'')+I.sec.map(x=>`<span class="tag">also ${x}</span>`).join("");
+   return `<div class="pc${p[8]?' st':''}" data-n="${p[1]}"><div class="nm">${p[1]}<span>#${p[0]}<button class="mv" title="Change position">${I.slot} ▾</button></span></div><div class="meta">${tg}<span>${p[3]} · ${p[4]}${fr}</span>${tags}</div>${shr}<div class="mbar"><i style="width:${mp/36*100}%;background:${p[8]?'#f2f3f4':'#8a8e95'}"></i></div><div class="row"><span>${mp.toFixed(0)} mpg${pp!=null?` · <b>${pp}</b> ppg`:''}</span><span class="xs">${p[11][0]} <b>${p[11][1]}</b></span></div></div>`}).join("")}</div>`}).join("")}</div><div class="cap">${t.depthCap} Position = share of minutes at each spot (PG → C), worked out from who played together and player size; hover the strip for exact shares. Use the <b style="color:#cfd3d9">▾</b> button on a card to set a position by hand (saved for all staff; <span class="tag staff">STAFF</span> marks hand-set spots).</div>`;
+}
+function wireDepth(t){
+ const box=document.getElementById("depthbox");if(!box)return;
+ box.querySelectorAll(".mv").forEach(b=>b.onclick=e=>{e.stopPropagation();document.querySelectorAll(".mvm").forEach(m=>m.remove());
+  const card=b.closest(".pc"),name=card.dataset.n,p=t.P.find(x=>x[1]==name),I=posInfo(t,p);
+  const m=document.createElement("div");m.className="mvm";
+  m.innerHTML=SLOTS.map(x=>`<button data-s="${x}" class="${x==I.slot?'on':''}">${x}</button>`).join("")+`<button data-s="" class="auto">Auto (data: ${I.auto})</button>`;
+  b.parentElement.appendChild(m);m.onclick=ev=>ev.stopPropagation();
+  m.querySelectorAll("button").forEach(x=>x.onclick=async()=>{m.remove();
+   try{const r=await fetch("/api/positions",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:`${t.key}|${name}`,slot:x.dataset.s||null})});
+    if(r.ok)OVR=(await r.json()).overrides||OVR;}catch{}
+   box.innerHTML=depthHTML(t);wireDepth(t);});
+ });
+}
+document.addEventListener("click",()=>document.querySelectorAll(".mvm").forEach(m=>m.remove()));
+
 // ---------- render ----------
 function render(t){
  const P=t.P,mid=t.mode=="proj";
@@ -275,10 +345,7 @@ function render(t){
  <div style="font-size:12.5px;color:#b9bdc4;margin-top:10px">${t.coach}</div></div><div>${t.game}</div></div>
  <div class="kpis">${t.kpis.map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
  <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
- <div class="grid g-depth"><div class="panel"><div class="depth">${t.slots.map(s=>{const ps=P.filter(p=>p[7]==s);const tot=d3.sum(ps,p=>mid?p[9][0]:p[9][2]);
-  return `<div class="pos"><div class="ph"><span>${s}</span><span>${tot.toFixed(0)} min</span></div>${ps.map(p=>{const mp=mid?p[9][0]:p[9][2],pp=mid?p[9][1]:p[9][3];
-   const tg=p[5]=="T"?'<span class="tag new">NEW</span>':p[5]=="F"?'<span class="tag fr">FR</span>':'';const fr=mid?(p[5]=="T"?` · ${p[6].replace(/ '\d+/,"")}`:p[5]==""?' · ret.':''):` · GS ${p[9][1]}`;
-   return `<div class="pc${p[8]?' st':''}"><div class="nm">${p[1]}<span>#${p[0]}</span></div><div class="meta">${tg}<span>${p[3]} · ${p[4]}${fr}</span></div><div class="mbar"><i style="width:${mp/36*100}%;background:${p[8]?'#f2f3f4':'#8a8e95'}"></i></div><div class="row"><span>${mp.toFixed(0)} mpg${pp!=null?` · <b>${pp}</b> ppg`:''}</span><span class="xs">${p[11][0]} <b>${p[11][1]}</b></span></div></div>`}).join("")}</div>`}).join("")}</div><div class="cap">${t.depthCap}</div></div>
+ <div class="grid g-depth"><div class="panel" id="depthbox">${depthHTML(t)}</div>
  <div class="panel"><div class="label ptitle"><span>${mid?"Projected leaders":"Season leaders"}</span><span>${t.leadHdr}</span></div><div class="lgrid">${t.leaders.map(([g,L])=>`<div class="lgrp"><div class="label" style="margin-bottom:5px">${g}</div>${L.map((l,i)=>`<div class="lrow"><span class="r">${i+1}</span><span>${l[0]}</span><span class="v">${l[1]}</span><span class="ls">${l[2]}</span></div>`).join("")}</div>`).join("")}</div></div></div></section>
  <section><div class="shead"><h2>Team trends</h2><span class="label">${t.trendHdr}</span></div><div class="story">${t.story}</div><div class="panel" style="margin-top:14px"><div class="tgrid" id="trends"></div><div class="cap">Dashed line = 2025-26 D-I average. Latest dot colored by national percentile (orange = strong, blue = weak). Grey = style stat.</div></div></section>
  <section><div class="shead"><h2>Scouting keys</h2><span class="label">What the numbers say · for staff review</span></div><div class="keys grid">${t.keys.map(([c,a,b,p])=>`<div class="key" style="border-left-color:${c}"><span class="label">${a}</span><h3>${b}</h3><p>${p}</p></div>`).join("")}</div></section>
@@ -294,6 +361,7 @@ function render(t){
  </tbody></table><div class="cap">Chips = percentile among 2,284 D-I rotation players in 2025-26 (shown at 20%+ minutes). 3P% chips need 40+ attempts.${mid?" Confidence: H = 2+ seasons, M = one season or level jump, L = small sample.":""}</div></div></section>
  <footer>${t.foot} Logos: ESPN.</footer>`;
  document.getElementById("page").innerHTML=h;
+ wireDepth(t);
  // trends
  const tg=document.getElementById("trends");const yrs=t.yrs;
  t.trends.forEach(([k,name,vals,proj,better,avg])=>{const W=290,H=170,m={t:40,b:30,l:26,r:30},svg=d3.select(tg).append("svg").attr("viewBox",`0 0 ${W} ${H}`),x=d3.scalePoint(yrs,[m.l,W-m.r]);
@@ -311,6 +379,9 @@ function render(t){
   yrs.forEach((yy,i)=>svg.append("text").attr("x",x(yy)).attr("y",H-9).attr("text-anchor","middle").attr("font-size",10).attr("fill",i>li&&!proj?"#4a4d53":"#9aa0a8").text(i>li&&!proj?"—":yy));});
  if(t.after)t.after();
 }
+for(const k in T)T[k].key=k;
+{const [pj,oj]=await Promise.all([fetch("/data/positions.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/api/positions").then(r=>r.ok?r.json():null).catch(()=>null)]);
+ if(pj)POS=pj;if(oj)OVR=oj.overrides||{};}
 {const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);if(i>=0)document.querySelector(`.tab[data-i="${i}"]`).click();else render(T.uw);}
 </script>
 </body>

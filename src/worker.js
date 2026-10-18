@@ -137,6 +137,25 @@ function secure(res, isHtml) {
 
 const PAGES = [[/^\/$/, "/"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"]];
 
+// Staff position overrides for depth charts. Stored as one JSON object in KV:
+//   { "<teamKey>|<player name>": { slot: "PF", by: "staff", at: "<iso>" } }
+// GET returns all overrides; POST { key, slot } sets one (slot null clears it).
+export const SLOTS = ["PG", "SG", "SF", "PF", "C"];
+async function positionsApi(request, env) {
+  if (!env.STAFF) return json({ overrides: {}, note: "storage not configured" });
+  const cur = (await env.STAFF.get("positions", "json")) || {};
+  if (request.method === "GET") return json({ overrides: cur });
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  let body; try { body = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const key = String(body.key || "").slice(0, 120);
+  if (!key.includes("|")) return json({ error: "bad_key" }, 400);
+  if (body.slot == null || body.slot === "") delete cur[key];
+  else if (SLOTS.includes(body.slot)) cur[key] = { slot: body.slot, at: new Date().toISOString() };
+  else return json({ error: "bad_slot" }, 400);
+  await env.STAFF.put("positions", JSON.stringify(cur));
+  return json({ overrides: cur });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url), path = url.pathname;
@@ -168,6 +187,7 @@ export default {
       try { return json({ games: await gameLog(m[1], url.searchParams.get("season") || "2025-26", ctx) }); }
       catch (e) { return json({ error: "gamelog_unavailable", detail: String(e.message || e) }, 502); }
     }
+    if (path === "/api/positions") return positionsApi(request, env);
     if (path.startsWith("/api/")) return json({ error: "not_found" }, 404);
 
     for (const [re, asset] of PAGES) if (re.test(path)) return secure(await env.ASSETS.fetch(new Request(new URL(asset, url), request)), true);

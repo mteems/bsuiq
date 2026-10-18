@@ -15,5 +15,7 @@
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"
   },
+  // Small staff-edited settings (depth chart position overrides).
+  "kv_namespaces": [{ "binding": "STAFF", "id": "837ff1bca61b45549f66eb80f363475a" }],
   "observability": { "enabled": true }
 }
