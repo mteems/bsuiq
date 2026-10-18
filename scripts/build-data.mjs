@@ -55,10 +55,14 @@ function playerScores(p) {
         if (v == null) return;
         sk[k] = { score: v, rank: r[6] ? SK.rows.filter((o) => o[6] && o[7 + i] != null && o[7 + i] > v).length + 1 : null };
       });
-      // Defense = DEF v2 (rebuilt in scripts/build-rankings.mjs), not the v1.1 defense component.
-      delete sk.defense;
+      // Scores come from the rankings build (bell-curve scale; Defense = DEF v2).
       const NR = RANK_LATEST?.rows.find((x) => normName(x[RC.name]) === normName(r[0]) && x[RC.team] === r[1]);
-      if (NR && NR[RC.df] != null) sk.defense = { score: NR[RC.df], rank: NR[RC.rk_df], pool: RANK_LATEST.defTest?.[RANK_LATEST.season]?.pool };
+      for (const k of Object.keys(sk)) delete sk[k];
+      if (NR) {
+        const pool = (key) => RANK_LATEST.rows.filter((x) => x[RC["rk_" + key]] != null).length;
+        for (const [k, key] of [["scoring", "sc"], ["playmaking", "pl"], ["rebounding", "rb"], ["defense", "df"]])
+          if (NR[RC[key]] != null) sk[k] = { score: NR[RC[key]], rank: NR[RC["rk_" + key]], pool: pool(key) };
+      }
       out.skills = { version: SK.version, season: SK.season, pool: SK.pool, team: r[1], min: r[3], mpg: r[4], ref: !!r[6], s: sk };
     }
   }

@@ -82,7 +82,7 @@ function row(p) {
     blkp: share && t ? rd((100 * v.blocks * share) / (t.d_fga - t.d_tpa)) : null,
     pf40: rd(f40(v.fouls)), drapm: rd(v.national_drapm, 2), rapm: rd(v.national_rapm_net, 2),
     sc: skv("scoring_score"), pl: skv("creation_score"), rb: skv("rebounding_score"), df: null,
-    _lat: sk && sk.skill_reference_group === "TRUE" ? { sc: n(sk.scoring_latent), pl: n(sk.creation_latent), rb: n(sk.rebounding_latent) } : null,
+    _lat: sk && sk.skill_score_eligible === "TRUE" ? { sc: n(sk.scoring_latent), pl: n(sk.creation_latent), rb: n(sk.rebounding_latent), ref: sk.skill_reference_group === "TRUE" } : null,
     _y: +p.season, _team: p.team_ncaa_team_id, _tor: null,
   };
 }
@@ -135,7 +135,18 @@ const bySeason = new Map();
 for (const p of all) { if (n(p.minutes) < 50) continue; const y = +p.season; if (!bySeason.has(y)) bySeason.set(y, []); bySeason.get(y).push(row(p)); }
 
 const test = {};
-const train = bySeason.get(latest).filter((r) => r._lat && r.min >= 200);
+const train = bySeason.get(latest).filter((r) => r._lat?.ref);
+// 2025-26: exact percentiles from the official latents (the CSV scores are
+// rounded to 0.1, which would create ties at the top).
+for (const k of ["sc", "pl", "rb"]) {
+  const ref = train.map((r) => r._lat[k]).sort((a, b) => a - b), N = ref.length;
+  for (const r of bySeason.get(latest)) {
+    const v = r._lat?.[k]; if (v == null) continue;
+    let lo = 0, hi = N; while (lo < hi) { const m = (lo + hi) >> 1; if (ref[m] < v) lo = m + 1; else hi = m; }
+    let up = lo; while (up < N && ref[up] === v) up++;
+    r[k] = (100 * (lo + up) / 2) / N;
+  }
+}
 for (const k of Object.keys(FEATS)) {
   const { beta, r2 } = fit(train, k);
   // Backtest on 2025-26: rebuilt score vs the official v1.1 score.
@@ -146,7 +157,7 @@ for (const k of Object.keys(FEATS)) {
     if (y === latest) continue;
     const pool = rows.filter((r) => r.min >= 200), Xp = features(pool, FEATS[k]);
     const s = pctScores(pool, Xp.map((x) => x.reduce((a, v, j) => a + v * beta[j], 0)));
-    pool.forEach((r, i) => (r[k] = rd(s[i])));
+    pool.forEach((r, i) => (r[k] = s[i]));
   }
 }
 
@@ -192,8 +203,30 @@ for (const [y, rows] of bySeason) {
   }
   pool.forEach((d) => (d.raw = Object.entries(DEFW).reduce((s, [k, w]) => s + w * d["z_" + k], 0) * (d.minp / (d.minp + 15))));
   const order = [...pool].sort((a, b) => a.raw - b.raw);
-  order.forEach((d, i) => { d.score = 1 + (99 * i) / (order.length - 1); if (d.me) d.me.df = rd(d.score); });
+  order.forEach((d, i) => { d.score = (100 * (i + 0.5)) / order.length; if (d.me) d.me.df = d.score; });
   defTest[seasonLabel(y)] = { pool: pool.length, matched: pool.filter((d) => d.me).length };
+}
+
+// ---------------------------------------------------------------------------
+// Score scale. Everything above is a percentile (0-100), which crowds the top
+// (dozens of 99.x). Final scores use a bell-curve scale instead:
+//   score = 50 + 13.5 x z, where z is the normal-curve value of the percentile.
+// 50 = D-I average, 60 = top ~23%, 70 = top ~7%, 80 = top ~1.3%, and the best
+// player in a season lands around 97-99. Ranks are unchanged.
+function invNorm(p) { // Acklam's approximation
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const q = p < 0.02425 ? Math.sqrt(-2 * Math.log(p)) : p > 1 - 0.02425 ? Math.sqrt(-2 * Math.log(1 - p)) : null;
+  if (q == null) { const r = (p - 0.5) ** 2, t = p - 0.5; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * t / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+  const v = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  return p < 0.5 ? v : -v;
+}
+const bell = (pct, N) => { if (pct == null) return null; const lo = 0.5 / N, p = Math.min(1 - lo, Math.max(lo, pct / 100)); return rd(Math.max(1, Math.min(99.9, 50 + 13.5 * invNorm(p)))); };
+for (const rows of bySeason.values()) {
+  const N = rows.filter((r) => r.min >= 200).length;
+  for (const r of rows) for (const k of ["sc", "pl", "rb", "df"]) r[k] = bell(r[k], k === "df" ? 1e9 : N);
 }
 
 // D-I ranks per season (200+ minute pool).

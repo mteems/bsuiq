@@ -78,7 +78,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
     el.innerHTML = last ? `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players</span></div><div class="story">${(last.season === "2025-26" && last.gp * last.mpg >= 50) ? "Scores for this player fill in with the next data refresh." : `No 2025-26 skill score: needs 50+ minutes in the 2025-26 season (last season on file: ${last.season}, ${last.gp} GP, ${f1(last.mpg)} mpg).`} See all rankings on the <a href="/rankings" style="color:var(--text);text-decoration:underline">Rankings page</a>.</div></section>` : "";
     return;
   }
-  el.innerHTML = `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players · same scale and tiers for every skill</span></div>
+  el.innerHTML = `<section><div class="shead"><h2>Skill scores</h2><span class="label">50 = D-I average · 70 = top 7% · 80+ = top 1%</span></div>
     <div class="grid two" style="grid-template-columns:${panels.length > 1 ? "1.35fr 1fr" : "minmax(0,760px)"}">${panels.join("")}</div></section>`;
 })();
 

@@ -37,7 +37,7 @@ td.st{font-variant-numeric:tabular-nums}
 <main class="pwrap">
   <div class="label">Rankings · skill scores · every D-I player with 50+ minutes · 2016-17 to 2025-26</div>
   <h1>Skill rankings</h1>
-  <div class="cap" style="margin-top:4px">Same 1–100 scale and tiers for every skill (Elite 95+, Plus 80–95, Solid 60–80, Average 40–60, Below 20–40, Poor under 20). Stat colors show where each number ranks among D-I players with 200+ minutes. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>. Click any column header to sort. Hover dotted names for definitions.</div>
+  <div class="cap" style="margin-top:4px">Every skill uses the same bell-curve scale: 50 = D-I average, and every 13.5 points is one standard deviation, so the top end spreads out. Tiers: Elite 80+ (about the top 1%), Plus 70–80 (top 7%), Solid 60–70 (top 23%), Average 40–60, Below 30–40, Poor under 30. Stat colors show where each number ranks among D-I players with 200+ minutes. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>. Click any column header to sort. Hover dotted names for definitions.</div>
   <div class="ptabs" id="views"></div>
   <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px"><div class="seg" id="skills"></div></div>
   <div class="filters" id="filters"></div>
@@ -48,7 +48,7 @@ td.st{font-variant-numeric:tabular-nums}
 </main>
 <script type="module">
 import { pc, esc, getJSON, topBar, addDefs } from "/assets/core.js";
-import { tierOf } from "/assets/scores.js";
+import { tierOf, scol } from "/assets/scores.js";
 topBar("rankings");
 
 addDefs({
@@ -183,7 +183,7 @@ function filtered() {
 
 const fmt = (v, d) => (v == null ? "—" : (+v).toFixed(d));
 const dash = `<span class="m" style="color:var(--muted)">—</span>`;
-const mini = (v) => (v == null ? dash : `<span class="mini" style="background:${pc(v)}">${v.toFixed(0)}</span>`);
+const mini = (v) => (v == null ? dash : `<span class="mini" style="background:${scol(v)}">${v.toFixed(0)}</span>`);
 
 function draw() {
   const S = SKILLS[st.skill], k = st.skill;
@@ -207,7 +207,7 @@ function draw() {
       const sc = r[k], rk = r["rk_" + k];
       const hl = st.view !== "bsu27" && r.season === IDX.latest && byName.has(norm(r.name));
       return `<tr class="${hl ? "me" : ""}"><td class="m">${(st.page * PER + i + 1).toLocaleString()}</td><td class="l">${link(r.name)}</td>${showSeason ? `<td class="l m">${r.season}</td>` : ""}<td class="l m">${esc(r.team)}</td>${showConf ? `<td class="l m">${esc(r.conf)}</td>` : ""}<td class="l m">${esc(r.cls)}</td><td class="l m">${esc(r.pos)}</td><td class="l m">${esc(r.ht)}</td><td class="m">${r.gp ?? "—"}</td><td class="m">${fmt(r.mpg, 1)}</td>
-        <td class="sep">${sc == null ? dash : `<span class="chip" style="background:${pc(sc)}">${sc.toFixed(1)}</span>`}</td><td class="l m">${sc == null ? "—" : tierOf(sc)}</td><td class="m">${rk ? rk.toLocaleString() : "—"}</td>
+        <td class="sep">${sc == null ? dash : `<span class="chip" style="background:${scol(sc)}">${sc.toFixed(1)}</span>`}</td><td class="l m">${sc == null ? "—" : tierOf(sc)}</td><td class="m">${rk ? rk.toLocaleString() : "—"}</td>
         ${S.stats.map(([sk, , d, dir], j) => { const v = r[sk], p = dir ? pctOf(sk, v) : null; const col = p == null || Math.abs(p - 50) < 10 ? "var(--text)" : pc(dir > 0 ? p : 100 - p);
           return `<td class="st ${j === 0 ? "sep" : ""}" style="color:${col}">${fmt(v, d)}</td>`; }).join("")}
         ${others.map((o, j) => `<td class="${j === 0 ? "sep" : ""}">${mini(r[o])}</td>`).join("")}</tr>`;
