@@ -28,6 +28,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 <script type="module">
 import { d3, pc, chip, tc, f1, f0, esc, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
 import { renderShotChart } from "/assets/shotchart.js";
+import { scorePanel } from "/assets/scores.js";
 topBar("player");
 
 const id = decodeURIComponent(location.pathname.split("/")[2] || "");
@@ -52,6 +53,7 @@ page.innerHTML = `
 <div class="label">${labelBits.map(esc).join(" · ")}</div>
 <h1>${esc(playerName(P))}</h1>
 <div class="cap" style="margin-top:4px">${P.onRoster ? `Boise St. 2026-27${P.jersey_number ? ` · #${esc(P.jersey_number)}` : ""}${pathText ? ` · ${esc(pathText)} → Boise St.` : ""} · ` : ""}Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
+<div id="s-scores"></div>
 <div id="s-shoot"></div>
 <div id="s-pd"></div>
 <div id="s-seasons"></div>
@@ -66,6 +68,37 @@ function profileTable(s, rows) {
   </tbody></table><div class="cap">Chip = percentile rank (100 = best) among ${pm.poolN.toLocaleString()} D-I rotation players${pm.fallback ? ` (${pm.poolSeason} pool)` : ""}. Lower-is-better stats are already flipped.${q ? "" : ` Small sample (${s.gp} GP, ${f1(s.mpg)} mpg): percentiles hidden.`}</div>`;
 }
 const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
+
+// ======================================================= SKILL SCORES
+(function skillScores() {
+  const el = document.getElementById("s-scores"), SC = D.scores || {};
+  const panels = [];
+  if (SC.playmaking) {
+    const r = SC.playmaking, fmt = { a40: (v) => v.toFixed(1), ato: (v) => v.toFixed(2), tovr: (v) => v.toFixed(1) + "%", ash: (v) => v.toFixed(1) + "%", load: (v) => v.toFixed(1) };
+    panels.push(scorePanel({
+      title: "Playmaking score", def: "playscore", version: r.version, score: r.score, rank: r.rank, pool: r.pool, groupLabel: (r.groupLabel || "").toLowerCase(), link: "/rankings#playmaking",
+      comps: r.weights.map(([k, l, w]) => ({ label: l, def: k, weight: w, z: r.z[k], value: fmt[k](r.v[k]) })),
+      note: `${r.season || "2025-26"} at ${esc(shortSchool(r.school))}. v0 is box score only; v1 adds AST%, usage and offensive RAPM from play-by-play.`,
+    }));
+  }
+  if (SC.defense) {
+    const r = SC.defense;
+    panels.push(scorePanel({
+      title: "DEF score", def: "defscore", version: r.version, score: r.score, rank: r.rank, pool: r.pool, groupLabel: `role (${r.role})`, link: "/rankings#defense",
+      comps: [
+        { label: "Defensive RAPM", def: "drapm", weight: 20, z: Math.max(-3, Math.min(3, r.drapm / 2.7)), value: (r.drapm > 0 ? "+" : "") + r.drapm.toFixed(2) },
+        { label: "DBPM*", weight: 25, z: Math.max(-3, Math.min(3, r.dbpm / 2)), value: (r.dbpm > 0 ? "+" : "") + r.dbpm.toFixed(1) },
+      ],
+      note: "Full breakdown (all seven components, on/off, career arc) in the Defense section below. * = team halo damped 50%.",
+    }));
+  }
+  if (!panels.length) {
+    el.innerHTML = last ? `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players</span></div><div class="story">${(last.gp >= 15 && last.mpg >= 15) ? "Scores for this player fill in with the next data refresh." : `Not enough minutes last season to score (needs 15+ games and 15+ minutes per game; ${last.gp} GP, ${f1(last.mpg)} mpg).`} See all rankings on the <a href="/rankings" style="color:var(--text);text-decoration:underline">Rankings page</a>.</div></section>` : "";
+    return;
+  }
+  el.innerHTML = `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players · same scale and tiers for every skill</span></div>
+    <div class="grid two" style="grid-template-columns:${panels.length > 1 ? "1fr 1fr" : "minmax(0,620px)"}">${panels.join("")}</div></section>`;
+})();
 
 // ======================================================= SHOOTING (Shot Profile mockup)
 (function shooting() {

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Rankings · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+.pwrap{max-width:1240px;margin:auto;padding:24px 24px 32px}
+.pwrap h1{font-size:28px;margin-top:6px}
+td a{color:#fff}
+td a:hover{text-decoration:underline;text-underline-offset:3px}
+tr.me td{background:rgba(255,255,255,.06)}
+.weights{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.weights span{font-family:var(--mono);font-size:10.5px;color:var(--soft);background:var(--card);border-radius:4px;padding:3px 7px}
+.weights b{color:#fff}
+@media (max-width:900px){.pwrap{padding:16px 16px 28px}.notes{grid-template-columns:1fr!important}}
+</style>
+</head>
+<body>
+<main class="pwrap">
+  <div class="label">Rankings · 2025-26 · D-I rotation players</div>
+  <h1>Skill scores</h1>
+  <div class="cap" style="margin-top:4px">Every skill score uses the same 1–100 scale and tiers (Elite 95+, Plus 80–95, Solid 60–80, Average 40–60, Below 20–40, Poor under 20). Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
+  <div class="ptabs" id="skills"></div>
+  <div id="body"></div>
+  <footer>Scores rank 2025-26 D-I rotation players. Player names link to Bronco IQ player pages when that player is in the current data set.</footer>
+</main>
+<script type="module">
+import { pc, chip, f1, esc, getJSON, topBar, shortSchool } from "/assets/core.js";
+import { tierOf } from "/assets/scores.js";
+topBar("rankings");
+
+const index = (await getJSON("/data/index.json")).players;
+const byId = new Map(index.map((p) => [p.id, p]));
+const norm = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+const byName = new Map(index.map((p) => [norm(`${p.first_name} ${p.last_name}`), p]));
+const link = (name, id) => { const p = (id && byId.get(id)) || byName.get(norm(name)); return p ? `<a href="/player/${encodeURIComponent(p.id)}">${esc(name)}</a>` : esc(name); };
+const load = async (k) => { try { return await getJSON(`/data/scores/${k}.json`); } catch { return null; } };
+const [PM, DF] = await Promise.all([load("playmaking"), load("defense")]);
+
+const SKILLS = [
+  { key: "playmaking", title: "Playmaking", data: PM, render: renderPlaymaking },
+  { key: "defense", title: "Defense", data: DF, render: renderDefense },
+];
+const skillsEl = document.getElementById("skills"), body = document.getElementById("body");
+skillsEl.innerHTML = SKILLS.map((s) => `<button data-k="${s.key}">${s.title}${s.data ? ` <span class="label" style="font-size:9.5px">${s.data.version}</span>` : ""}</button>`).join("");
+function show(key) {
+  const s = SKILLS.find((x) => x.key === key) || SKILLS[0];
+  skillsEl.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.k === s.key));
+  history.replaceState(null, "", "#" + s.key);
+  s.render(s.data);
+}
+skillsEl.querySelectorAll("button").forEach((b) => (b.onclick = () => show(b.dataset.k)));
+
+function scopeBar(scopes, cur, onPick) {
+  const html = `<div class="seg" id="scope">${scopes.map(([k, l]) => `<button data-s="${k}" class="${k === cur ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  setTimeout(() => document.querySelectorAll("#scope button").forEach((b) => (b.onclick = () => onPick(b.dataset.s))));
+  return html;
+}
+
+// ======================================================= PLAYMAKING
+function renderPlaymaking(D, scope = "nat") {
+  if (!D) {
+    body.innerHTML = `<section><div class="shead"><h2>Playmaking score</h2><span class="label">v0 · box score</span></div>
+      <div class="note">The Playmaking score is built and waiting on today's data pull. The source database hit its free daily read limit this afternoon and resets at 6:00 PM Boise time; the national rankings fill in right after that.</div></section>`;
+    return;
+  }
+  const rows = D.rows;
+  const sets = {
+    nat: rows.filter((r) => r.rank <= 25),
+    mwc: rows.filter((r) => r.mwc).slice(0, 10),
+    bsu: rows.filter((r) => r.school === "Boise State"),
+    roster: rows.filter((r) => byId.has(r.id)),
+  };
+  const W = Object.fromEntries(D.weights.map(([k, l, w]) => [k, w]));
+  body.innerHTML = `<section><div class="shead"><h2><span data-def="playscore">Playmaking score</span></h2><span class="label">${D.version} · box score · ${D.pool.toLocaleString()} players</span>
+      <div style="margin-left:auto">${scopeBar([["nat", "NATIONAL TOP 25"], ["mwc", "MOUNTAIN WEST TOP 10"], ["bsu", "BOISE ST. '26"], ["roster", "2026-27 ROSTER"]], scope, (s) => renderPlaymaking(D, s))}</div></div>
+    <div class="weights">${D.weights.map(([k, l, w]) => `<span data-def="${k}">${l} <b>${w > 0 ? "" : "−"}${Math.abs(w)}%</b></span>`).join("")}</div>
+    <div class="panel scroll" style="margin-top:12px"><table><thead><tr><th>#</th><th class="l">Player</th><th class="l">Team</th><th class="l">Group</th><th>GP</th><th><span data-def="mpg">MPG</span></th><th><span data-def="playscore">PLAY</span></th><th class="l">Tier</th>
+      <th class="sep"><span data-def="a40">AST/40</span></th><th><span data-def="ato">AST/TO</span></th><th><span data-def="tovr">TOV%</span></th><th><span data-def="ash">AST share</span></th><th><span data-def="load">Plays/40</span></th></tr></thead><tbody>
+    ${sets[scope].map((r) => { const zc = (k) => { const z = r.z[k] * (W[k] < 0 ? -1 : 1); return Math.abs(z) < 0.35 ? "var(--text)" : pc(50 + Math.max(-45, Math.min(45, z * 15))); };
+      return `<tr class="${byId.has(r.id) ? "me" : ""}"><td class="m">${r.rank.toLocaleString()}</td><td class="l">${link(r.name, r.id)}</td><td class="l m">${esc(shortSchool(r.school))}</td><td class="l m">${D.groups[r.grp]?.label || r.grp}</td><td class="m">${r.gp}</td><td class="m">${f1(r.mpg)}</td>
+      <td><span class="chip" style="background:${pc(r.score)}">${r.score.toFixed(1)}</span></td><td class="l m">${tierOf(r.score)}</td>
+      <td class="sep" style="color:${zc("a40")}">${r.v.a40.toFixed(1)}</td><td style="color:${zc("ato")}">${r.v.ato.toFixed(2)}</td><td style="color:${zc("tovr")}">${r.v.tovr.toFixed(1)}</td><td style="color:${zc("ash")}">${r.v.ash.toFixed(1)}</td><td style="color:${zc("load")}">${r.v.load.toFixed(1)}</td></tr>`; }).join("") || `<tr><td colspan="13" class="m l">No qualified players in this group.</td></tr>`}
+    </tbody></table>
+    <div class="cap">Stat colors compare each player with his position group's average (orange = better, blue = worse). Highlighted rows are on Boise St.'s 2026-27 roster.</div>
+    <div class="grid notes" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">
+      <div class="cap" style="margin-top:0"><b style="color:var(--text)">How it's built (v0).</b> Pool: ${D.pool.toLocaleString()} D-I rotation players in 2025-26 (15+ games, 15+ minutes per game). Each stat becomes a z-score within the player's position group (guards, forwards, bigs), clipped at ±3. The weighted sum is shrunk for minutes (Min% ÷ (Min% + 15)), then ranked against the whole pool: score = 1 + 99 × percentile.</div>
+      <div class="cap" style="margin-top:0"><b style="color:var(--text)">Why these stats.</b> AST/40 measures how much he creates. AST/TO and TOV% measure the decisions. Assist share shows how pass-first his touches are. Plays/40 credits on-ball load, so a high-volume creator isn't scored like a low-usage spot-up guard with a clean turnover line.</div>
+      <div class="cap" style="margin-top:0"><b style="color:var(--text)">What v1 adds.</b> Box scores can't see teammates, so v0 can't compute AST% or usage. When the play-by-play archive moves into Bronco IQ's database, v1 swaps in AST%, TOV%, usage and offensive RAPM, the same way the DEF score moved from box score (v0) to RAPM (v2).</div>
+    </div></div></section>`;
+}
+
+// ======================================================= DEFENSE
+function renderDefense(D, scope = "nat") {
+  if (!D) { body.innerHTML = `<div class="note">DEF score data isn't in this build.</div>`; return; }
+  const L = D.lists;
+  body.innerHTML = `<section><div class="shead"><h2><span data-def="defscore">DEF score</span></h2><span class="label">${D.version} · ${D.pool.toLocaleString()} players</span>
+      <div style="margin-left:auto">${scopeBar([["nat", "NATIONAL TOP 10"], ["mwc", "MOUNTAIN WEST TOP 10"], ["bsu", "BOISE ST. '26"]], scope, (s) => renderDefense(D, s))}</div></div>
+    <div class="weights">${D.weights.map(([l, w]) => `<span>${esc(l)} <b>${w > 0 ? "" : "−"}${Math.abs(w)}%</b></span>`).join("")}</div>
+    <div class="panel scroll" style="margin-top:12px"><table><thead><tr><th>#</th><th class="l">Player</th><th class="l">Team</th><th class="l">Role</th><th>Min%</th><th><span data-def="defscore">DEF</span></th><th class="l">Tier</th><th>v1 #</th><th><span data-def="drapm">DRAPM</span></th><th>Poss</th><th>DBPM*</th><th>Adj DRtg*</th><th>STL%</th><th>BLK%</th><th>DRB%</th><th>Fouls/40</th></tr></thead><tbody>
+    ${L[scope].map((r) => { const mv = r.v1rank == null ? null : r.v1rank - r.rank;
+      return `<tr class="${r.isRef ? "me" : ""}"><td class="m">${r.isRef ? "—" : r.rank.toLocaleString()}</td><td class="l">${link(r.name)}</td><td class="l m">${esc(r.team)}</td><td class="l m">${esc(r.role)}</td><td class="m">${r.minPct}</td>
+      <td><span class="chip" style="background:${pc(r.score)}">${r.score.toFixed(1)}</span></td><td class="l m">${tierOf(r.score)}</td>
+      <td class="m">${mv == null ? "—" : `${r.v1rank.toLocaleString()} <span style="color:${mv > 0 ? "#f08a5d" : mv < 0 ? "#7fa6f0" : "var(--muted)"};font-family:var(--mono);font-size:10.5px">${mv > 0 ? "▲" + mv : mv < 0 ? "▼" + -mv : "="}</span>`}</td>
+      <td style="color:${r.drapm > 1 ? "#f08a5d" : r.drapm < -1 ? "#7fa6f0" : "var(--text)"}">${(r.drapm > 0 ? "+" : "") + r.drapm.toFixed(2)}</td><td class="m">${r.rapmPoss.toLocaleString()}</td><td>${(r.dbpm > 0 ? "+" : "") + r.dbpm.toFixed(1)}</td><td>${r.adjd.toFixed(1)}</td><td>${r.stl.toFixed(1)}</td><td>${r.blk.toFixed(1)}</td><td>${r.drb.toFixed(1)}</td><td>${r.pf.toFixed(1)}</td></tr>`; }).join("")}
+    </tbody></table>
+    <div class="cap">* = team halo damped 50% in the score. ▲/▼ = places moved since v1. ${scope === "bsu" ? "Wheeler-Thomas is shown for reference (North Dakota St. in 2025-26)." : ""} The full national table arrives with the data migration.</div>
+    <div class="grid notes" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">${D.notes.map((n) => `<div class="cap" style="margin-top:0">${n}</div>`).join("")}</div></div></section>`;
+}
+
+show(location.hash.slice(1) || "playmaking");
+</script>
+</body>
+</html>

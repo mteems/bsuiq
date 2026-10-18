@@ -53,6 +53,13 @@ export const DEF = {
   shrate: ["Share of attempts", "Share of all his field-goal attempts from that zone."],
   pts: ["Points", ""], reb: ["Rebounds", ""], ast: ["Assists", ""], stl: ["Steals", ""], blk: ["Blocks", ""], to: ["Turnovers", "Lower is better."],
   min: ["Minutes", ""], fgma: ["Field goals made-attempted", ""], tpma: ["Threes made-attempted", ""], ftma: ["Free throws made-attempted", ""],
+  playscore: ["Playmaking score (v0)", "Bronco IQ 1-100 percentile of playmaking among D-I rotation players (15+ GP, 15+ MPG). Built from box scores: AST/40 30%, AST/TO 20%, TOV% −20%, assist share 15%, plays/40 15%. Each stat is compared within position group (guards, forwards, bigs), then shrunk for minutes. v1 adds AST%, usage and offensive RAPM from play-by-play."],
+  defscore: ["DEF score (v2)", "Bronco IQ 1-100 percentile of defensive impact among 2,284 D-I rotation players. Weights: DBPM 25%, Adj DRtg 15% (both with team credit cut in half), defensive RAPM 20%, STL% 13%, BLK% 10%, DRB% 10%, fouls −7%. Each stat is compared within role, then shrunk for minutes."],
+  a40: ["Assists per 40", "Assists scaled to 40 minutes."],
+  ash: ["Assist share", "Assists as a share of all his plays: AST ÷ (FGA + 0.44 × FTA + AST + TO). Higher = more pass-first."],
+  tovr: ["Turnover rate (TOV%)", "Turnovers per 100 of his own plays: TO ÷ (FGA + 0.44 × FTA + TO). Lower is better."],
+  load: ["Plays per 40", "On-ball load: (FGA + 0.44 × FTA + AST + TO) per 40 minutes. A box-score stand-in for usage."],
+  drapm: ["Defensive RAPM", "Points per 100 opponent possessions a player saves vs an average D-I player, after accounting for all teammates and opponents on the floor. Positive = good."],
   gmsc: ["Game score", "John Hollinger's one-number box score summary: PTS + 0.4·FGM − 0.7·FGA − 0.4·(FTA − FTM) + 0.7·ORB + 0.3·DRB + STL + 0.7·AST + 0.7·BLK − 0.4·PF − TOV. ESPN logs don't split rebounds, so this uses 0.5·REB. ~10 is a solid game."],
 };
 export const addDefs = (more) => Object.assign(DEF, more);
@@ -109,7 +116,7 @@ export function topBar(active) {
   el.className = "top";
   el.innerHTML = `<div class="bar">
     <a class="brand" href="/"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png"><b>BRONCO IQ</b></a>
-    <nav class="nav"><a href="/" class="${active === "home" ? "on" : ""}">Roster</a><a href="/scouting" class="${active === "scouting" ? "on" : ""}">Scouting</a></nav>
+    <nav class="nav"><a href="/" class="${active === "home" ? "on" : ""}">Roster</a><a href="/scouting" class="${active === "scouting" ? "on" : ""}">Scouting</a><a href="/rankings" class="${active === "rankings" ? "on" : ""}">Rankings</a></nav>
     <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" placeholder="Search players or schools" autocomplete="off" aria-label="Search players"><div class="results" id="qr"></div></div>
     <div class="user" id="who"></div></div>`;
