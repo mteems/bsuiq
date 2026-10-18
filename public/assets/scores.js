@@ -38,3 +38,19 @@ export function scorePanel({ title, def, version, score, rank, pool, groupLabel,
     <div style="margin-top:4px">${comps.map(compRow).join("")}</div>
     ${note ? `<div class="cap">${note}</div>` : ""}</div>`;
 }
+
+// v1.1 skill cards: one small ring per skill, with rank and tier.
+export const SKILL_V11 = [["scoring", "Scoring", "scorescore"], ["playmaking", "Playmaking", "playscore"], ["rebounding", "Rebounding", "rebscore"]];
+export function skillCards(sk) {
+  const cards = SKILL_V11.filter(([k]) => sk.s[k]).map(([k, label, def]) => {
+    const { score, rank } = sk.s[k];
+    return `<div class="skcard"><div class="label"><span data-def="${def}">${label}</span></div>${ring(score)}
+      <span class="stag" style="background:${pc(score)}">${tierOf(score).toUpperCase()}</span>
+      <div class="srank" style="font-size:13px;margin-top:6px">${rank ? `${ord(rank)} of ${sk.pool.toLocaleString()}` : "No rank (under 200 min)"}</div>
+      <a class="cap" href="/rankings#${k}" style="color:var(--soft)">Rankings →</a></div>`;
+  });
+  return `<div class="panel"><div class="label ptitle"><span>Skill scores · ${esc(sk.version)}</span><span class="m" style="color:var(--muted)">${esc(sk.team)} · ${sk.min.toLocaleString()} min</span></div>
+    <div class="skcards">${cards.join("")}</div>
+    ${tierStrip(-1)}
+    <div class="cap">From the RStudio skill model. Ranked against ${sk.pool.toLocaleString()} D-I players with 200+ minutes in ${esc(sk.season)}.</div></div>`;
+}

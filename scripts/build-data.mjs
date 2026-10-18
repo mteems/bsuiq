@@ -37,6 +37,23 @@ function playerScores(p) {
   const dl = scores.defense ? Object.values(scores.defense.lists).flat() : [];
   const df = dl.find((r) => normName(r.name) === normName(`${p.first_name} ${p.last_name}`));
   if (df) out.defense = { ...df, pool: scores.defense.pool, version: scores.defense.version, weights: scores.defense.weights };
+  // v1.1 skill components (RStudio). Match on name, then on last season's school.
+  const SK = scores.skills;
+  if (SK) {
+    const last = p.seasons[p.seasons.length - 1];
+    const school = normName(last?.school).slice(0, 5);
+    const hits = SK.rows.filter((r) => normName(r[0]) === normName(`${p.first_name} ${p.last_name}`));
+    const r = hits.length === 1 ? hits[0] : hits.find((h) => normName(h[1]).slice(0, 5) === school);
+    if (r) {
+      const sk = {};
+      SK.skills.forEach((k, i) => {
+        const v = r[7 + i];
+        if (v == null) return;
+        sk[k] = { score: v, rank: r[6] ? SK.rows.filter((o) => o[6] && o[7 + i] != null && o[7 + i] > v).length + 1 : null };
+      });
+      out.skills = { version: SK.version, season: SK.season, pool: SK.pool, team: r[1], min: r[3], mpg: r[4], ref: !!r[6], s: sk };
+    }
+  }
   return out;
 }
 

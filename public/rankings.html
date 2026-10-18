@@ -42,10 +42,11 @@ const norm = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").to
 const byName = new Map(index.map((p) => [norm(`${p.first_name} ${p.last_name}`), p]));
 const link = (name, id) => { const p = (id && byId.get(id)) || byName.get(norm(name)); return p ? `<a href="/player/${encodeURIComponent(p.id)}">${esc(name)}</a>` : esc(name); };
 const load = async (k) => { try { return await getJSON(`/data/scores/${k}.json`); } catch { return null; } };
-const [PM, DF] = await Promise.all([load("playmaking"), load("defense")]);
+const [SK, DF] = await Promise.all([load("skills"), load("defense")]);
 
+const V11 = { scoring: ["Scoring", "scorescore"], playmaking: ["Playmaking", "playscore"], rebounding: ["Rebounding", "rebscore"] };
 const SKILLS = [
-  { key: "playmaking", title: "Playmaking", data: PM, render: renderPlaymaking },
+  ...Object.entries(V11).map(([k, [title]]) => ({ key: k, title, data: SK, render: (D) => renderSkill(D, k) })),
   { key: "defense", title: "Defense", data: DF, render: renderDefense },
 ];
 const skillsEl = document.getElementById("skills"), body = document.getElementById("body");
@@ -64,36 +65,33 @@ function scopeBar(scopes, cur, onPick) {
   return html;
 }
 
-// ======================================================= PLAYMAKING
-function renderPlaymaking(D, scope = "nat") {
-  if (!D) {
-    body.innerHTML = `<section><div class="shead"><h2>Playmaking score</h2><span class="label">v0 · box score</span></div>
-      <div class="note">The Playmaking score is built and waiting on today's data pull. The source database hit its free daily read limit this afternoon and resets at 6:00 PM Boise time; the national rankings fill in right after that.</div></section>`;
-    return;
-  }
-  const rows = D.rows;
+// ======================================================= v1.1 SKILLS (RStudio skill model)
+function renderSkill(D, key, scope = "nat") {
+  if (!D) { body.innerHTML = `<div class="note">Skill score data isn't in this build.</div>`; return; }
+  const [title, def] = V11[key], ci = D.cols.indexOf(key), C = Object.fromEntries(D.cols.map((c, i) => [c, i]));
+  const ranked = D.rows.filter((r) => r[C.ref] && r[ci] != null).sort((a, b) => b[ci] - a[ci]);
+  const rank = new Map(ranked.map((r, i) => [r, i + 1]));
+  const all = D.rows.filter((r) => r[ci] != null).sort((a, b) => b[ci] - a[ci]);
+  const onRoster = (r) => byName.has(norm(r[C.name]));
   const sets = {
-    nat: rows.filter((r) => r.rank <= 25),
-    mwc: rows.filter((r) => r.mwc).slice(0, 10),
-    bsu: rows.filter((r) => r.school === "Boise State"),
-    roster: rows.filter((r) => byId.has(r.id)),
+    nat: ranked.slice(0, 25),
+    mwc: ranked.filter((r) => r[C.conf] === "MWC").slice(0, 10),
+    bsu: all.filter((r) => r[C.team] === "Boise St."),
+    roster: all.filter(onRoster),
   };
-  const W = Object.fromEntries(D.weights.map(([k, l, w]) => [k, w]));
-  body.innerHTML = `<section><div class="shead"><h2><span data-def="playscore">Playmaking score</span></h2><span class="label">${D.version} · box score · ${D.pool.toLocaleString()} players</span>
-      <div style="margin-left:auto">${scopeBar([["nat", "NATIONAL TOP 25"], ["mwc", "MOUNTAIN WEST TOP 10"], ["bsu", "BOISE ST. '26"], ["roster", "2026-27 ROSTER"]], scope, (s) => renderPlaymaking(D, s))}</div></div>
-    <div class="weights">${D.weights.map(([k, l, w]) => `<span data-def="${k}">${l} <b>${w > 0 ? "" : "−"}${Math.abs(w)}%</b></span>`).join("")}</div>
-    <div class="panel scroll" style="margin-top:12px"><table><thead><tr><th>#</th><th class="l">Player</th><th class="l">Team</th><th class="l">Group</th><th>GP</th><th><span data-def="mpg">MPG</span></th><th><span data-def="playscore">PLAY</span></th><th class="l">Tier</th>
-      <th class="sep"><span data-def="a40">AST/40</span></th><th><span data-def="ato">AST/TO</span></th><th><span data-def="tovr">TOV%</span></th><th><span data-def="ash">AST share</span></th><th><span data-def="load">Plays/40</span></th></tr></thead><tbody>
-    ${sets[scope].map((r) => { const zc = (k) => { const z = r.z[k] * (W[k] < 0 ? -1 : 1); return Math.abs(z) < 0.35 ? "var(--text)" : pc(50 + Math.max(-45, Math.min(45, z * 15))); };
-      return `<tr class="${byId.has(r.id) ? "me" : ""}"><td class="m">${r.rank.toLocaleString()}</td><td class="l">${link(r.name, r.id)}</td><td class="l m">${esc(shortSchool(r.school))}</td><td class="l m">${D.groups[r.grp]?.label || r.grp}</td><td class="m">${r.gp}</td><td class="m">${f1(r.mpg)}</td>
-      <td><span class="chip" style="background:${pc(r.score)}">${r.score.toFixed(1)}</span></td><td class="l m">${tierOf(r.score)}</td>
-      <td class="sep" style="color:${zc("a40")}">${r.v.a40.toFixed(1)}</td><td style="color:${zc("ato")}">${r.v.ato.toFixed(2)}</td><td style="color:${zc("tovr")}">${r.v.tovr.toFixed(1)}</td><td style="color:${zc("ash")}">${r.v.ash.toFixed(1)}</td><td style="color:${zc("load")}">${r.v.load.toFixed(1)}</td></tr>`; }).join("") || `<tr><td colspan="13" class="m l">No qualified players in this group.</td></tr>`}
+  const others = Object.keys(V11).filter((k) => k !== key);
+  body.innerHTML = `<section><div class="shead"><h2><span data-def="${def}">${title} score</span></h2><span class="label">${D.version} · RStudio skill model · ${D.pool.toLocaleString()} players</span>
+      <div style="margin-left:auto">${scopeBar([["nat", "NATIONAL TOP 25"], ["mwc", "MOUNTAIN WEST TOP 10"], ["bsu", "BOISE ST. '26"], ["roster", "2026-27 ROSTER"]], scope, (s) => renderSkill(D, key, s))}</div></div>
+    <div class="panel scroll" style="margin-top:12px"><table><thead><tr><th>#</th><th class="l">Player</th><th class="l">Team</th><th class="l">Conf</th><th>Min</th><th><span data-def="mpg">MPG</span></th><th><span data-def="ppg">PPG</span></th><th><span data-def="${def}">${title.toUpperCase()}</span></th><th class="l">Tier</th>
+      ${others.map((k) => `<th class="${k === others[0] ? "sep" : ""}"><span data-def="${V11[k][1]}">${V11[k][0]}</span></th>`).join("")}</tr></thead><tbody>
+    ${sets[scope].map((r) => `<tr class="${onRoster(r) ? "me" : ""}"><td class="m">${rank.get(r)?.toLocaleString() ?? "—"}</td><td class="l">${link(r[C.name])}</td><td class="l m">${esc(r[C.team])}</td><td class="l m">${esc(r[C.conf])}</td><td class="m">${r[C.min].toLocaleString()}</td><td class="m">${f1(r[C.mpg])}</td><td class="m">${f1(r[C.ppg])}</td>
+      <td><span class="chip" style="background:${pc(r[ci])}">${r[ci].toFixed(1)}</span></td><td class="l m">${tierOf(r[ci])}</td>
+      ${others.map((k) => { const v = r[C[k]]; return `<td class="${k === others[0] ? "sep" : ""}">${v == null ? "—" : `<span class="chip" style="background:${pc(v)}">${v.toFixed(1)}</span>`}</td>`; }).join("")}</tr>`).join("") || `<tr><td colspan="11" class="m l">No players in this group.</td></tr>`}
     </tbody></table>
-    <div class="cap">Stat colors compare each player with his position group's average (orange = better, blue = worse). Highlighted rows are on Boise St.'s 2026-27 roster.</div>
-    <div class="grid notes" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">
-      <div class="cap" style="margin-top:0"><b style="color:var(--text)">How it's built (v0).</b> Pool: ${D.pool.toLocaleString()} D-I rotation players in 2025-26 (15+ games, 15+ minutes per game). Each stat becomes a z-score within the player's position group (guards, forwards, bigs), clipped at ±3. The weighted sum is shrunk for minutes (Min% ÷ (Min% + 15)), then ranked against the whole pool: score = 1 + 99 × percentile.</div>
-      <div class="cap" style="margin-top:0"><b style="color:var(--text)">Why these stats.</b> AST/40 measures how much he creates. AST/TO and TOV% measure the decisions. Assist share shows how pass-first his touches are. Plays/40 credits on-ball load, so a high-volume creator isn't scored like a low-usage spot-up guard with a clean turnover line.</div>
-      <div class="cap" style="margin-top:0"><b style="color:var(--text)">What v1 adds.</b> Box scores can't see teammates, so v0 can't compute AST% or usage. When the play-by-play archive moves into Bronco IQ's database, v1 swaps in AST%, TOV%, usage and offensive RAPM, the same way the DEF score moved from box score (v0) to RAPM (v2).</div>
+    <div class="cap">Ranks count only the ${D.pool.toLocaleString()} D-I players with 200+ minutes in ${D.season}. Players with 50–199 minutes still get a score (shrunk toward average) but show "—" for rank. Highlighted rows are on Boise St.'s 2026-27 roster.</div>
+    <div class="grid notes" style="grid-template-columns:1fr 1fr;margin-top:14px">
+      <div class="cap" style="margin-top:0"><b style="color:var(--text)">Where it comes from.</b> These scores come from the RStudio skill model (player_skill_components_2026_v1_1), built on the 10-season play-by-play and box score archive. Same 1–100 scale and tiers as every other Bronco IQ score.</div>
+      <div class="cap" style="margin-top:0"><b style="color:var(--text)">Small samples.</b> Under 50 minutes: no score. 50–199 minutes: score uses the low-sample method (inputs pulled toward average). 200+ minutes: the reference group everyone is ranked against.</div>
     </div></div></section>`;
 }
 
@@ -115,7 +113,7 @@ function renderDefense(D, scope = "nat") {
     <div class="grid notes" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">${D.notes.map((n) => `<div class="cap" style="margin-top:0">${n}</div>`).join("")}</div></div></section>`;
 }
 
-show(location.hash.slice(1) || "playmaking");
+show(location.hash.slice(1) || "scoring");
 </script>
 </body>
 </html>

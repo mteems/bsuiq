@@ -28,7 +28,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 <script type="module">
 import { d3, pc, chip, tc, f1, f0, esc, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
 import { renderShotChart } from "/assets/shotchart.js";
-import { scorePanel } from "/assets/scores.js";
+import { scorePanel, skillCards } from "/assets/scores.js";
 topBar("player");
 
 const id = decodeURIComponent(location.pathname.split("/")[2] || "");
@@ -73,14 +73,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
 (function skillScores() {
   const el = document.getElementById("s-scores"), SC = D.scores || {};
   const panels = [];
-  if (SC.playmaking) {
-    const r = SC.playmaking, fmt = { a40: (v) => v.toFixed(1), ato: (v) => v.toFixed(2), tovr: (v) => v.toFixed(1) + "%", ash: (v) => v.toFixed(1) + "%", load: (v) => v.toFixed(1) };
-    panels.push(scorePanel({
-      title: "Playmaking score", def: "playscore", version: r.version, score: r.score, rank: r.rank, pool: r.pool, groupLabel: (r.groupLabel || "").toLowerCase(), link: "/rankings#playmaking",
-      comps: r.weights.map(([k, l, w]) => ({ label: l, def: k, weight: w, z: r.z[k], value: fmt[k](r.v[k]) })),
-      note: `${r.season || "2025-26"} at ${esc(shortSchool(r.school))}. v0 is box score only; v1 adds AST%, usage and offensive RAPM from play-by-play.`,
-    }));
-  }
+  if (SC.skills) panels.push(skillCards(SC.skills));
   if (SC.defense) {
     const r = SC.defense;
     panels.push(scorePanel({
@@ -93,7 +86,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
     }));
   }
   if (!panels.length) {
-    el.innerHTML = last ? `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players</span></div><div class="story">${(last.gp >= 15 && last.mpg >= 15) ? "Scores for this player fill in with the next data refresh." : `Not enough minutes last season to score (needs 15+ games and 15+ minutes per game; ${last.gp} GP, ${f1(last.mpg)} mpg).`} See all rankings on the <a href="/rankings" style="color:var(--text);text-decoration:underline">Rankings page</a>.</div></section>` : "";
+    el.innerHTML = last ? `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players</span></div><div class="story">${(last.season === "2025-26" && last.gp * last.mpg >= 50) ? "Scores for this player fill in with the next data refresh." : `No 2025-26 skill score: needs 50+ minutes in the 2025-26 season (last season on file: ${last.season}, ${last.gp} GP, ${f1(last.mpg)} mpg).`} See all rankings on the <a href="/rankings" style="color:var(--text);text-decoration:underline">Rankings page</a>.</div></section>` : "";
     return;
   }
   el.innerHTML = `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players · same scale and tiers for every skill</span></div>
