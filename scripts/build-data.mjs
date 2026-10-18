@@ -29,6 +29,10 @@ if (existsSync(src("scores"))) for (const f of readdirSync(src("scores"))) {
   const s = JSON.parse(readFileSync(src(join("scores", f)), "utf8"));
   scores[f.replace(/-\d{4}-\d{2}\.json$/, "")] = s;
 }
+// Latest national rankings file (for the DEF v2 score on player pages).
+const RIDX = existsSync(src("rankings/index.json")) ? JSON.parse(readFileSync(src("rankings/index.json"), "utf8")) : null;
+const RANK_LATEST = RIDX ? JSON.parse(readFileSync(src(`rankings/national-${RIDX.latest}.json`), "utf8")) : null;
+const RC = RANK_LATEST ? Object.fromEntries(RANK_LATEST.cols.map((c, i) => [c, i])) : {};
 const normName = (s) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 function playerScores(p) {
   const out = {};
@@ -51,6 +55,10 @@ function playerScores(p) {
         if (v == null) return;
         sk[k] = { score: v, rank: r[6] ? SK.rows.filter((o) => o[6] && o[7 + i] != null && o[7 + i] > v).length + 1 : null };
       });
+      // Defense = DEF v2 (rebuilt in scripts/build-rankings.mjs), not the v1.1 defense component.
+      delete sk.defense;
+      const NR = RANK_LATEST?.rows.find((x) => normName(x[RC.name]) === normName(r[0]) && x[RC.team] === r[1]);
+      if (NR && NR[RC.df] != null) sk.defense = { score: NR[RC.df], rank: NR[RC.rk_df], pool: RANK_LATEST.defTest?.[RANK_LATEST.season]?.pool };
       out.skills = { version: SK.version, season: SK.season, pool: SK.pool, team: r[1], min: r[3], mpg: r[4], ref: !!r[6], s: sk };
     }
   }

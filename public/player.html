@@ -28,7 +28,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 <script type="module">
 import { d3, pc, chip, tc, f1, f0, esc, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
 import { renderShotChart } from "/assets/shotchart.js";
-import { scorePanel, skillCards } from "/assets/scores.js";
+import { skillCards } from "/assets/scores.js";
 topBar("player");
 
 const id = decodeURIComponent(location.pathname.split("/")[2] || "");
@@ -74,17 +74,6 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
   const el = document.getElementById("s-scores"), SC = D.scores || {};
   const panels = [];
   if (SC.skills) panels.push(skillCards(SC.skills));
-  if (SC.defense) {
-    const r = SC.defense;
-    panels.push(scorePanel({
-      title: "DEF score", def: "defscore", version: r.version, score: r.score, rank: r.rank, pool: r.pool, groupLabel: `role (${r.role})`, link: "/rankings#defense",
-      comps: [
-        { label: "Defensive RAPM", def: "drapm", weight: 20, z: Math.max(-3, Math.min(3, r.drapm / 2.7)), value: (r.drapm > 0 ? "+" : "") + r.drapm.toFixed(2) },
-        { label: "DBPM*", weight: 25, z: Math.max(-3, Math.min(3, r.dbpm / 2)), value: (r.dbpm > 0 ? "+" : "") + r.dbpm.toFixed(1) },
-      ],
-      note: "Full breakdown (all seven components, on/off, career arc) in the Defense section below. * = team halo damped 50%.",
-    }));
-  }
   if (!panels.length) {
     el.innerHTML = last ? `<section><div class="shead"><h2>Skill scores</h2><span class="label">1–100 vs D-I rotation players</span></div><div class="story">${(last.season === "2025-26" && last.gp * last.mpg >= 50) ? "Scores for this player fill in with the next data refresh." : `No 2025-26 skill score: needs 50+ minutes in the 2025-26 season (last season on file: ${last.season}, ${last.gp} GP, ${f1(last.mpg)} mpg).`} See all rankings on the <a href="/rankings" style="color:var(--text);text-decoration:underline">Rankings page</a>.</div></section>` : "";
     return;

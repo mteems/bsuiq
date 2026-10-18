@@ -40,17 +40,17 @@ export function scorePanel({ title, def, version, score, rank, pool, groupLabel,
 }
 
 // v1.1 skill cards: one small ring per skill, with rank and tier.
-export const SKILL_V11 = [["scoring", "Scoring", "scorescore"], ["playmaking", "Playmaking", "playscore"], ["rebounding", "Rebounding", "rebscore"], ["defense", "Defense", "dscore"]];
+export const SKILL_V11 = [["scoring", "Scoring", "scorescore"], ["playmaking", "Playmaking", "playscore"], ["rebounding", "Rebounding", "rebscore"], ["defense", "Defense", "defscore"]];
 export function skillCards(sk) {
   const cards = SKILL_V11.filter(([k]) => sk.s[k]).map(([k, label, def]) => {
     const { score, rank } = sk.s[k];
     return `<div class="skcard"><div class="label"><span data-def="${def}">${label}</span></div>${ring(score)}
       <span class="stag" style="background:${pc(score)}">${tierOf(score).toUpperCase()}</span>
-      <div class="srank" style="font-size:13px;margin-top:6px">${rank ? `${ord(rank)} of ${sk.pool.toLocaleString()}` : "No rank (under 200 min)"}</div>
+      <div class="srank" style="font-size:13px;margin-top:6px">${rank ? `${ord(rank)} of ${(sk.s[k].pool || sk.pool).toLocaleString()}` : "No rank (under 200 min)"}</div>
       <a class="cap" href="/rankings#nat/${{ scoring: "sc", playmaking: "pl", rebounding: "rb", defense: "df" }[k]}" style="color:var(--soft)">Rankings →</a></div>`;
   });
-  return `<div class="panel"><div class="label ptitle"><span>Skill scores · ${esc(sk.version)}</span><span class="m" style="color:var(--muted)">${esc(sk.team)} · ${sk.min.toLocaleString()} min</span></div>
+  return `<div class="panel"><div class="label ptitle"><span>Skill scores · ${esc(sk.season)}</span><span class="m" style="color:var(--muted)">${esc(sk.team)} · ${sk.min.toLocaleString()} min</span></div>
     <div class="skcards">${cards.join("")}</div>
     ${tierStrip(-1)}
-    <div class="cap">From the RStudio skill model. Ranked against ${sk.pool.toLocaleString()} D-I players with 200+ minutes in ${esc(sk.season)}.</div></div>`;
+    <div class="cap">Scoring, Playmaking and Rebounding: RStudio skill model v1.1, ranked against ${sk.pool.toLocaleString()} D-I players with 200+ minutes. Defense: DEF score v2, ranked against D-I rotation players (40%+ of team minutes).</div></div>`;
 }

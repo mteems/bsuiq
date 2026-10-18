@@ -35,7 +35,7 @@ td.st{font-variant-numeric:tabular-nums}
 </head>
 <body>
 <main class="pwrap">
-  <div class="label">Rankings · 2025-26 skill scores · every D-I player with 50+ minutes</div>
+  <div class="label">Rankings · skill scores · every D-I player with 50+ minutes · 2016-17 to 2025-26</div>
   <h1>Skill rankings</h1>
   <div class="cap" style="margin-top:4px">Same 1–100 scale and tiers for every skill (Elite 95+, Plus 80–95, Solid 60–80, Average 40–60, Below 20–40, Poor under 20). Stat colors show where each number ranks among D-I players with 200+ minutes. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>. Click any column header to sort. Hover dotted names for definitions.</div>
   <div class="ptabs" id="views"></div>
@@ -88,7 +88,7 @@ const SKILLS = {
   sc: { title: "Scoring", def: "scorescore", stats: [["ppg", "PPG", 1, 1], ["pts40", "PTS/40", 1, 1], ["usg", "USG%", 1, 1], ["ts", "TS%", 1, 1], ["efg", "eFG%", 1, 1], ["fga40", "FGA/40", 1, 1], ["p3", "3P%", 1, 1], ["tpa40", "3PA/40", 1, 1], ["tpar", "3PAr", 1, 0], ["ftr", "FTr", 1, 1], ["ft", "FT%", 1, 1], ["rim", "Rim%", 1, 1], ["rimr", "Rim rate", 1, 0], ["mid", "Mid%", 1, 1], ["unast", "Unast%", 1, 0]] },
   pl: { title: "Playmaking", def: "playscore", stats: [["apg", "APG", 1, 1], ["ast40", "AST/40", 1, 1], ["astp", "AST%", 1, 1], ["tov40", "TOV/40", 1, -1], ["tovp", "TOV%", 1, -1], ["ato", "AST/TO", 2, 1], ["usg", "USG%", 1, 1], ["unast", "Unast%", 1, 0], ["orapm", "ORAPM", 2, 1]] },
   rb: { title: "Rebounding", def: "rebscore", stats: [["rpg", "RPG", 1, 1], ["reb40", "REB/40", 1, 1], ["oreb40", "OREB/40", 1, 1], ["dreb40", "DREB/40", 1, 1], ["orbp", "OREB%", 1, 1], ["drbp", "DREB%", 1, 1], ["trbp", "REB%", 1, 1], ["pb40", "Putbacks/40", 1, 1]] },
-  df: { title: "Defense", def: "dscore", stats: [["spg", "SPG", 1, 1], ["bpg", "BPG", 1, 1], ["stl40", "STL/40", 1, 1], ["blk40", "BLK/40", 1, 1], ["stlp", "STL%", 1, 1], ["blkp", "BLK%", 1, 1], ["drbp", "DREB%", 1, 1], ["pf40", "Fouls/40", 1, -1], ["drapm", "DRAPM", 2, 1], ["rapm", "Net RAPM", 2, 1]] },
+  df: { title: "Defense", def: "defscore", stats: [["dbpm", "DBPM", 1, 1], ["drapm", "DRAPM", 2, 1], ["adrtg", "Adj DRtg", 1, -1], ["stlp", "STL%", 1, 1], ["blkp", "BLK%", 1, 1], ["drbp", "DREB%", 1, 1], ["pf40", "Fouls/40", 1, -1], ["spg", "SPG", 1, 1], ["bpg", "BPG", 1, 1], ["stl40", "STL/40", 1, 1], ["blk40", "BLK/40", 1, 1], ["rapm", "Net RAPM", 2, 1]] },
 };
 const PAC12 = ["Boise St.", "Colorado St.", "Fresno St.", "Gonzaga", "Oregon St.", "San Diego St.", "Texas St.", "Utah St.", "Washington St."];
 
@@ -98,36 +98,42 @@ const byName = new Map(index.map((p) => [norm(`${p.first_name} ${p.last_name}`),
 const link = (name) => { const p = byName.get(norm(name)); return p ? `<a href="/player/${encodeURIComponent(p.id)}">${esc(name)}</a>` : esc(name); };
 
 const unpack = (D) => D.rows.map((r) => Object.fromEntries(D.cols.map((c, i) => [c, r[i]])));
-const [NAT, BSU] = await Promise.all([getJSON("/data/rankings/national-2025-26.json"), getJSON("/data/rankings/bsu-last10.json")]);
+const IDX = await getJSON("/data/rankings/index.json");
+const [NAT, BSU] = await Promise.all([getJSON(`/data/rankings/national-${IDX.latest}.json`), getJSON("/data/rankings/bsu-last10.json")]);
 const nat = unpack(NAT), bsu = unpack(BSU);
+const seasonCache = { [IDX.latest]: nat };
+async function loadSeason(y) { if (!seasonCache[y]) seasonCache[y] = unpack(await getJSON(`/data/rankings/national-${y}.json`)); return seasonCache[y]; }
 
-// Percentiles and D-I ranks come from the 200+ minute national pool.
-const ref = nat.filter((r) => r.min >= 200);
-const sortedVals = {};
+// Stat colors: percentile within a season's 200+ minute national pool.
+const pools = {};
+const poolFor = (y) => (pools[y] ||= { ref: (seasonCache[y] || nat).filter((r) => r.min >= 200), sorted: {} });
+let colorSeason = IDX.latest;
 const pctOf = (k, v) => {
   if (v == null) return null;
-  const a = (sortedVals[k] ||= ref.map((r) => r[k]).filter((x) => x != null).sort((x, y) => x - y));
+  const P = poolFor(colorSeason);
+  const a = (P.sorted[k] ||= P.ref.map((r) => r[k]).filter((x) => x != null).sort((x, y) => x - y));
   if (!a.length) return null;
   let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < v) lo = m + 1; else hi = m; }
   let up = lo; while (up < a.length && a[up] === v) up++;
   return (100 * (lo + up) / 2) / a.length;
 };
-const drank = {};
-for (const k of Object.keys(SKILLS)) {
-  const m = new Map(); ref.filter((r) => r[k] != null).sort((a, b) => b[k] - a[k]).forEach((r, i) => m.set(r, i + 1)); drank[k] = m;
-}
 const roster = nat.filter((r) => byName.has(norm(r.name)));
 
 const VIEWS = {
-  nat: { title: "National", rows: nat, minDefault: 200, filters: ["q", "pos", "cls", "conf", "team", "min"] },
-  pac: { title: "PAC-12", rows: nat.filter((r) => PAC12.includes(r.team)), minDefault: 100, filters: ["q", "pos", "cls", "team", "min"] },
+  nat: { title: "National", rows: nat, minDefault: 200, filters: ["yr", "q", "pos", "cls", "conf", "team", "min"] },
+  pac: { title: "PAC-12", rows: nat.filter((r) => PAC12.includes(r.team)), minDefault: 100, filters: ["yr", "q", "pos", "cls", "team", "min"] },
   bsu10: { title: "BSU Last 10", rows: bsu, minDefault: 100, filters: ["q", "pos", "cls", "season", "min"] },
   bsu27: { title: "BSU '26-27", rows: roster, minDefault: 0, filters: ["q", "pos", "cls"] },
 };
 const TEXT = ["name", "team", "conf", "cls", "pos", "season", "ht"];
-const LOWBEST = new Set(["drk", "tov40", "tovp", "pf40"]);
+const LOWBEST = new Set(["drk", "tov40", "tovp", "pf40", "adrtg"]);
 
-const st = { view: "nat", skill: "sc", sort: "score", dir: -1, page: 0, f: {} };
+const st = { view: "nat", skill: "sc", sort: "score", dir: -1, page: 0, f: {}, yr: IDX.latest };
+async function setSeason() {
+  const rows = await loadSeason(st.yr);
+  VIEWS.nat.rows = rows; VIEWS.pac.rows = rows.filter((r) => PAC12.includes(r.team));
+  colorSeason = st.view === "nat" || st.view === "pac" ? st.yr : IDX.latest;
+}
 const PER = 100;
 const skAlias = { scoring: "sc", playmaking: "pl", rebounding: "rb", defense: "df" };
 const hv = location.hash.slice(1).split("/");
@@ -137,7 +143,7 @@ if (SKILLS[hv[1]]) st.skill = hv[1];
 
 const $ = (id) => document.getElementById(id);
 $("views").innerHTML = Object.entries(VIEWS).map(([k, v]) => `<button data-v="${k}">${v.title}</button>`).join("");
-$("views").querySelectorAll("button").forEach((b) => (b.onclick = () => { st.view = b.dataset.v; st.f = {}; st.page = 0; render(); }));
+$("views").querySelectorAll("button").forEach((b) => (b.onclick = async () => { st.view = b.dataset.v; st.f = {}; st.page = 0; await setSeason(); render(); }));
 $("skills").innerHTML = Object.entries(SKILLS).map(([k, s]) => `<button data-s="${k}">${s.title.toUpperCase()}</button>`).join("");
 $("skills").querySelectorAll("button").forEach((b) => (b.onclick = () => { st.skill = b.dataset.s; st.sort = "score"; st.dir = -1; st.page = 0; render(); }));
 
@@ -153,11 +159,16 @@ function buildFilters() {
     conf: sel("conf", "Conf", uniq(rows, "conf")),
     team: sel("team", "Team", uniq(f.conf ? rows.filter((r) => r.conf === f.conf) : rows, "team")),
     season: sel("season", "Season", uniq(rows, "season").reverse()),
+    yr: `<label>Season<select data-f="yr">${[...IDX.seasons].reverse().map((y) => `<option ${y === st.yr ? "selected" : ""}>${y}</option>`).join("")}</select></label>`,
     min: `<label>Min. minutes<select data-f="min">${[0, 50, 100, 200, 400, 600].map((m) => `<option value="${m}" ${+f.min === m ? "selected" : ""}>${m}+</option>`).join("")}</select></label>`,
   };
   $("filters").innerHTML = V.filters.map((k) => parts[k]).join("") + `<span class="count" id="count"></span>`;
   $("filters").querySelectorAll("[data-f]").forEach((el) => {
-    const go = () => { const k = el.dataset.f; f[k] = el.value === "" ? undefined : el.value; if (k === "conf") { f.team = undefined; buildFilters(); } st.page = 0; draw(); };
+    const go = async () => {
+      const k = el.dataset.f;
+      if (k === "yr") { st.yr = el.value; await setSeason(); buildFilters(); st.page = 0; draw(); return; }
+      f[k] = el.value === "" ? undefined : el.value; if (k === "conf") { f.team = undefined; buildFilters(); } st.page = 0; draw();
+    };
     el.tagName === "INPUT" ? (el.oninput = go) : (el.onchange = go);
   });
 }
@@ -177,7 +188,7 @@ const mini = (v) => (v == null ? dash : `<span class="mini" style="background:${
 function draw() {
   const S = SKILLS[st.skill], k = st.skill;
   const showSeason = st.view === "bsu10", showConf = st.view === "nat";
-  const val = (r, key) => (key === "score" ? r[k] : key === "drk" ? drank[k].get(r) : r[key]);
+  const val = (r, key) => (key === "score" ? r[k] : key === "drk" ? r["rk_" + k] : r[key]);
   const rows = filtered().sort((a, b) => {
     const x = val(a, st.sort), y = val(b, st.sort);
     if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
@@ -189,14 +200,14 @@ function draw() {
   const others = Object.keys(SKILLS).filter((x) => x !== k);
   const th = (key, label, def, cls = "") => `<th class="sort ${cls} ${st.sort === key ? "sorted" : ""}" data-k="${key}" data-arrow="${st.dir < 0 ? "▼" : "▲"}">${def ? `<span data-def="${def}">${label}</span>` : label}</th>`;
   $("table").innerHTML = `<table><thead><tr><th>#</th>${th("name", "Player", null, "l")}${showSeason ? th("season", "Season", null, "l") : ""}${th("team", "Team", null, "l")}${showConf ? th("conf", "Conf", null, "l") : ""}${th("cls", "Cls", "cls", "l")}${th("pos", "Pos", "pos", "l")}${th("ht", "Ht", "ht", "l")}${th("gp", "GP", "gp")}${th("mpg", "MPG", "mpg")}
-    ${th("score", S.title.toUpperCase(), S.def, "sep")}<th class="l">Tier</th>${showSeason ? "" : th("drk", "D-I rk", "drk")}
+    ${th("score", S.title.toUpperCase(), S.def, "sep")}<th class="l">Tier</th>${th("drk", "D-I rk", "drk")}
     ${S.stats.map(([sk, label], i) => th(sk, label, sk, i === 0 ? "sep" : "")).join("")}
     ${others.map((o, i) => th(o, SKILLS[o].title.slice(0, 4).toUpperCase(), SKILLS[o].def, i === 0 ? "sep" : "")).join("")}</tr></thead><tbody>
     ${slice.map((r, i) => {
-      const sc = r[k], rk = drank[k].get(r);
-      const hl = st.view !== "bsu27" && r.season === NAT.season && byName.has(norm(r.name));
+      const sc = r[k], rk = r["rk_" + k];
+      const hl = st.view !== "bsu27" && r.season === IDX.latest && byName.has(norm(r.name));
       return `<tr class="${hl ? "me" : ""}"><td class="m">${(st.page * PER + i + 1).toLocaleString()}</td><td class="l">${link(r.name)}</td>${showSeason ? `<td class="l m">${r.season}</td>` : ""}<td class="l m">${esc(r.team)}</td>${showConf ? `<td class="l m">${esc(r.conf)}</td>` : ""}<td class="l m">${esc(r.cls)}</td><td class="l m">${esc(r.pos)}</td><td class="l m">${esc(r.ht)}</td><td class="m">${r.gp ?? "—"}</td><td class="m">${fmt(r.mpg, 1)}</td>
-        <td class="sep">${sc == null ? dash : `<span class="chip" style="background:${pc(sc)}">${sc.toFixed(1)}</span>`}</td><td class="l m">${sc == null ? "—" : tierOf(sc)}</td>${showSeason ? "" : `<td class="m">${rk ? rk.toLocaleString() : "—"}</td>`}
+        <td class="sep">${sc == null ? dash : `<span class="chip" style="background:${pc(sc)}">${sc.toFixed(1)}</span>`}</td><td class="l m">${sc == null ? "—" : tierOf(sc)}</td><td class="m">${rk ? rk.toLocaleString() : "—"}</td>
         ${S.stats.map(([sk, , d, dir], j) => { const v = r[sk], p = dir ? pctOf(sk, v) : null; const col = p == null || Math.abs(p - 50) < 10 ? "var(--text)" : pc(dir > 0 ? p : 100 - p);
           return `<td class="st ${j === 0 ? "sep" : ""}" style="color:${col}">${fmt(v, d)}</td>`; }).join("")}
         ${others.map((o, j) => `<td class="${j === 0 ? "sep" : ""}">${mini(r[o])}</td>`).join("")}</tr>`;
@@ -221,12 +232,13 @@ function render() {
   buildFilters();
   const V = st.view;
   $("notes").innerHTML = [
-    `<b style="color:var(--text)">Who's included.</b> ${V === "nat" ? `All ${nat.length.toLocaleString()} D-I players with 50+ minutes in 2025-26. The default filter is 200+ minutes, the group every score is ranked against.` : V === "pac" ? "2025-26 players on the nine 2026-27 Pac-12 teams: Boise St., Colorado St., Fresno St., Gonzaga, Oregon St., San Diego St., Texas St., Utah St., Washington St." : V === "bsu10" ? `Every Boise St. player-season from ${BSU.seasons[0]} through ${BSU.seasons[BSU.seasons.length - 1]}. Stats cover all ten seasons; skill scores exist for 2025-26 so far.` : "Players on Boise St.'s 2026-27 roster, with their 2025-26 season wherever they played. Incoming freshmen have no college stats yet."}`,
-    `<b style="color:var(--text)">Reading the colors.</b> Each stat is colored by where it ranks among the ${ref.length.toLocaleString()} D-I players with 200+ minutes in 2025-26 (orange = top, blue = bottom, white = middle). For turnovers and fouls lower is better, so low numbers are orange.${V === "bsu10" ? " Past seasons are compared against 2025-26 players." : ""}`,
-    `<b style="color:var(--text)">Where it comes from.</b> Skill scores: RStudio skill model v1.1 (Scoring, Creation = Playmaking, Rebounding, Defense). Rate stats (USG%, AST%, REB%, STL%, BLK%) use team and opponent totals from the same archive. RAPM is national regularized plus-minus.`,
+    `<b style="color:var(--text)">Who's included.</b> ${V === "nat" ? `All ${VIEWS.nat.rows.length.toLocaleString()} D-I players with 50+ minutes in ${st.yr}. The default filter is 200+ minutes, the group every score is ranked against.` : V === "pac" ? `${st.yr} players on the nine 2026-27 Pac-12 teams: Boise St., Colorado St., Fresno St., Gonzaga, Oregon St., San Diego St., Texas St., Utah St., Washington St.` : V === "bsu10" ? `Every Boise St. player-season from ${BSU.seasons[0]} through ${BSU.seasons[BSU.seasons.length - 1]}. Scores and D-I ranks compare each player with D-I players in his own season (200+ minutes needed for a score before 2025-26).` : "Players on Boise St.'s 2026-27 roster, with their 2025-26 season wherever they played. Incoming freshmen have no college stats yet."}`,
+    `<b style="color:var(--text)">Reading the colors.</b> Each stat is colored by where it ranks among the ${poolFor(colorSeason).ref.length.toLocaleString()} D-I players with 200+ minutes in ${colorSeason} (orange = top, blue = bottom, white = middle). For turnovers and fouls lower is better, so low numbers are orange.${V === "bsu10" ? " On this tab stat colors use the 2025-26 pool." : ""}`,
+    `<b style="color:var(--text)">Where it comes from.</b> 2025-26: RStudio skill model v1.1 (Creation = Playmaking). Earlier seasons: the same model rebuilt from each season's stats (tested on 2025-26: rank agreement ${IDX.test.sc.spearman} Scoring, ${IDX.test.pl.spearman} Playmaking, ${IDX.test.rb.spearman} Rebounding; average gap ${IDX.test.sc.meanAbsDiff}, ${IDX.test.pl.meanAbsDiff}, ${IDX.test.rb.meanAbsDiff} points). Defense = DEF score v2 (DBPM, DRAPM, Adj DRtg, STL%, BLK%, DRB%, fouls; compared within role), run for every season on Barttorvik + RAPM data; it matches the published 2025-26 DEF v2 scores (r = 0.997). DEF needs 40%+ of team minutes. Rate stats (USG%, AST%, REB%, STL%, BLK%) use team and opponent totals from the same archive. RAPM is national regularized plus-minus.`,
   ].map((n) => `<div class="cap" style="margin-top:0">${n}</div>`).join("");
   draw();
 }
+await setSeason();
 render();
 </script>
 </body>
