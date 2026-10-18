@@ -11,34 +11,22 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
 <link rel="stylesheet" href="/assets/app.css">
 <style>
-.hero{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end;margin-top:22px}
-.who{display:flex;gap:16px;align-items:center;min-width:0}
-.hs{width:92px;height:92px;border-radius:10px;background:var(--card);overflow:hidden;flex:none;display:flex;align-items:flex-end;justify-content:center}
-.hs img{width:120%;height:auto}
-.hs b{font-family:var(--mono);color:var(--muted);font-size:22px;align-self:center}
-.path{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--dim)}
-.path i{font-style:normal;color:var(--faint)}
-.headline{display:flex;gap:10px}
-.hl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:120px}
-.hl b{display:block;font-size:30px;font-weight:750;letter-spacing:-.02em;margin-top:2px}
-.hl .sub{font-size:11.5px;color:var(--dim);margin-top:2px}
-.hl.main{min-width:170px;border-color:#3a3d42}
-.hl.main b{font-size:40px}
+/* Player page layout follows the boisestate.ai mockups (Shot Profile, Playmaking & Defense):
+   one long page, small label line, big name, sections stacked with h2 + mono sublabel. */
+.pwrap{max-width:1240px;margin:auto;padding:24px 24px 32px}
+.pwrap h1{font-size:28px;margin-top:6px}
+.pwrap section{margin-top:28px}
+.pwrap h2{font-size:20px}
 .prof td:first-child{color:var(--soft)}
-.court{width:100%;display:block}
-.legend{display:flex;align-items:center;gap:10px;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted)}
-.legend svg{flex:1;max-width:280px}
-.arcgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.arcgrid svg{width:100%;display:block;background:var(--card);border-radius:8px}
-iframe.mod{width:100%;border:0;display:block;min-height:600px;background:var(--bg)}
+iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--bg)}
 .glchart svg{width:100%;display:block}
-@media (max-width:900px){.hero{grid-template-columns:1fr}.headline{flex-wrap:wrap}.arcgrid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr!important}}
+@media (max-width:900px){.pwrap{padding:16px 16px 28px}.two{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
-<main class="wrap" id="page"><div class="loading">Loading player…</div></main>
+<main class="pwrap" id="page"><div class="loading">Loading player…</div></main>
 <script type="module">
-import { d3, GOOD, BAD, NEU, pc, chip, tc, f1, f0, sg, esc, DEF, addDefs, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
+import { d3, pc, chip, tc, f1, f0, esc, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
 import { renderShotChart } from "/assets/shotchart.js";
 topBar("player");
 
@@ -48,81 +36,97 @@ let D;
 try { D = await getJSON("/data/players/" + encodeURIComponent(id) + ".json"); }
 catch (e) { page.innerHTML = `<div class="loading">${/not found|404/i.test(e.message) ? "This player isn't in the Bronco IQ data yet." : `Couldn't load this player (${esc(e.message)}).`}</div>`; throw e; }
 
-const P = D.player, S = D.seasons, last = S[S.length - 1];
+const P = D.player, S = D.seasons, last = S[S.length - 1] || null;
 document.title = `${playerName(P)} · Bronco IQ`;
-const isBoise = !!P.onRoster;
 const qualified = (s) => s && s.d.gp >= 8 && (s.d.mpg ?? 0) >= 8;
 const pctOf = (s, k) => (qualified(s) ? s.pct.metrics[k]?.pct ?? null : null);
-
-// ---------- career path (school changes = transfers) ----------
-const path = [];
-for (const s of S) if (!path.length || path[path.length - 1].school !== s.school) path.push({ school: s.school, from: s.season, to: s.season }); else path[path.length - 1].to = s.season;
-if (isBoise && (!path.length || !/boise/i.test(path[path.length - 1].school))) path.push({ school: "Boise State", from: "2026-27", to: "2026-27", now: true });
 const yr = (s) => "'" + s.slice(5);
 
-// ---------- hero ----------
-const hlMetric = last ? { k: "ppg", v: last.d.ppg, p: pctOf(last, "ppg") } : null;
+// Label line in the mockup's format: "Player · 2025-26 · North Dakota St. · G · 6'0" · Graduate"
+const labelBits = ["Player", last ? last.season : "2026-27", last ? shortSchool(last.school) : "Boise St.", P.position, P.height, P.class_year].filter(Boolean);
+const pathBits = [];
+for (const s of S) if (!pathBits.length || pathBits[pathBits.length - 1].school !== s.school) pathBits.push({ school: s.school, from: s.season, to: s.season }); else pathBits[pathBits.length - 1].to = s.season;
+const pathText = pathBits.map((p) => `${shortSchool(p.school)} ${p.from === p.to ? yr(p.from) : yr(p.from) + "–" + yr(p.to)}`).join(" → ");
+
 page.innerHTML = `
-<div class="hero">
-  <div class="who">
-    <div class="hs">${P.espnId ? `<img alt="" src="https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${P.espnId}.png&w=240&h=176" onerror="this.parentNode.innerHTML='<b>${esc((P.first_name[0] || "") + (P.last_name[0] || ""))}</b>'">` : `<b>${esc((P.first_name[0] || "") + (P.last_name[0] || ""))}</b>`}</div>
-    <div style="min-width:0">
-      <div class="label">${[isBoise ? "Boise St. · 2026-27" : esc(shortSchool(P.school)), esc(P.position), esc(P.height), esc(P.class_year)].filter(Boolean).join(" · ")}${P.jersey_number ? ` · #${esc(P.jersey_number)}` : ""}</div>
-      <h1>${esc(playerName(P))}</h1>
-      <div class="path">${path.map((p) => `<span>${esc(shortSchool(p.school))} <span class="label" style="font-size:9.5px">${p.from === p.to ? yr(p.from) : yr(p.from) + "–" + yr(p.to)}</span></span>`).join("<i>→</i>")}${P.hometown ? `<i>·</i><span>${esc(P.hometown)}</span>` : ""}</div>
-    </div>
-  </div>
-  ${last ? `<div class="headline">
-    <div class="hl main"><span class="label" data-def="ppg">${esc(last.season)} PPG</span><b style="color:${tc(hlMetric.p)}">${f1(hlMetric.v)}</b><div class="sub">${hlMetric.p != null ? `${chip(hlMetric.p)} pct` : "small sample"} · ${esc(shortSchool(last.school))}</div></div>
-    ${[["ts", "TS%", f1], ["p3", "3P%", f1], ["ato", "AST/TO", (v) => (v == null ? "—" : v.toFixed(2))]].map(([k, l, fm]) => `<div class="hl"><span class="label" data-def="${k}">${l}</span><b style="color:${tc(pctOf(last, k))}">${fm(last.d[k])}</b><div class="sub">${chip(pctOf(last, k))} pct</div></div>`).join("")}
-  </div>` : ""}
-</div>
-<div class="ptabs" id="tabs">${["Overview", "Shooting", "Playmaking & Defense", "Game log"].map((t, i) => `<button data-t="${i}">${t}</button>`).join("")}</div>
-<div id="tab"></div>
+<div class="label">${labelBits.map(esc).join(" · ")}</div>
+<h1>${esc(playerName(P))}</h1>
+<div class="cap" style="margin-top:4px">${P.onRoster ? `Boise St. 2026-27${P.jersey_number ? ` · #${esc(P.jersey_number)}` : ""}${pathText ? ` · ${esc(pathText)} → Boise St.` : ""} · ` : ""}Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
+<div id="s-shoot"></div>
+<div id="s-pd"></div>
+<div id="s-seasons"></div>
+<div id="s-games"></div>
 <footer>Sources: ESPN season box scores and play-by-play shot locations, ESPN game logs (live). <span data-def="pool">Percentiles</span> compare against D-I rotation players for the same season. Sample data for the formatting phase.</footer>`;
 
-const TABS = [overview, shooting, playmaking, gamelog];
-const tabEl = document.getElementById("tab");
-function go(i) {
-  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", +b.dataset.t === i));
-  history.replaceState(null, "", "#" + ["overview", "shooting", "playmaking", "games"][i]);
-  tabEl.innerHTML = "";
-  TABS[i]();
+// Profile table in the mockup's format: Stat | His | D-I med | D-I pct
+function profileTable(s, rows) {
+  const q = qualified(s), pm = s.pct;
+  return `<table class="prof"><thead><tr><th class="l">Stat</th><th>His</th><th>D-I med</th><th>D-I pct</th></tr></thead><tbody>
+    ${rows.map(([k, l, fm]) => { const m = pm.metrics[k], p = q ? m.pct : null; return `<tr><td class="l"><span data-def="${k}">${l}</span></td><td style="font-weight:700;color:${m.dir === 0 ? "var(--text)" : tc(p)}">${fm(m.v)}</td><td class="m">${fm(m.med)}</td><td>${m.dir === 0 ? `<span class="chip" style="background:#3a3d42">${p ?? "—"}</span>` : chip(p)}</td></tr>`; }).join("")}
+  </tbody></table><div class="cap">Chip = percentile rank (100 = best) among ${pm.poolN.toLocaleString()} D-I rotation players${pm.fallback ? ` (${pm.poolSeason} pool)` : ""}. Lower-is-better stats are already flipped.${q ? "" : ` Small sample (${s.gp} GP, ${f1(s.mpg)} mpg): percentiles hidden.`}</div>`;
 }
-document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => go(+b.dataset.t)));
-// Initial tab is rendered at the very end of this script, after every
-// module-level constant the tab functions use has been initialized.
+const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
 
-// ======================================================= OVERVIEW
-function overview() {
-  if (!S.length) { tabEl.innerHTML = `<div class="note">No college season stats on file for this player yet.${isBoise ? " Freshmen and international players get stats once games start." : ""}</div>`; return; }
-  let si = S.length - 1;
-  tabEl.innerHTML = `
-  <section><div class="shead"><h2>Profile</h2><span class="label" id="profsub"></span><div style="margin-left:auto" class="seg" id="pseas">${S.map((s, i) => `<button data-i="${i}">${s.season.slice(2)}</button>`).join("")}</div></div>
-    <div class="grid two" style="grid-template-columns:1fr 1fr" id="prof"></div></section>
-  <section><div class="shead"><h2>Career</h2><span class="label">Per game · transfers tagged · chips = percentile within that season</span></div>
-    <div class="panel scroll" style="margin-top:14px" id="career"></div></section>
-  <section><div class="shead"><h2>Career arc</h2><span class="label">Dashed line = D-I rotation median for the latest season</span></div>
-    <div class="panel" style="margin-top:14px"><div class="arcgrid" id="arc"></div><div class="cap">Latest dot colored by percentile (orange = strong, blue = weak, grey = average or style stat).</div></div></section>`;
+// ======================================================= SHOOTING (Shot Profile mockup)
+(function shooting() {
+  const el = document.getElementById("s-shoot");
+  const SH = D.shots;
+  if (SH.length) {
+    let si = SH.length - 1;
+    el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label" id="shsub"></span>${SH.length > 1 ? `<div style="margin-left:auto" class="seg" id="sseas">${SH.map((s, i) => `<button data-i="${i}">${s.season.slice(2)}</button>`).join("")}</div>` : ""}</div><div id="shot"></div></section>`;
+    const draw = () => {
+      const sp = SH[si];
+      el.querySelectorAll("#sseas button").forEach((b) => b.classList.toggle("on", +b.dataset.i === si));
+      document.getElementById("shsub").textContent = `${sp.season} · ${sp.team} · where he shoots · how well · every attempt`;
+      renderShotChart(document.getElementById("shot"), sp);
+    };
+    el.querySelectorAll("#sseas button").forEach((b) => (b.onclick = () => { si = +b.dataset.i; draw(); }));
+    draw();
+    return;
+  }
+  if (!last) {
+    el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label">No college stats yet</span></div><div class="story">No college season on file.${P.onRoster ? " Freshmen and international players get stats and a shot chart once games start." : ""}</div></section>`;
+    return;
+  }
+  el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label">${last.season} · ${esc(shortSchool(last.school))} · efficiency vs D-I</span></div>
+    <div class="grid two" style="grid-template-columns:1.15fr 1fr"><div class="panel"><div class="label ptitle">Scoring profile vs D-I</div>
+    ${profileTable(last, [["ppg", "Points / g", f1], ["pts40", "Points / 40", f1], ["ts", "True shooting %", f1], ["efg", "Effective FG %", f1], ["p3", "3-point %", f1], ["ft", "Free throw %", f1], ["tpar", "3PA rate", f1], ["ftr", "FT rate", f1]])}</div>
+    <div class="panel"><div class="label ptitle">Shot chart</div><div class="story" style="margin-top:0">No charted shots for this player yet. Shot charts come from play-by-play shot locations; they arrive for every player when the 10-season play-by-play archive moves into Bronco IQ's database.</div></div></div></section>`;
+})();
 
-  const groups = [["Scoring", [["ppg", "Points / g", f1], ["pts40", "Points / 40", f1], ["ts", "True shooting %", f1], ["efg", "Effective FG %", f1], ["p3", "3-point %", f1], ["ft", "Free throw %", f1], ["tpar", "3PA rate", f1], ["ftr", "FT rate", f1]]],
-                  ["Floor game", [["mpg", "Minutes / g", f1], ["rpg", "Rebounds / g", f1], ["apg", "Assists / g", f1], ["ato", "AST / TO", (v) => (v == null ? "—" : v.toFixed(2))], ["topg", "Turnovers / g", f1], ["spg", "Steals / g", f1], ["bpg", "Blocks / g", f1]]]];
-  const drawProfile = () => {
-    const s = S[si], q = qualified(s), pm = s.pct;
-    document.querySelectorAll("#pseas button").forEach((b) => b.classList.toggle("on", +b.dataset.i === si));
-    document.getElementById("profsub").innerHTML = `${esc(shortSchool(s.school))} · ${s.gp} GP · <span data-def="pool">pool</span> n=${pm.poolN.toLocaleString()}${pm.fallback ? ` (${pm.poolSeason} players; ${s.season} sample too thin)` : ""}`;
-    document.getElementById("prof").innerHTML = groups.map(([g, rows]) => `<div class="panel"><div class="label ptitle"><span>${g}</span><span>${s.season}</span></div>
-      <table class="prof"><thead><tr><th class="l">Stat</th><th>His</th><th>D-I med</th><th>Pct</th></tr></thead><tbody>
-      ${rows.map(([k, l, fm]) => { const m = pm.metrics[k], p = q ? m.pct : null; return `<tr><td class="l"><span data-def="${k}">${l}</span></td><td style="font-weight:700;color:${m.dir === 0 ? "var(--text)" : tc(p)}">${fm(m.v)}</td><td class="m">${fm(m.med)}</td><td>${m.dir === 0 ? `<span class="chip" style="background:#3a3d42">${p ?? "—"}</span>` : chip(p)}</td></tr>`; }).join("")}
-      </tbody></table>${q ? "" : `<div class="cap">Small sample (${s.gp} GP, ${f1(s.mpg)} mpg): percentiles hidden.</div>`}</div>`).join("");
-  };
-  document.querySelectorAll("#pseas button").forEach((b) => (b.onclick = () => { si = +b.dataset.i; drawProfile(); }));
-  drawProfile();
+// ======================================================= PLAYMAKING & DEFENSE (mockup)
+(function playmakingDefense() {
+  const el = document.getElementById("s-pd");
+  const mods = D.modules;
+  if (mods.length) {
+    el.innerHTML = `<iframe class="mod" id="mod" src="${mods[0].src}" title="${esc(mods[0].title)}" scrolling="no"></iframe>`;
+    const f = document.getElementById("mod");
+    const fit = () => { try { f.style.height = f.contentDocument.documentElement.scrollHeight + "px"; } catch {} };
+    f.onload = () => { fit(); setTimeout(fit, 500); setTimeout(fit, 1500); setTimeout(fit, 3000); };
+    addEventListener("resize", fit);
+    return;
+  }
+  if (!last) return;
+  el.innerHTML = `
+  <section><div class="shead"><h2>Playmaking</h2><span class="label">Usage · creation · ball security</span></div>
+    <div class="grid two" style="grid-template-columns:1.15fr 1fr"><div class="panel"><div class="label ptitle">Profile vs D-I · ${last.season}</div>
+      ${profileTable(last, [["apg", "Assists / g", f1], ["ato", "AST / TO", fx2], ["topg", "Turnovers / g", f1], ["mpg", "Minutes / g", f1]])}</div>
+    <div class="panel"><div class="label ptitle">Coming with the database</div><div class="story" style="margin-top:0">Usage, assist rate, creation splits and the load-vs-ball-security chart need play-by-play. They fill in for every player when the archive moves into Bronco IQ's database.</div></div></div></section>
+  <section><div class="shead"><h2>Defense</h2><span class="label">Individual · box score</span></div>
+    <div class="grid two" style="grid-template-columns:1.15fr 1fr"><div class="panel"><div class="label ptitle">Individual profile vs D-I · ${last.season}</div>
+      ${profileTable(last, [["spg", "Steals / g", f1], ["bpg", "Blocks / g", f1], ["rpg", "Rebounds / g", f1]])}</div>
+    <div class="panel"><div class="label ptitle">Coming with the database</div><div class="story" style="margin-top:0">The DEF score, defensive RAPM and on/off splits come from replayed lineup stints. They fill in once play-by-play is loaded.</div></div></div></section>`;
+})();
 
-  // career table
+// ======================================================= SEASON BY SEASON
+(function seasons() {
+  if (!S.length) return;
+  const el = document.getElementById("s-seasons");
   const tot = S.reduce((a, s) => { for (const k of ["gp", "gs", "points", "rebounds", "assists", "steals", "blocks", "turnovers", "fgm", "fga", "three_pm", "three_pa", "ftm", "fta"]) a[k] = (a[k] || 0) + (+s[k] || 0); a.min = (a.min || 0) + (+s.mpg || 0) * (+s.gp || 0); return a; }, {});
   const ct = (s, k) => chip(pctOf(s, k), f1(s.d[k]));
-  document.getElementById("career").innerHTML = `<table><thead>
+  const schools = new Set(S.map((s) => s.school)).size;
+  el.innerHTML = `<section><div class="shead"><h2>Season by season</h2><span class="label">Per game · transfers tagged · chips = percentile within that season</span></div>
+  <div class="panel scroll" style="margin-top:14px"><table><thead>
     <tr><th class="l" colspan="2"></th><th class="grp sep" colspan="4">Role</th><th class="grp sep" colspan="6">Per game</th><th class="grp sep" colspan="6">Shooting</th></tr>
     <tr><th class="l">Season</th><th class="l">School</th><th class="sep"><span data-def="gp">GP</span></th><th><span data-def="gs">GS</span></th><th><span data-def="mpg">MPG</span></th><th><span data-def="pts40">Pts/40</span></th>
     <th class="sep"><span data-def="ppg">PTS</span></th><th><span data-def="rpg">REB</span></th><th><span data-def="apg">AST</span></th><th><span data-def="spg">STL</span></th><th><span data-def="bpg">BLK</span></th><th><span data-def="topg">TOV</span></th>
@@ -130,89 +134,25 @@ function overview() {
     ${S.map((s, i) => { const moved = i > 0 && S[i - 1].school !== s.school; return `<tr class="${i === S.length - 1 ? "hl" : ""}"><td class="l" style="font-weight:600">${s.season}</td><td class="l m">${esc(shortSchool(s.school))}${moved ? ' <span class="tag new">TRANSFER</span>' : ""}</td>
       <td class="sep m">${s.gp}</td><td class="m">${s.gs ?? "—"}</td><td>${ct(s, "mpg")}</td><td>${ct(s, "pts40")}</td>
       <td class="sep">${ct(s, "ppg")}</td><td>${f1(s.rpg)}</td><td>${f1(s.apg)}</td><td>${f1(s.spg)}</td><td>${f1(s.bpg)}</td><td>${f1(s.topg)}</td>
-      <td class="sep">${f1(s.fg_pct)}</td><td>${s.d.p3 != null ? chip(pctOf(s, "p3"), f1(s.three_pct)) : `<span class="m">${f1(s.three_pct)}</span>`} <span class="m" style="font-size:10.5px">${f0(s.three_pm)}/${f0(s.three_pa)}</span></td><td>${f1(s.ft_pct)}</td><td class="m">${f1(s.d.tpar)}</td><td>${ct(s, "ts")}</td><td>${f1(s.efg_pct)}</td></tr>`; }).join("")}
+      <td class="sep">${f1(s.fg_pct)}</td><td>${!s.three_pa ? `<span class="m">—</span>` : `${s.d.p3 != null ? chip(pctOf(s, "p3"), f1(s.three_pct)) : `<span class="m">${f1(s.three_pct)}</span>`} <span class="m" style="font-size:10.5px">${f0(s.three_pm)}/${f0(s.three_pa)}</span>`}</td><td>${f1(s.ft_pct)}</td><td class="m">${f1(s.d.tpar)}</td><td>${ct(s, "ts")}</td><td>${f1(s.efg_pct)}</td></tr>`; }).join("")}
     ${S.length > 1 ? (() => { const g = tot.gp || 1, ts = tot.fga + 0.44 * tot.fta > 0 ? (tot.points / (2 * (tot.fga + 0.44 * tot.fta))) * 100 : null;
-      return `<tr class="total"><td class="l">Career</td><td class="l m">${path.filter((p) => !p.now).length} school${path.filter((p) => !p.now).length > 1 ? "s" : ""}</td><td class="sep m">${tot.gp}</td><td class="m">${tot.gs}</td><td>${f1(tot.min / g)}</td><td>${f1(tot.min ? (tot.points / tot.min) * 40 : null)}</td>
+      return `<tr class="total"><td class="l">Career</td><td class="l m">${schools} school${schools > 1 ? "s" : ""}</td><td class="sep m">${tot.gp}</td><td class="m">${tot.gs}</td><td>${f1(tot.min / g)}</td><td>${f1(tot.min ? (tot.points / tot.min) * 40 : null)}</td>
       <td class="sep">${f1(tot.points / g)}</td><td>${f1(tot.rebounds / g)}</td><td>${f1(tot.assists / g)}</td><td>${f1(tot.steals / g)}</td><td>${f1(tot.blocks / g)}</td><td>${f1(tot.turnovers / g)}</td>
       <td class="sep">${f1(tot.fga ? (tot.fgm / tot.fga) * 100 : null)}</td><td>${f1(tot.three_pa ? (tot.three_pm / tot.three_pa) * 100 : null)} <span class="m" style="font-size:10.5px">${tot.three_pm}/${tot.three_pa}</span></td><td>${f1(tot.fta ? (tot.ftm / tot.fta) * 100 : null)}</td><td class="m">${f1(tot.fga ? (tot.three_pa / tot.fga) * 100 : null)}</td><td>${f1(ts)}</td><td>${f1(tot.fga ? ((tot.fgm + 0.5 * tot.three_pm) / tot.fga) * 100 : null)}</td></tr>`; })() : ""}
-    </tbody></table><div class="cap">Season totals include every game ESPN logged (non-D-I opponents too). Percentile chips appear at 8+ games and 8+ minutes per game; 3P% needs 40+ attempts.</div>`;
-
-  // career arc
-  const arcs = [["ppg", "Points / g", 1], ["ts", "True shooting %", 1], ["p3", "3-point %", 1], ["apg", "Assists / g", 1], ["tpar", "3PA rate", 0], ["topg", "Turnovers / g", -1]];
-  const arcEl = document.getElementById("arc");
-  for (const [k, name, dir] of arcs) {
-    const pts = S.map((s) => [s.season, s.d[k], pctOf(s, k)]).filter((d) => d[1] != null);
-    const W = 300, H = 170, m = { t: 40, b: 28, l: 26, r: 26 };
-    const svg = d3.select(arcEl).append("svg").attr("viewBox", `0 0 ${W} ${H}`);
-    svg.append("text").attr("x", 12).attr("y", 20).attr("font-size", 11.5).attr("font-weight", 500).attr("fill", "#d6d8db").attr("letter-spacing", ".06em").attr("data-def", k).text(name.toUpperCase());
-    svg.append("text").attr("x", W - 12).attr("y", 20).attr("text-anchor", "end").attr("font-size", 9.5).attr("fill", "#6b6e75").text(dir === 0 ? "style" : dir < 0 ? "↓ better" : "↑ better");
-    if (!pts.length) { svg.append("text").attr("x", W / 2).attr("y", H / 2 + 10).attr("text-anchor", "middle").attr("font-size", 11).attr("fill", "#6b6e75").text("not enough volume"); continue; }
-    const med = last.pct.metrics[k]?.med;
-    const x = d3.scalePoint(S.map((s) => s.season), [m.l, W - m.r]).padding(S.length === 1 ? 0.5 : 0);
-    const all = pts.map((d) => d[1]).concat(med != null ? [med] : []), e = d3.extent(all), pad = (e[1] - e[0]) * 0.35 || 1;
-    const y = d3.scaleLinear([e[0] - pad, e[1] + pad], dir < 0 ? [m.t, H - m.b] : [H - m.b, m.t]);
-    if (med != null) {
-      svg.append("line").attr("x1", m.l - 10).attr("x2", W - m.r + 10).attr("y1", y(med)).attr("y2", y(med)).attr("stroke", "#6b6e75").attr("stroke-dasharray", "4 4");
-      // Put the median label on whichever side of the line is farther from the latest point.
-      const lastY = y(pts[pts.length - 1][1]), below = lastY < y(med);
-      svg.append("text").attr("x", W - m.r + 10).attr("y", y(med) + (below ? 13 : -5)).attr("text-anchor", "end").attr("font-size", 9).attr("fill", "#8a8e95").text("D-I med " + med.toFixed(1));
-    }
-    svg.append("path").attr("d", d3.line().x((d) => x(d[0])).y((d) => y(d[1]))(pts)).attr("stroke", "#8a8e95").attr("stroke-width", 1.8).attr("fill", "none");
-    pts.forEach((d, i) => {
-      const L = i === pts.length - 1, col = dir === 0 || d[2] == null ? "#c9ccd2" : pc(d[2]);
-      svg.append("circle").attr("cx", x(d[0])).attr("cy", y(d[1])).attr("r", L ? 6.5 : 4.5).attr("fill", L ? col : "#26282c").attr("stroke", L ? "#fff" : col).attr("stroke-width", L ? 2 : 1.8)
-        .on("mousemove", (ev) => tipOn(ev, `${d[0]} · ${name} ${d[1].toFixed(1)}${d[2] != null ? ` · ${d[2]}th pct` : ""}`)).on("mouseleave", tipOff);
-      svg.append("text").attr("x", x(d[0])).attr("y", y(d[1]) - 11).attr("text-anchor", "middle").attr("font-size", L ? 13 : 11).attr("font-weight", L ? 700 : 500).attr("fill", L ? "#fff" : "#b9bdc4").text(d[1].toFixed(1));
-    });
-    S.forEach((s) => svg.append("text").attr("x", x(s.season)).attr("y", H - 8).attr("text-anchor", "middle").attr("font-size", 10).attr("fill", "#9aa0a8").text(yr(s.season)));
-  }
-}
-
-// ======================================================= SHOOTING
-function shooting() {
-  const SH = D.shots;
-  if (!SH.length) {
-    tabEl.innerHTML = `<div class="note" style="margin-top:18px">No charted shots for this player yet. Shot charts are built from play-by-play shot locations; they arrive for every player when the 10-season play-by-play archive moves into Bronco IQ's database.</div>`;
-    return;
-  }
-  let si = SH.length - 1;
-  tabEl.innerHTML = `<section><div class="shead"><h2>Shot chart</h2><span class="label" id="shsub"></span>${SH.length > 1 ? `<div style="margin-left:auto" class="seg" id="sseas">${SH.map((s, i) => `<button data-i="${i}">${s.season.slice(2)}</button>`).join("")}</div>` : ""}</div><div id="shot"></div></section>`;
-  const draw = () => {
-    const sp = SH[si];
-    document.querySelectorAll("#sseas button").forEach((b) => b.classList.toggle("on", +b.dataset.i === si));
-    document.getElementById("shsub").textContent = `${sp.season} · ${sp.team}`;
-    renderShotChart(document.getElementById("shot"), sp);
-  };
-  document.querySelectorAll("#sseas button").forEach((b) => (b.onclick = () => { si = +b.dataset.i; draw(); }));
-  draw();
-}
-
-// ======================================================= PLAYMAKING & DEFENSE
-function playmaking() {
-  const mods = D.modules;
-  if (mods.length) {
-    tabEl.innerHTML = `<div class="note" style="margin-top:18px"><b style="color:#fff">${esc(mods[0].title)} · ${esc(mods[0].season)}.</b> Hand-built deep dive: creation metrics, defensive RAPM, the DEF score (v2) and on/off from replayed lineup stints. It covers his last season at ${esc(shortSchool(S[S.length - 1]?.school || ""))}.</div>
-      <iframe class="mod" id="mod" src="${mods[0].src}" title="${esc(mods[0].title)}"></iframe>`;
-    const f = document.getElementById("mod");
-    const fit = () => { try { f.style.height = f.contentDocument.documentElement.scrollHeight + "px"; } catch {} };
-    f.onload = () => { fit(); setTimeout(fit, 600); setTimeout(fit, 2000); };
-    return;
-  }
-  const s = last;
-  tabEl.innerHTML = `<div class="note" style="margin-top:18px">The full Playmaking & Defense module (creation splits, defensive RAPM, DEF score, on/off) needs the national lineup-stint pipeline and is built so far for Damari Wheeler-Thomas only. Box-score indicators below in the meantime.</div>
-  ${s ? `<div class="grid two" style="grid-template-columns:1fr 1fr">${[["Playmaking", [["apg", "Assists / g"], ["ato", "AST / TO"], ["topg", "Turnovers / g"]]], ["Defense (box score)", [["spg", "Steals / g"], ["bpg", "Blocks / g"], ["rpg", "Rebounds / g"]]]].map(([g, rows]) => `<div class="panel"><div class="label ptitle"><span>${g}</span><span>${s.season}</span></div><div class="cards">${rows.map(([k, l]) => { const p = pctOf(s, k), v = s.d[k]; return `<div class="card"><span class="label" data-def="${k}">${l}</span><b style="color:${tc(p)}">${v == null ? "—" : k === "ato" ? v.toFixed(2) : v.toFixed(1)}</b><div class="sub">${chip(p)} pct · D-I med ${f1(s.pct.metrics[k].med)}</div></div>`; }).join("")}</div></div>`).join("")}</div>` : ""}`;
-}
+    </tbody></table><div class="cap">Season totals include every game ESPN logged (non-D-I opponents too). Chips need 8+ games and 8+ minutes per game; 3P% chips need 40+ attempts.</div></div></section>`;
+})();
 
 // ======================================================= GAME LOG
-function gamelog() {
-  if (!P.espnId) { tabEl.innerHTML = `<div class="note">No ESPN athlete ID on file, so there's no game log to pull.</div>`; return; }
+(function gamelog() {
+  if (!P.espnId) return;
+  const el = document.getElementById("s-games");
   const seasons = [...new Set(S.map((s) => s.season))];
-  if (!seasons.includes("2026-27") && isBoise) seasons.push("2026-27");
-  let cur = seasons.includes(last?.season) ? last.season : seasons[seasons.length - 1];
-  tabEl.innerHTML = `<section><div class="shead"><h2>Game log</h2><span class="label" id="glsub">ESPN box scores</span><div class="seg" style="margin-left:auto" id="glseas">${seasons.map((s) => `<button data-s="${s}">${s.slice(2)}</button>`).join("")}</div></div>
+  if (!seasons.includes("2026-27") && P.onRoster) seasons.push("2026-27");
+  let cur = last && seasons.includes(last.season) ? last.season : seasons[seasons.length - 1];
+  el.innerHTML = `<section><div class="shead"><h2>Game log</h2><span class="label" id="glsub">ESPN box scores</span><div class="seg" style="margin-left:auto" id="glseas">${seasons.map((s) => `<button data-s="${s}">${s.slice(2)}</button>`).join("")}</div></div>
     <div class="panel glchart" style="margin-top:14px" id="glc"><div class="loading">Loading…</div></div><div class="panel scroll" style="margin-top:12px" id="glt"></div></section>`;
   const load = async () => {
-    document.querySelectorAll("#glseas button").forEach((b) => b.classList.toggle("on", b.dataset.s === cur));
+    el.querySelectorAll("#glseas button").forEach((b) => b.classList.toggle("on", b.dataset.s === cur));
     document.getElementById("glc").innerHTML = `<div class="loading">Loading ${cur}…</div>`;
     document.getElementById("glt").innerHTML = "";
     let G;
@@ -220,7 +160,7 @@ function gamelog() {
     catch (e) { document.getElementById("glc").innerHTML = `<div class="loading">ESPN game log unavailable right now (${esc(e.message)}).</div>`; return; }
     if (!G.length) { document.getElementById("glc").innerHTML = `<div class="loading">No games logged for ${cur} yet.</div>`; return; }
     for (const g of G) g.gs = g.pts + 0.4 * g.fgm - 0.7 * g.fga - 0.4 * (g.fta - g.ftm) + 0.5 * g.reb + g.stl + 0.7 * g.ast + 0.7 * g.blk - 0.4 * g.pf - g.to;
-    const sorted = G.map((g) => g.gs).sort((a, b) => a - b), rank = (v) => Math.round((sorted.filter((x) => x < v).length + 0.5 * sorted.filter((x) => x === v).length) / sorted.length * 100);
+    const sorted = G.map((g) => g.gs).sort((a, b) => a - b), rank = (v) => Math.round(((sorted.filter((x) => x < v).length + 0.5 * sorted.filter((x) => x === v).length) / sorted.length) * 100);
     document.getElementById("glsub").textContent = `${G.length} games · ${f1(d3.mean(G, (g) => g.pts))} ppg · bars = game score`;
     const W = 1180, H = 200, m = { t: 14, b: 40, l: 30, r: 8 };
     const x = d3.scaleBand(G.map((g) => g.id), [m.l, W - m.r]).padding(0.2), ext = d3.extent(G, (g) => g.gs), y = d3.scaleLinear([Math.min(0, ext[0]), Math.max(10, ext[1])], [H - m.b, m.t]).nice();
@@ -236,11 +176,9 @@ function gamelog() {
       ${G.slice().reverse().map((g) => `<tr><td class="l m">${g.date.slice(5, 10)}</td><td class="l"><span style="display:inline-flex;gap:6px;align-items:center"><span class="m" style="width:16px">${g.atVs}</span>${g.oppId ? LG(g.oppId, 16) : ""}${esc(g.opp)}</span></td><td class="l ${g.result === "W" ? "" : "m"}">${g.result} ${g.tm ?? ""}-${g.op ?? ""}</td><td class="m">${g.min}</td><td class="b">${g.pts}</td><td>${g.reb}</td><td>${g.ast}</td><td>${g.stl}</td><td>${g.blk}</td><td>${g.to}</td><td class="sep">${g.fgm}-${g.fga}</td><td>${g.tpm}-${g.tpa}</td><td>${g.ftm}-${g.fta}</td><td class="sep">${chip(rank(g.gs), g.gs.toFixed(1))}</td></tr>`).join("")}</tbody></table>
       <div class="cap">Game-score chips rank each game within his own season (orange = one of his better games, blue = one of his worse).</div>`;
   };
-  document.querySelectorAll("#glseas button").forEach((b) => (b.onclick = () => { cur = b.dataset.s; load(); }));
+  el.querySelectorAll("#glseas button").forEach((b) => (b.onclick = () => { cur = b.dataset.s; load(); }));
   load();
-}
-
-go(Math.max(0, ["#overview", "#shooting", "#playmaking", "#games"].indexOf(location.hash)));
+})();
 </script>
 </body>
 </html>
