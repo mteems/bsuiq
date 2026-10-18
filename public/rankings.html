@@ -17,7 +17,22 @@ td a{color:#fff}
 td a:hover{text-decoration:underline;text-underline-offset:3px}
 tr.me td{background:rgba(255,255,255,.06)}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
-.filters select,.filters input{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:6px 8px;font:12px var(--mono)}
+.filters input{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:7px 10px;font:12px var(--mono);outline:none}
+.filters input:focus{border-color:#6a6e75}
+.dd{position:relative;display:flex;align-items:center;gap:6px}
+.ddl{font:10.5px var(--mono);color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.ddb{display:flex;align-items:center;gap:8px;background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:6px 10px;font:12px var(--mono);cursor:pointer;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.ddb:hover,.dd.open .ddb{border-color:#6a6e75;color:#fff}
+.ddb.set{background:#3a3d42;color:#fff}
+.ddb svg{flex:none;color:var(--muted)}
+.ddm{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:50;min-width:100%;background:#1e1f22;border:1px solid var(--edge);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:4px}
+.dd.open .ddm{display:block}
+@media (max-width:600px){.ddm{max-width:calc(100vw - 32px)}.ddb{max-width:160px}}
+.ddq{width:100%;box-sizing:border-box;margin-bottom:4px;background:var(--card)!important}
+.ddi{max-height:300px;overflow-y:auto}
+.ddi button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--soft);font:12px var(--mono);padding:6px 10px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.ddi button:hover{background:var(--card);color:#fff}
+.ddi button.on{background:#3a3d42;color:#fff}
 .filters input{width:190px}
 .filters label{font:10.5px var(--mono);color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;gap:6px;align-items:center}
 .filters .count{margin-left:auto;font:11px var(--mono);color:var(--soft)}
@@ -151,27 +166,53 @@ const uniq = (rows, k) => [...new Set(rows.map((r) => r[k]).filter(Boolean))].so
 function buildFilters() {
   const V = VIEWS[st.view], rows = V.rows, f = st.f;
   if (f.min == null) f.min = V.minDefault;
-  const sel = (key, label, opts) => `<label>${label}<select data-f="${key}"><option value="">All</option>${opts.map((o) => `<option ${String(f[key] ?? "") === String(o) ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label>`;
+  const all = (opts) => [["", "All"], ...opts.map((o) => [o, o])];
   const parts = {
     q: `<input data-f="q" placeholder="Search player or team" value="${esc(f.q || "")}">`,
-    pos: sel("pos", "Pos", ["G", "F", "C"]),
-    cls: sel("cls", "Class", ["Fr.", "So.", "Jr.", "Sr."]),
-    conf: sel("conf", "Conf", uniq(rows, "conf")),
-    team: sel("team", "Team", uniq(f.conf ? rows.filter((r) => r.conf === f.conf) : rows, "team")),
-    season: sel("season", "Season", uniq(rows, "season").reverse()),
-    yr: `<label>Season<select data-f="yr">${[...IDX.seasons].reverse().map((y) => `<option ${y === st.yr ? "selected" : ""}>${y}</option>`).join("")}</select></label>`,
-    min: `<label>Min. minutes<select data-f="min">${[0, 50, 100, 200, 400, 600].map((m) => `<option value="${m}" ${+f.min === m ? "selected" : ""}>${m}+</option>`).join("")}</select></label>`,
+    pos: dd("pos", "Pos", all(["G", "F", "C"]), f.pos ?? ""),
+    cls: dd("cls", "Class", all(["Fr.", "So.", "Jr.", "Sr."]), f.cls ?? ""),
+    conf: dd("conf", "Conf", all(uniq(rows, "conf")), f.conf ?? ""),
+    team: dd("team", "Team", all(uniq(f.conf ? rows.filter((r) => r.conf === f.conf) : rows, "team")), f.team ?? ""),
+    season: dd("season", "Season", all(uniq(rows, "season").reverse()), f.season ?? ""),
+    yr: dd("yr", "Season", [...IDX.seasons].reverse().map((y) => [y, y]), st.yr),
+    min: dd("min", "Min. minutes", [0, 50, 100, 200, 400, 600].map((m) => [String(m), m + "+"]), String(f.min)),
   };
   $("filters").innerHTML = V.filters.map((k) => parts[k]).join("") + `<span class="count" id="count"></span>`;
-  $("filters").querySelectorAll("[data-f]").forEach((el) => {
-    const go = async () => {
-      const k = el.dataset.f;
-      if (k === "yr") { st.yr = el.value; await setSeason(); buildFilters(); st.page = 0; draw(); return; }
-      f[k] = el.value === "" ? undefined : el.value; if (k === "conf") { f.team = undefined; buildFilters(); } st.page = 0; draw();
+  const go = async (k, value) => {
+    if (k === "yr") { st.yr = value; await setSeason(); buildFilters(); st.page = 0; draw(); return; }
+    f[k] = value === "" ? undefined : value;
+    if (k === "conf") f.team = undefined;
+    if (k !== "q") buildFilters();
+    st.page = 0; draw();
+  };
+  const q = $("filters").querySelector('input[data-f="q"]');
+  if (q) q.oninput = () => go("q", q.value);
+  wireDropdowns($("filters"), go);
+}
+
+// Site-styled dropdowns (instead of the browser's native menus).
+function dd(key, label, opts, cur) {
+  const curText = (opts.find(([v]) => String(v) === String(cur)) || opts[0])[1];
+  return `<div class="dd" data-dd="${key}"><span class="ddl">${esc(label)}</span>
+    <button type="button" class="ddb${cur !== "" && key !== "yr" && key !== "min" ? " set" : ""}">${esc(curText)}<svg viewBox="0 0 10 6" width="9" height="6"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <div class="ddm">${opts.length > 12 ? `<input class="ddq" placeholder="Type to filter">` : ""}<div class="ddi">${opts.map(([v, t]) => `<button type="button" data-v="${esc(v)}" class="${String(v) === String(cur) ? "on" : ""}">${esc(t)}</button>`).join("")}</div></div></div>`;
+}
+function wireDropdowns(root, onPick) {
+  root.querySelectorAll(".dd").forEach((d) => {
+    const btn = d.querySelector(".ddb"), menu = d.querySelector(".ddm"), fq = d.querySelector(".ddq");
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const open = d.classList.contains("open");
+      document.querySelectorAll(".dd.open").forEach((x) => x.classList.remove("open"));
+      if (!open) { d.classList.add("open"); if (fq) { fq.value = ""; fq.dispatchEvent(new Event("input")); fq.focus(); } menu.querySelector(".on")?.scrollIntoView({ block: "nearest" }); }
     };
-    el.tagName === "INPUT" ? (el.oninput = go) : (el.onchange = go);
+    menu.onclick = (e) => e.stopPropagation();
+    if (fq) fq.oninput = () => { const t = fq.value.toLowerCase(); menu.querySelectorAll(".ddi button").forEach((b) => (b.style.display = !t || b.textContent.toLowerCase().includes(t) ? "" : "none")); };
+    menu.querySelectorAll(".ddi button").forEach((b) => (b.onclick = () => { d.classList.remove("open"); onPick(d.dataset.dd, b.dataset.v); }));
   });
 }
+document.addEventListener("click", () => document.querySelectorAll(".dd.open").forEach((x) => x.classList.remove("open")));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelectorAll(".dd.open").forEach((x) => x.classList.remove("open")); });
 
 function filtered() {
   const V = VIEWS[st.view], f = st.f, q = norm(f.q);
