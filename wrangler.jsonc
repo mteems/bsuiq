@@ -6,6 +6,7 @@
   "name": "bsuiq",
   "main": "src/worker.js",
   "compatibility_date": "2026-09-03",
+  "workers_dev": true,
   "preview_urls": false,
   "assets": {
     "directory": "./public",
