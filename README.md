@@ -40,7 +40,7 @@ Built from the boisestate.ai handoff package (Oct 16, 2026): scouting v2, playma
 One-time setup in the Cloudflare dashboard:
 
 1. Go to **Workers & Pages → Create → Import a repository** and pick `mteems/bsuiq`.
-2. Set **Project name** to `bronco-iq` and leave **Root directory** at `/`.
+2. Set **Project name** to `bsuiq` and leave **Root directory** at `/`.
 3. Set **Build command** to *(leave empty)* and **Deploy command** to `npx wrangler deploy`.
 4. After the first deploy, go to the Worker's **Settings → Variables and secrets** and add two **secrets**:
    - `STAFF_PASSWORD`: the shared staff password

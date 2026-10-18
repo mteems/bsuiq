@@ -3,7 +3,7 @@
   // the Recruiting Hub. Data ships as static JSON (public/data) during the
   // formatting phase; Bronco IQ's own D1 database gets added at migration.
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bronco-iq",
+  "name": "bsuiq",
   "main": "src/worker.js",
   "compatibility_date": "2026-09-03",
   "preview_urls": false,
