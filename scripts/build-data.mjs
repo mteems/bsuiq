@@ -1,0 +1,53 @@
+// Builds the static JSON the pages read (public/data/) from data-src/.
+//   node scripts/build-data.mjs
+// During the formatting phase data-src/ holds a sample export. When the data
+// moves into Bronco IQ's own database, this script (or the Worker API that
+// replaces it) produces the same file shapes, so the pages don't change.
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { derive, seasonPercentiles } from "../src/stats.js";
+
+const root = new URL("..", import.meta.url).pathname;
+const src = (p) => join(root, "data-src", p);
+const out = join(root, "public", "data");
+const pool = JSON.parse(readFileSync(src("pool.json"), "utf8"));
+delete pool._about;
+const roster = JSON.parse(readFileSync(src("roster.json"), "utf8"));
+
+// Per-shot profiles: data-src/shots/<playerId>-<season>.json
+const shots = {};
+if (existsSync(src("shots"))) for (const f of readdirSync(src("shots"))) {
+  if (!f.endsWith(".json")) continue;
+  const s = JSON.parse(readFileSync(src(join("shots", f)), "utf8"));
+  (shots[s.player] ||= []).push(s);
+}
+
+// Hand-built deep-dive modules embedded on player pages.
+const MODULES = {
+  "espn-5107273": [{ key: "pd", title: "Playmaking & Defense", src: "/modules/pd-espn-5107273.html", season: "2025-26" }],
+};
+
+rmSync(out, { recursive: true, force: true });
+mkdirSync(join(out, "players"), { recursive: true });
+const write = (p, v) => writeFileSync(join(out, p), JSON.stringify(v));
+
+const index = [], rosterRows = [];
+for (const p of roster.players) {
+  const seasons = p.seasons.map((s) => ({ ...s, d: derive(s), pct: seasonPercentiles(s, pool) }));
+  const last = seasons[seasons.length - 1] || null;
+  const espnId = p.id.startsWith("espn-") ? p.id.slice(5) : null;
+  const player = { ...p, seasons: undefined, espnId, onRoster: true };
+  write(`players/${p.id}.json`, {
+    player,
+    seasons,
+    shots: (shots[p.id] || []).sort((a, b) => a.season.localeCompare(b.season)),
+    modules: MODULES[p.id] || [],
+  });
+  const lastLite = last ? { season: last.season, school: last.school, gp: last.gp, mpg: last.mpg, ppg: last.ppg, three_pct: last.three_pct, three_pa: last.three_pa, ...last.d, pct: last.pct.metrics } : null;
+  rosterRows.push({ ...player, last: lastLite });
+  index.push({ id: p.id, first_name: p.first_name, last_name: p.last_name, school: roster.team, position: p.position, last: last ? { season: last.season, school: last.school, ppg: last.ppg } : null });
+}
+write("roster.json", { team: roster.team, season: roster.season, espnTeamId: roster.espnTeamId, players: rosterRows });
+write("index.json", { players: index });
+write("meta.json", { builtAt: new Date().toISOString(), pools: Object.fromEntries(Object.entries(pool).map(([s, m]) => [s, m.ppg[0]])), source: roster._about });
+console.log(`built ${rosterRows.length} players, ${Object.values(shots).flat().length} shot profiles → public/data`);

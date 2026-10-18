@@ -1,0 +1,18 @@
+{
+  // Bronco IQ 2.0: standalone staff analytics site. No shared resources with
+  // the Recruiting Hub. Data ships as static JSON (public/data) during the
+  // formatting phase; Bronco IQ's own D1 database gets added at migration.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bronco-iq",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-03",
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "observability": { "enabled": true }
+}

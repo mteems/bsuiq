@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+.hero{display:flex;gap:16px;align-items:center;margin-top:22px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-left:auto;min-width:min(520px,100%)}
+.kpi{background:var(--card);border-radius:8px;padding:10px 12px}
+.kpi b{display:block;font-size:22px;font-weight:750;margin-top:2px}
+.kpi .sub{font-size:11px;color:var(--dim);margin-top:2px}
+td a{color:#fff;font-weight:600}
+td a:hover{text-decoration:underline;text-underline-offset:3px}
+.next{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.nx{background:var(--card);border-radius:8px;padding:11px 12px;display:flex;gap:10px;align-items:center;border:1px solid transparent}
+.nx:hover{border-color:var(--edge)}
+.nx .label{font-size:9.5px}
+@media (max-width:900px){.kpis{grid-template-columns:1fr 1fr}.next{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="hero">
+    <span class="lg" style="width:56px;height:56px"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png"></span>
+    <div><div class="label">Boise State men's basketball · 2026-27</div><h1>Roster</h1></div>
+    <div class="kpis" id="kpis"></div>
+  </div>
+
+  <section><div class="shead"><h2>2026-27 roster</h2><span class="label">Last college season for each player · chips = percentile among D-I rotation players that season</span></div>
+    <div class="panel scroll" style="margin-top:14px" id="roster"><div class="loading">Loading roster…</div></div></section>
+
+  <section><div class="shead"><h2>Next up</h2><span class="label"><a href="/scouting" style="color:var(--soft)">All scouting reports →</a></span></div>
+    <div class="next" style="margin-top:14px" id="next"></div></section>
+
+  <footer>Sample data for the formatting phase: 2026-27 roster and ESPN box-score totals. Freshmen and international players without D-I history show no stats until games start.</footer>
+</main>
+<script type="module">
+import { chip, tc, f1, f0, esc, getJSON, playerName, shortSchool, topBar, LG } from "/assets/core.js";
+topBar("home");
+
+// Upcoming schedule (from the scouting page's opponent list).
+const SCHED = [["2026-10-29", "Bismarck St.", "EXH", 0, "bismarck-st"], ["2026-11-04", "West Coast Baptist", "", 0, "west-coast-baptist"], ["2026-11-08", "Butler", "", 2086, "butler"], ["2026-11-11", "Oakland", "", 2473, "oakland"], ["2026-11-15", "Nebraska", "N", 158, "nebraska"], ["2026-11-20", "Sam Houston", "", 2534, "sam-houston"], ["2026-11-24", "Idaho St.", "", 304, "idaho-st"], ["2026-11-27", "Drake", "N", 2181, "drake"]];
+const today = new Date().toISOString().slice(0, 10);
+document.getElementById("next").innerHTML = SCHED.filter((g) => g[0] >= today).slice(0, 4).map((g) => `<a class="nx" href="/scouting#${g[4]}">${LG(g[3], 28, g[1].slice(0, 3).toUpperCase())}<div><div class="label">${new Date(g[0] + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}${g[2] ? " · " + g[2] : ""}</div><div style="font-weight:650;font-size:13.5px;margin-top:2px">${esc(g[1])}</div></div></a>`).join("");
+
+const R = await getJSON("/data/roster.json");
+const rows = R.players.map((p) => ({ ...p, isNew: p.last && !/boise/i.test(p.last.school), noStats: !p.last }));
+rows.sort((a, b) => (a.noStats - b.noStats) || ((b.last?.mpg ?? 0) - (a.last?.mpg ?? 0)));
+const ret = rows.filter((r) => r.last && !r.isNew), tr = rows.filter((r) => r.isNew), fr = rows.filter((r) => r.noStats);
+document.getElementById("kpis").innerHTML = [
+  ["Players", rows.length, "on the 2026-27 roster"],
+  ["Returners", ret.length, `${f1(ret.reduce((a, r) => a + (r.last.ppg || 0), 0))} ppg back from '26`],
+  ["Transfers", tr.length, tr.map((r) => shortSchool(r.last.school)).slice(0, 3).join(" · ") || "—"],
+  ["Freshmen / intl", fr.length, "no D-I stats yet"],
+].map(([l, v, s]) => `<div class="kpi"><span class="label">${l}</span><b>${v}</b><div class="sub">${esc(s)}</div></div>`).join("");
+
+const q = (r, k) => (r.last && r.last.gp >= 8 && r.last.mpg >= 8 ? r.last.pct[k]?.pct ?? null : null);
+document.getElementById("roster").innerHTML = `<table><thead>
+  <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="3">Last season</th><th class="grp sep" colspan="8">Production · percentile chips</th></tr>
+  <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th class="l">Cl</th><th class="l sep">Season</th><th class="l">School</th><th><span data-def="gp">GP</span></th>
+  <th class="sep"><span data-def="mpg">MPG</span></th><th><span data-def="ppg">PPG</span></th><th><span data-def="ts">TS%</span></th><th><span data-def="p3">3P%</span></th><th><span data-def="rpg">RPG</span></th><th><span data-def="apg">APG</span></th><th><span data-def="ato">A/TO</span></th><th><span data-def="spg">STL</span></th></tr></thead><tbody>
+  ${rows.map((r) => { const L = r.last; const tag = r.isNew ? ' <span class="tag new">NEW</span>' : r.noStats ? ' <span class="tag fr">FR</span>' : "";
+    return `<tr><td class="l m">${esc(r.jersey_number || "")}</td><td class="l"><a href="/player/${encodeURIComponent(r.id)}">${esc(playerName(r))}</a>${tag}</td><td class="l m">${esc(r.position)}</td><td class="m">${esc(r.height)}</td><td class="l m">${esc((r.class_year || "").slice(0, 2))}</td>
+    ${L ? `<td class="l sep m">${L.season}</td><td class="l m">${esc(shortSchool(L.school))}</td><td class="m">${L.gp}</td>
+      <td class="sep">${chip(q(r, "mpg"), f1(L.mpg))}</td><td>${chip(q(r, "ppg"), f1(L.ppg))}</td><td>${chip(q(r, "ts"), f1(L.ts))}</td><td>${!L.three_pa ? `<span class="m">—</span>` : `${L.p3 != null ? chip(q(r, "p3"), f1(L.p3)) : `<span class="m">${f1(L.three_pct)}</span>`} <span class="m" style="font-size:10.5px">${f0(L.three_pa)}</span>`}</td>
+      <td>${chip(q(r, "rpg"), f1(L.rpg))}</td><td>${chip(q(r, "apg"), f1(L.apg))}</td><td>${chip(q(r, "ato"), L.ato == null ? "—" : L.ato.toFixed(2))}</td><td>${chip(q(r, "spg"), f1(L.spg))}</td>`
+      : `<td class="l sep m" colspan="11">no D-I history</td>`}</tr>`; }).join("")}
+  </tbody></table><div class="cap">Sorted by last season's minutes. <span class="tag new">NEW</span> = transfer in · <span class="tag fr">FR</span> = freshman/international. Chips need 8+ games and 8+ minutes per game; 3P% chips need 40+ attempts.</div>`;
+</script>
+</body>
+</html>

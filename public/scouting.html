@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scouting · Bronco IQ</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+/* SITE CONVENTION: orange = good / high percentile, blue = bad / low percentile (for the team on the page) */
+:root{--bg:#16171a;--panel:#1e1f22;--card:#26282c;--line:#2e3034;--text:#f2f3f4;--muted:#8a8e95;--good:#e2622a;--bad:#4a7fe0;--ui:'Inter Tight Variable',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-variant-numeric:tabular-nums}
+.wrap{max-width:1280px;margin:auto;padding:0 24px 28px}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.otop{border-bottom:1px solid var(--line);background:var(--bg)}
+.obrand{display:flex;align-items:center;gap:10px;padding:14px 24px 6px;max-width:1280px;margin:auto}
+.obrand b{font-weight:700;font-size:15px}
+.otabs{display:flex;gap:2px;overflow-x:auto;padding:0 24px;max-width:1280px;margin:auto;scrollbar-width:thin}
+.tab{flex:none;display:flex;gap:7px;align-items:center;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--ui);font-size:12.5px;padding:7px 10px 8px;cursor:pointer;text-align:left;line-height:1.25}
+.tab small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:#61656c}
+.tab.on{color:#fff;border-bottom-color:#f2f3f4}.tab.on small{color:#d6d8db}
+.tab:hover{color:#d6d8db}
+.tab.sample{border-right:1px solid var(--line);margin-right:6px;padding-right:14px}
+.tab.sample small{color:#9aa0a8}
+.lg{position:relative;display:inline-flex;flex:none;align-items:center;justify-content:center}
+.lg img{width:100%;height:100%;object-fit:contain}
+.lg b{display:none;width:100%;height:100%;border-radius:50%;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:500;color:#fff;background:#3a3d42}
+.lg.fb b{display:flex}
+.cf{display:inline-flex;align-items:center;gap:6px;background:#eceef0;color:#1e1f22;border-radius:5px;padding:3px 8px 3px 4px;font-size:11.5px;font-weight:600}
+.cf img{height:18px;width:18px;object-fit:contain}
+.kp{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid #3a3d42;border-radius:5px;padding:3px 8px;font-size:11.5px;color:#cfd3d9}
+.kp img{width:14px;height:14px;border-radius:2px}
+.kp b{color:#fff;font-weight:700}
+h1{font-size:30px;font-weight:750;letter-spacing:-.02em}
+h2{font-size:19px;font-weight:700;letter-spacing:-.01em}
+section{margin-top:26px}
+.shead{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap}
+.grid{display:grid;gap:16px;margin-top:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.ptitle{margin-bottom:12px;display:flex;justify-content:space-between;gap:10px}
+.cap{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.55}
+.story{margin-top:10px;font-size:14px;color:#cfd3d9;line-height:1.55;max-width:1020px}
+.story b{color:var(--text)}
+[data-def]{cursor:help;text-decoration:underline dotted rgba(138,142,149,.6);text-underline-offset:3px}
+svg [data-def]{text-decoration:none}
+.hero{display:grid;grid-template-columns:1.1fr 2fr;gap:16px;margin-top:18px}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.pill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:3px 7px;border-radius:4px;background:#3a3d42;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--card);border-radius:8px;padding:12px}
+.kpi b{display:block;font-size:24px;font-weight:750;margin-top:4px}
+.kpi .sub{font-size:11.5px;color:#b9bdc4;margin-top:3px;line-height:1.4}
+.chip{display:inline-block;min-width:34px;text-align:center;border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:11px;font-weight:500;color:#fff}
+.depth{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.pos{display:flex;flex-direction:column;gap:8px}
+.pos .ph{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.08em;padding:0 2px}
+.pc{background:var(--card);border-radius:8px;padding:10px 10px 9px;border:1px solid transparent}
+.pc.st{border-color:#3e4146;background:#2b2d32}
+.pc .nm{font-size:13.5px;font-weight:650;line-height:1.2;display:flex;justify-content:space-between;gap:6px}
+.pc .nm span{font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--muted)}
+.pc .meta{font-size:11px;color:#9aa0a8;margin-top:3px;display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:9px;letter-spacing:.07em;padding:1px 5px;border-radius:3px;border:1px solid #4a4d53;color:#c9ccd2}
+.tag.new{border-color:#6b4a3a;color:#f0a27d}.tag.fr{color:#9aa0a8}
+.mbar{height:5px;border-radius:3px;background:#34363b;margin-top:8px;overflow:hidden}
+.mbar i{display:block;height:100%}
+.pc .row{display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:#b9bdc4}
+.pc .row b{color:#fff;font-weight:600}
+.lgrp{margin-bottom:12px}
+.lrow{display:grid;grid-template-columns:18px 1fr 52px 70px;gap:8px;align-items:center;font-size:12.5px;padding:4px 0;border-bottom:1px solid #2a2c30}
+.lrow .r,.lrow .ls{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.lrow .v{font-weight:700;text-align:right}.lrow .ls{text-align:right}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tgrid svg{width:100%;display:block;background:var(--card);border-radius:8px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.key{background:var(--card);border-radius:8px;padding:13px;border-left:3px solid #4a4d53}
+.key h3{font-size:14px;font-weight:700;margin-top:4px;line-height:1.3}
+.key p{font-size:12.5px;color:#c4c8ce;line-height:1.5;margin-top:6px}.key p b{color:#fff}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-family:var(--mono);font-weight:500;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:0 5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.l,td.l{text-align:left}
+th.grp{text-align:center;border-bottom:1px solid #3a3d42;padding-bottom:5px;color:#b9bdc4}
+td{padding:6px 5px;border-bottom:1px solid #2a2c30;text-align:right;white-space:nowrap}
+td.m{color:var(--muted)}
+.sep{border-left:1px solid #34363b}
+tr:hover td{background:rgba(255,255,255,.025)}
+.tl{display:flex;align-items:center;gap:7px}
+.banner{margin-top:16px;background:#24262a;border:1px dashed #4a4d53;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#cfd3d9}
+.ph-empty{padding:60px 20px;text-align:center;color:var(--muted)}
+footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="otop">
+  <div class="obrand"><b>Opponent scouting</b><span class="label">2026-27 schedule · Boise St. '26 sample first</span></div>
+  <div class="otabs" id="tabs"></div>
+</div>
+<div class="wrap" id="page"></div>
+
+<script type="module">
+import { d3, addDefs, tipOn, tipOff, topBar } from "/assets/core.js";
+topBar("scouting");
+const GOOD="#e2622a",BAD="#4a7fe0",NEU="#5d6168";
+const pc=p=>p==null?NEU:p>=50?d3.interpolateLab(NEU,"#d4561f")(Math.min(1,(p-50)/45)):d3.interpolateLab(NEU,"#2f63d6")(Math.min(1,(50-p)/45));
+const LG=(id,s,ab)=>`<span class="lg${id?'':' fb'}" style="width:${s}px;height:${s}px">${id?`<img alt="" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa/500-dark/${id}.png&w=${s*2}&h=${s*2}" onerror="this.parentNode.classList.add('fb');this.remove()">`:''}<b>${ab||''}</b></span>`;
+const CF=(k,n)=>`<span class="cf"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${k}.png" onerror="this.remove()">${n}</span>`;
+const KP=(rk,sfx="")=>`<span class="kp"><img alt="" src="https://kenpom.com/assets/favicon.ico" onerror="this.remove()">KenPom <b>#${rk}</b>${sfx}</span>`;
+
+// ---------- definitions / tooltip ----------
+const DEF={trank:["T-Rank (Barttorvik)","Bart Torvik's tempo-free power rating. The preseason version projects from returning production, transfers, recruits and program history."],
+ kenpom:["KenPom","Ken Pomeroy's adjusted efficiency ratings, the most widely used college basketball power rating. Preseason ranks are his projection."],
+ adjo:["Adjusted offense","Points scored per 100 possessions vs an average D-I defense. Higher is better."],
+ adjd:["Adjusted defense","Points allowed per 100 possessions vs an average D-I offense. Lower is better."],
+ retmin:["Returning minutes","Share of last season's team minutes played by players who are back."],
+ tpar:["3PA rate","Share of field-goal attempts that are threes. Style stat."],tempo:["Tempo","Possessions per 40 minutes, adjusted for opponent. Style stat."],
+ p3:["3-point %","For projections: last 3 seasons, weighted to recent, with ~150 attempts of league-average shooting added."],
+ bpm:["Box plus-minus","Estimated points per 100 possessions added vs an average D-I player. 0 = average, +3 = strong starter, +6 = all-conference."],
+ conf:["Projection confidence","H = 2+ seasons with real minutes. M = one solid season or a level jump. L = small sample."],
+ minp:["Minutes %","Share of available team minutes played."],ortg:["Offensive rating","Points produced per 100 possessions used (Dean Oliver). ~105 is average."],
+ usg:["Usage rate","Share of team possessions he ends while on the floor. ~20% is average."],ts:["True shooting %","PTS ÷ (2 × (FGA + 0.44 × FTA))."],
+ ast:["Assist rate","Share of teammates' made field goals he assisted while on the floor."],tov:["Turnover rate","Turnovers per 100 of his plays. Lower is better."],
+ blk:["Block rate","Share of opponent 2-point attempts blocked while on the floor."],orb:["Offensive rebound %","Share of available offensive rebounds grabbed."],
+ dreb:["Opponent offensive rebound %","Share of their own misses the opponent gets back. Lower = better defensive rebounding."],
+ ftr:["Free-throw rate","FTA ÷ FGA."],tod:["Forced turnover %","Share of opponent possessions ending in a turnover."],tp:["3-point %","Team three-point %."],
+ efgd:["Opponent eFG%","Opponent effective FG%, with threes worth 1.5×. Lower is better."],
+ l6:["Last-6 minutes","Average minutes over the final 6 games, which shows the late-season rotation."],
+ net:["Net rating","Points per 100 possessions scored minus allowed with that lineup on the floor. Small samples are noisy."]};
+addDefs(DEF);
+
+const Q={ortg:[92.9,102.9,109.8,116.7,126.1],ts:[46.35,51.88,55.41,58.9,64.47],bpm:[-5.34,-2.22,0.35,2.97,7.30],p3:[0,28.2,33.2,37.2,42.3]};
+const pctOf=(k,v)=>{const q=Q[k],P=[5,25,50,75,95];if(v<=q[0])return 3;if(v>=q[4])return 98;for(let i=0;i<4;i++)if(v<=q[i+1])return Math.round(P[i]+(P[i+1]-P[i])*(v-q[i])/(q[i+1]-q[i]))};
+const chip=(k,v,t)=>`<span class="chip" style="background:${pc(pctOf(k,v))}" title="${pctOf(k,v)}th pct">${t??v}</span>`;
+const sg=v=>(v>0?"+":"")+v.toFixed(1),f1=v=>v==null?"—":(+v).toFixed(1);
+
+// ---------- tabs ----------
+const OPP=[["bsu26","Boise St. '26","SAMPLE · final",68,"BSU"],["uw","Washington","Oct 17 · EXH",264,"UW"],["","Bismarck St.","Oct 29 · EXH",0,"BIS"],["","West Coast Baptist","Nov 4",0,"WCB"],["","Butler","Nov 8",2086],["","Oakland","Nov 11",2473],["","Nebraska","Nov 15 · N",158],["","Sam Houston","Nov 20",2534],["","Idaho St.","Nov 24",304],["","Drake","Nov 27 · N",2181],["","North Texas","Nov 28 · N",249],["","North Dakota St.","Nov 29 · N",2449],["","Wichita St.","Dec 5 · A",2724],["","TAMU-CC","Dec 12",357],["","Utah Valley","Dec 16",3084],["","Santa Clara","Dec 21 · N",2541],["","New Mexico","Dec 23 · N",167],["","Lamar","Dec 29",2320],["","Utah St.","Jan 6 · A · P12",328],["","Oregon St.","Jan 9 · P12",204],["","Washington St.","Jan 13 · P12",265],["","Gonzaga","Jan 16 · A · P12",2250],["","Fresno St.","Jan 20 · A · P12",278],["","San Diego St.","Jan 23 · P12",21],["","Texas St.","Jan 30 · A · P12",326],["","Colorado St.","Feb 18 · A · P12",36]];
+document.getElementById("tabs").innerHTML=OPP.map((o,i)=>`<button class="tab${i==1?' on':''}${i==0?' sample':''}" data-i="${i}">${LG(o[3],20,o[4]||o[1].slice(0,3).toUpperCase())}<span>${o[1]}<small>${o[2]}</small></span></button>`).join("");
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));b.classList.add("on");const o=OPP[+b.dataset.i];history.replaceState(null,"","#"+(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-")));
+ if(T[o[0]])render(T[o[0]]);else document.getElementById("page").innerHTML=`<div class="ph-empty">${LG(o[3],72,o[1].slice(0,3).toUpperCase())}<div class="label" style="margin-top:12px">${o[2]}</div><h1 style="color:#fff;margin-top:6px">${o[1]}</h1><div style="margin-top:10px">Scouting report not built yet. Same template as Washington, so it's queued for build.</div></div>`;scrollTo(0,0)});
+
+// ---------- team data ----------
+// player: [jersey,name,pos,ht,cls,tag(T/F/""),from,slot,starter,mid{...},adv[gp,min,ortg,usg,ts,tpm,tpa,p3,ast,tov,blk,bpm],advLabel,key]
+const T={};
+T.uw={id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:"HC Danny Sprinkle (yr 3) · 29-35 at UW",kp:"68",mode:"proj",
+ game:`<div class="label">Next up · Exhibition</div><span class="pill" style="background:var(--good);margin-top:6px">SAT OCT 17 · 7:00 PM MT</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">Idaho Central Arena, Boise · Washington's first game of the season</div><div class="cap" style="margin-top:6px">Exhibition: no 2026-27 game data exists yet. Everything below is a projection from each player's prior seasons. Refresh after the box score.</div>`,
+ kpis:[["kenpom","Preseason ranks","#68 · #73","","KenPom · T-Rank. <b style='color:#fff'>Boise: #59 · #85</b>. The two models disagree on who's better."],
+  ["adjo","Proj. offense","114.0",GOOD,"KenPom AdjO · #57<br>T-Rank 112.6 (#69)"],["adjd","Proj. defense","101.4",GOOD,"KenPom AdjD · #83<br>T-Rank 100.8 (#80)"],
+  ["retmin","Returning minutes","21%",BAD,"5 returners · lost top 2 scorers (Steinbach, NBA #14 pick; Diallo → Kentucky)"],
+  ["","Last season","16-17","","7-13 Big Ten · T-Rank #53"],["","Roster build","5 · 3 · 6","","transfers · freshmen/intl · returners (+1 walk-on)"],
+  ["tpar","3PA rate, 3 yrs","34–36%",NEU,"D-I avg 39.5%. Sprinkle teams take few threes"],["tempo","Proj. tempo","71.5",NEU,"KenPom · #192 · '26 was 67.1 (about average)"]],
+ depthCap:`Depth chart and minutes are Bronco IQ projections. No official UW depth chart has been released. <span class="tag new">NEW</span> transfer · <span class="tag fr">FR</span> freshman/intl · no tag = returner.`,
+ leadHdr:"proj · last yr",
+ leaders:[["Points",[["Wesley Yates III","15.6","12.7"],["LeJuan Watts","12.7","11.8"],["Ryan Beasley","9.5","13.6"],["Lathan Sommerville","9.1","4.3"]]],["Rebounds",[["LeJuan Watts","6.4","6.0"],["Lathan Sommerville","4.8","2.6"],["Wesley Yates III","3.6","3.3"]]],["Assists",[["LeJuan Watts","3.2","2.4"],["Ryan Beasley","2.7","4.0"],["Wesley Yates III","1.7","1.3"]]],["3P% · 90+ att last yr",[["Parker Friedrichsen","36.2%","40.4%"],["Steele Venters","35.8%","36.7%"],["Wesley Yates III","35.1%","31.2%"]]],["Rim protection · BLK%",[["Nikola Dzepina","8.5","12% min"],["Lathan Sommerville","2.7","24% min"]]]],
+ trendHdr:"Sprinkle's last 3 seasons · '24 at Utah St. · '25–'26 at Washington · ◇ = '27 T-Rank projection",yrs:["USU '24","UW '25","UW '26","'27p"],
+ story:`<b>Same style every year: few threes, an average pace and paint-first offense. This year's roster is built to fix last season's shooting.</b> UW shot 31.5% from three in '26 (#305) and took few. Their best edge was offensive rebounding (#56), and that ran through Steinbach (11.8 rpg), who is gone. Their defense forced turnovers on only 14.3% of possessions (#325). Four of the five transfers are perimeter players who shot 33–40% from three.`,
+ trends:[["adjo","AdjO",[[114.9,89],[109.8,70],[116.8,81]],112.6,"high",109.3],["adjd","AdjD",[[101.3,74],[104.5,65],[102.6,84]],100.8,"low",109.3],["tp","3P%",[[32.5,32],[34.4,60],[31.5,16]],null,"high",33.8],["tpar","3PA rate",[[33.6],[35.7],[34.6]],null,"style",39.5],["orb","Off. reb %",[[27.8,41],[27.5,31],[34.6,85]],null,"high",30.4],["ftr","FT rate",[[39.0,91],[34.5,63],[30.1,16]],null,"high",35.0],["tod","Forced TO %",[[16.4,42],[16.7,46],[14.3,11]],null,"high",16.7],["tempo","Tempo",[[68.8],[68.0],[67.1]],71.6,"style",67.4]],
+ keys:[[GOOD,"LeJuan Watts · the hub","Point forward who does a bit of everything",`25.6% usage at Texas Tech, 6.0 rpg, 15.7 AST%. At Washington St. in '25: <b>13.7 / 6.7 / 4.4</b>. Projected #2 scorer, #1 in rebounds and assists. <b>Turnovers are the soft spot:</b> 20.9 TOV% last year, 24.7 the year before.`],
+  [GOOD,"Parker Friedrichsen · the shooter","Davidson's 40% catch-and-shoot threat",`<b>65-of-161 (40.4%)</b> from three, with 11.3 AST% and 13.7 TOV%. That profile says he finishes plays rather than creates them. Best shooter on the roster by volume and accuracy.`],
+  [NEU,"Wesley Yates III · volume scorer","Top returning scorer, with a shooting dip to resolve",`12.7 ppg on <b>31.2% from three (170 att)</b> and 49.6 TS%, after 43.9% as a USC freshman. True-talent projection is ~35%. Projected leading scorer (15.6) as the top option.`],
+  [NEU,"Ryan Beasley · the point","5-11 table-setter from the WCC",`24.9 AST% with only 13.7 TOV% and a 115.3 ORtg at San Francisco. 13.6 ppg but <b>32.9% from three</b>. Projection discounts him for the WCC → Big Ten jump (BPM +2.6 → +0.4).`],
+  [BAD,"Bench guard usage","Comer takes a lot of shots without much efficiency",`Tayshawn Comer: <b>26.1% usage, 102.0 ORtg, 50.4 TS%</b> at Nevada. 3-year projection is −3.1 BPM, the weakest on the roster.`],
+  [BAD,"Frontcourt after Steinbach","They lost 11.8 rpg and their top player",`Sommerville (6-10, 275) is the likely starter: 7.8 ORB% but only 24% of minutes, −2.4 BPM. Dzepina blocked 8.5% of 2-point attempts in limited minutes. Braga (6-9) is untested.`]],
+ midHdr:["2026-27 projection",["MPG","PPG","RPG","APG","<span data-def='p3'>3P%</span>","<span data-def='bpm'>BPM</span>","<span data-def='conf'>Conf.</span>"]],advHdr:"Last D-I season (Torvik)",
+ P:[["0","Ryan Beasley","PG","5-11","Sr","T","San Francisco '26","PG",1,[24.0,9.5,2.4,2.7,32.5,0.4,"H"],[30,79.3,115.3,21.8,54.9,49,149,32.9,24.9,13.7,0.4,2.6],["AST%","24.9"]],
+  ["12","Tayshawn Comer","PG","6-1","Sr","T","Nevada '26","PG",0,[14.0,5.5,1.2,1.6,33.0,-3.1,"H"],[37,62.2,102.0,26.1,50.4,40,114,35.1,29.7,17.9,0.1,-0.8],["USG","26.1"]],
+  ["6","Tristan Devers","G","6-4","Fr","F","","PG",0,[3.2],null,["NBL dev","AUS"]],
+  ["9","Wesley Yates III","G","6-4","Sr","","Washington '26","SG",1,[31.2,15.6,3.6,1.7,35.1,2.1,"H"],[27,63.4,102.5,21.4,49.6,53,170,31.2,7.4,14.0,0.9,2.5],["PPG","12.7"]],
+  ["11","Steele Venters","G","6-7","Sr","T","Gonzaga '26","SG",0,[15.2,6.6,1.7,1.4,35.8,0.4,"M"],[27,28.9,112.9,15.2,56.0,36,98,36.7,10.0,15.7,0.6,3.6],["3P%","36.7"]],
+  ["3","BJ Roy","G","6-2","So","","Washington '26","SG",0,[0.8],[5,0.6,109.2,25.4,50.0,1,4,25.0,0,0,0,-7.4],["GP","5"]],
+  ["5","Parker Friedrichsen","G","6-4","Sr","T","Davidson '26","W",1,[22.0,7.7,1.8,1.0,36.2,-0.3,"H"],[32,63.7,109.7,21.5,56.7,65,161,40.4,11.3,13.7,0.1,2.0],["3P%","40.4"]],
+  ["13","Harun Zrno","G","6-7","So","T","Rutgers '26","W",0,[10.0,3.4,0.9,0.3,33.8,0.3,"M"],[34,47.3,98.0,18.2,51.9,52,154,33.8,6.2,17.2,0.2,-0.8],["3PA","154"]],
+  ["1","Lat Ford","G","6-7","Fr","F","","W",0,[2.8],null,["3★","WA"]],
+  ["8","LeJuan Watts","F","6-5","Sr","T","Texas Tech '26","F",1,[28.8,12.7,6.4,3.2,35.5,2.2,"H"],[33,66.1,104.8,25.6,53.4,25,78,32.1,15.7,20.9,0.9,2.7],["RPG","6.0"]],
+  ["15","Wini Braga","F","6-9","Fr","F","","F",0,[10.0],null,["21 yo","BRA"]],
+  ["4","Jasir Rencher","F","6-5","So","","Washington '26","F",0,[2.4],[8,5.0,139.9,14.6,66.0,1,5,20.0,2.5,6.1,3.3,1.8],["GP","8"]],
+  ["24","Lathan Sommerville","C","6-10","Jr","","Washington '26","C",1,[22.0,9.1,4.8,0.6,null,0.1,"M"],[22,23.8,103.1,17.0,51.4,1,5,20.0,2.6,16.5,2.7,-2.4],["ORB%","7.8"]],
+  ["33","Nikola Dzepina","F","6-10","So","","Washington '26","C",0,[9.6,5.5,2.7,1.5,30.2,0.9,"L"],[14,11.6,105.3,14.3,41.2,9,36,25.0,10.6,5.4,8.5,3.4],["BLK%","8.5"]],
+  ["14","Mady Traore","F","7-1","Sr","","Maryland '24","C",0,[4.0],[12,7.8,92.1,11.2,38.1,0,5,0,3.9,10.3,2.0,-2.3],["Ht","7-1"]]],
+ slots:["PG","SG","W","F","C"],
+ extra:()=>{const G=[["Hannes Steinbach","PF/C",77.9,18.5,11.8,8.7,"NBA · #14 pick (CHA)",0],["Zoom Diallo","Scoring PG",73.3,15.7,3.9,3.3,"Kentucky",96],["Quimari Peterson","Combo G",76.3,9.2,2.8,5.4,"out of eligibility",0],["Franck Kepnang","C",46.2,6.2,6.3,4.5,"out of eligibility",0],["Desmond Claude","Wing G",24.9,13.3,2.4,-1.6,"out of eligibility",0],["Bryson Tucker","Wing F",34.7,5.7,3.9,0.3,"departed",0],["JJ Mandaquit","Scoring PG",32.3,5.2,2.1,0.7,"transfer",0],["Courtland Muldrew","Wing G",19.0,3.3,1.9,1.1,"transfer",0]];
+  const N=[["LeJuan Watts",2641,"Texas Tech","big_12","B12",11.8,104.8,32.1,78,"0"],["Ryan Beasley",2539,"San Francisco","29","WCC",13.6,115.3,32.9,149,"−1.5"],["Tayshawn Comer",2440,"Nevada","mountain_west","MWC",11.0,102.0,35.1,114,"−1.0"],["Parker Friedrichsen",2166,"Davidson","3","A10",10.8,109.7,40.4,161,"−1.5"],["Harun Zrno",164,"Rutgers","big_ten","B10",6.5,98.0,33.8,154,"0"],["Steele Venters",2250,"Gonzaga","29","WCC*",5.0,112.9,36.7,98,"0"]];
+  return `<section><div class="grid" style="grid-template-columns:1fr 1fr"><div class="panel"><div class="label ptitle"><span>Who left · 2025-26 Washington</span><span>79% of minutes</span></div><table><thead><tr><th class="l">Player</th><th class="l">Role</th><th>Min%</th><th>PPG</th><th>RPG</th><th>BPM</th><th class="l">Next</th></tr></thead><tbody>${G.map(g=>`<tr><td class="l" style="color:#fff">${g[0]}</td><td class="l m">${g[1]}</td><td class="m">${g[2].toFixed(0)}</td><td style="font-weight:700">${g[3].toFixed(1)}</td><td>${g[4].toFixed(1)}</td><td>${chip("bpm",g[5],sg(g[5]))}</td><td class="l m"><span class="tl">${g[7]?LG(g[7],16):""}${g[6]}</span></td></tr>`).join("")}</tbody></table></div>
+  <div class="panel"><div class="label ptitle"><span>Who's new · where they came from</span><span>conference jump</span></div><table><thead><tr><th class="l">Player</th><th class="l">From</th><th>PPG</th><th>ORtg</th><th>3P%</th><th class="l">Adj.</th></tr></thead><tbody>${N.map(n=>`<tr><td class="l" style="color:#fff">${n[0]}</td><td class="l m"><span class="tl">${LG(n[1],18)}${n[2]} <span style="color:#61656c">${n[4]}</span></span></td><td style="font-weight:700">${n[5].toFixed(1)}</td><td>${chip("ortg",n[6],n[6].toFixed(1))}</td><td>${chip("p3",n[7],n[7].toFixed(1))} <span class="m" style="font-size:10.5px">${n[8]}</span></td><td class="l m">${n[9]}</td></tr>`).join("")}</tbody></table>
+  <div class="cap">Players from WCC/A10/MWC get a BPM discount (−1.0 to −1.5) for the step up to the Big Ten. Gonzaga counts as high-major. Freshmen/intl: Wini Braga (6-9, 21-year-old from Brazil), Tristan Devers (Australia, NBL development player), Lat Ford (3★, Renton, WA).</div></div></div></section>`},
+ foot:`Sources: KenPom (2027 preseason ratings), Barttorvik (player stats 2023-24 to 2025-26; team results; 2026-27 preseason T-Rank), ESPN roster API, UW roster release (Oct 7), Boise State athletics schedule. <b style="color:#b9bdc4">Projection method:</b> weighted average of the last 3 seasons (3/2/1 × minutes), pulled toward a bench-level prior for small samples. Then adjusted for conference level and development, with minutes assigned from the depth chart and usage normalized to the team. Mady Traore has no D-I minutes since 2023-24.`};
+
+T.bsu26={id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
+ banner:`<b style="color:#fff">Sample tab:</b> the template run on Boise State as if scouting them after their last game (Mar 12, 2026). This shows what an opponent tab looks like once real game data exists: actual rotation, results and lineups instead of projections.`,
+ game:`<div class="label">Season complete</div><span class="pill" style="background:var(--bad);margin-top:6px">FINAL · L 74-84 vs SAN JOSÉ ST.</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">MWC Tournament 1st round · Mar 12, 2026 · Las Vegas. As the 6 seed, lost to the 11 seed (8-23 before the game).</div>`,
+ kpis:[["kenpom","Rankings","#60 · #54","","KenPom (Mar 2) · T-Rank final"],["adjo","Offense","118.3",GOOD,"AdjO · #52 nationally"],["adjd","Defense","103.9",GOOD,"AdjD · #77 · 3rd straight year slipping"],["","Record","20-12","","12-8 MWC · 6th seed"],
+  ["dreb","Defensive glass","23.6%",GOOD,"opp. OReb% · <b style='color:#fff'>#3 in D-I</b> · top 3 three years running"],["ftr","FT rate","42.7",GOOD,"#22 nationally"],["","Close games","3-4","","decided by ≤3 pts · lost to D-II Hawaii Pacific in opener"],["tempo","Tempo","65.8",NEU,"#271 · slow, deliberate"]],
+ depthCap:`Actual season rotation: bar = minutes per game, outlined = primary starter, header = games started. Hover the roster table below for definitions.`,
+ leadHdr:"season · context",
+ leaders:[["Points",[["Drew Fielder","14.7","62.6 TS"],["Javan Buchanan","12.6","55.8 TS"],["Dylan Andrews","12.5","54.6 TS"],["Andrew Meadow","12.1","61.4 TS"]]],["Rebounds",[["Drew Fielder","5.7","23.7 mpg"],["Javan Buchanan","5.0","27.9 mpg"],["Dominic Parolin","4.7","17.0 mpg"]]],["Assists",[["Dylan Andrews","3.2","20.2 AST%"],["RJ Keene","1.9","14.4 AST%"],["Aginaldo Neto","1.9","17.8 AST%"]]],["3P% · 90+ att",[["Drew Fielder","41.1%","90 att"],["Andrew Meadow","38.7%","106 att"],["Pearson Carmichael","31.5%","111 att"]]],["Rim protection · BLK%",[["Spencer Ahrens","3.2","32% min"],["Dominic Parolin","3.1","42% min"]]]],
+ trendHdr:"Leon Rice's last 3 seasons",yrs:["'24","'25","'26"],
+ story:`<b>Efficient, slow offense and elite defensive rebounding, but the defense slipped for the second straight year.</b> Boise held opponents to 23.6% offensive rebounding (#3 nationally) and got to the line at the #22 rate. The decline was in forcing misses and turnovers: opponent eFG rose to 52.7% and forced turnovers fell to 14.5% (#318). After winning 7 of their last 9, they lost their first MWC tournament game to the 11 seed.`,
+ trends:[["adjo","AdjO",[[113.7,86],[116.1,87],[118.3,86]],null,"high",109.3],["adjd","AdjD",[[97.8,90],[100.2,82],[103.9,79]],null,"low",109.3],["dreb","Opp. OReb %",[[23.1,99],[22.5,99],[23.6,99]],null,"low",30.6],["ftr","FT rate",[[35.1,69],[37.6,87],[42.7,94]],null,"high",35.0],["efgd","Opp. eFG%",[[49.8,61],[50.4,57],[52.7,30]],null,"low",51.5],["tod","Forced TO %",[[16.9,52],[16.4,39],[14.5,13]],null,"high",16.7],["tpar","3PA rate",[[39.4],[42.9],[43.1]],null,"style",39.5],["tempo","Tempo",[[66.5],[66.0],[65.8]],null,"style",67.4]],
+ keys:[[GOOD,"Drew Fielder · the hub","6-11 stretch big who leads the offense",`Team-high <b>14.7 ppg in only 23.7 mpg</b>, 27.9% usage, 62.6 TS%. Shoots <b>41.1% from three</b> (90 att) and takes 15.5 TOV%. Most of the offense runs through him.`],
+  [GOOD,"One shot and done","Elite defensive rebounding three years running",`Opponents rebounded <b>23.6%</b> of their misses (#3 in D-I) after #1–#4 finishes the two prior years. Add the #22 FT rate, and Boise wins the possession battle without forcing turnovers.`],
+  [GOOD,"RJ Keene · the glue","2.6 ppg, +6.7 BPM",`19.2 DRB%, 14.4 AST% and a 121.7 ORtg on low usage. <b>All 5 of the top-8 lineups with Keene had a positive net rating</b> (394 min). The 3 without him were negative (183 min). Small samples.`],
+  [NEU,"Dylan Andrews · the creator","Lead guard with a shooting hole",`20.2 AST%, 12.5 ppg, 88.7% FT. But <b>31.1% from three on 135 att</b> and 17.5 TOV%. The three is the shot he'll be left open for.`],
+  [BAD,"Defense doesn't force mistakes","Forced turnovers fell to #318",`<b>14.5% forced TO</b> and 52.7% opponent eFG (bottom third). AdjD rank slid #35 → #65 → #77 over three years.`],
+  [BAD,"Bench ball-handling","Neto's freshman turnovers",`Aginaldo Neto: <b>30.6 TOV%, 88.3 ORtg</b> in 19.7 mpg. The Neto + Andrews backcourt lineup was −13.2 net in 55 min.`]],
+ midHdr:["2025-26 season (all games)",["GP","GS","MPG","PPG","RPG","APG","<span data-def='l6'>L6 MPG</span>"]],advHdr:"Advanced (Torvik, D-I games)",
+ P:[["4","Dylan Andrews","G","6-3","Sr","","","G",1,[32,32,29.3,12.5,2.5,3.2,30.0],[30,71.8,109.8,23.4,54.6,42,135,31.1,20.2,17.5,0.3,1.8],["AST%","20.2"]],
+  ["1","Aginaldo Neto","G","6-3","Fr","","","G",0,[32,2,19.7,4.3,1.4,1.9,15.3],[30,47.3,88.3,16.6,49.0,15,44,34.1,17.8,30.6,0.4,-2.3],["TOV%","30.6"]],
+  ["0","Julian Bowie","G","6-3","So","","","G",0,[8,0,5.9,1.0,0.1,0.3,null],[6,2.4,111.3,11.6,80.0,2,3,66.7,6.6,35.1,0,2.0],["GP","8"]],
+  ["13","Andrew Meadow","F","6-7","Jr","","","G/W",1,[32,32,30.0,12.1,3.6,1.0,32.7],[30,73.2,123.4,17.4,61.4,41,106,38.7,7.0,10.0,0.1,4.2],["3P%","38.7"]],
+  ["11","Rayzhon Bergersen","G","6-2","Jr","","","G/W",0,[6,0,2.0,0.3,0.2,0.3,null],[5,0.8,212.1,8.4,100,0,0,0,42.0,0,0,4.0],["GP","6"]],
+  ["21","Brennan Ramirez","G","6-2","Jr","","","G/W",0,[2,0,1.5,1.5,0,0,null],[2,0.2,300,4.8,150,1,1,100,0,0,0,0],["GP","2"]],
+  ["22","Javan Buchanan","F","6-7","Sr","","","W",1,[31,31,27.9,12.6,5.0,1.5,31.0],[29,66.3,120.4,22.8,55.8,30,97,30.9,11.7,10.1,0.7,5.1],["ORtg","120.4"]],
+  ["6","Pearson Carmichael","F","6-7","So","","","W",0,[31,6,19.1,7.9,3.1,0.8,13.8],[29,45.6,109.2,20.2,55.7,35,111,31.5,7.4,16.0,0.6,0.9],["3PA","111"]],
+  ["5","RJ Keene","G","6-7","Sr","","","F",1,[31,24,22.2,2.6,4.6,1.9,27.3],[29,53.2,121.7,8.6,49.4,18,51,35.3,14.4,17.0,1.7,6.7],["BPM","+6.7"]],
+  ["16","Spencer Ahrens","F","6-10","Fr","","","F",0,[32,0,13.0,4.9,2.3,0.7,8.5],[30,31.9,103.5,20.9,53.7,18,55,32.7,10.5,20.6,3.2,2.4],["BLK%","3.2"]],
+  ["3","Bhan Buom","F","6-8","Fr","","","F",0,[22,0,4.1,1.6,0.5,0.2,3.4],[21,7.1,111.7,17.0,63.3,3,9,33.3,11.5,20.3,0,0.9],["GP","22"]],
+  ["20","Drew Fielder","F","6-11","Jr","","","C",1,[32,30,23.7,14.7,5.7,1.3,27.5],[30,57.7,119.4,27.9,62.6,37,90,41.1,11.7,15.5,2.6,5.4],["USG","27.9"]],
+  ["9","Dominic Parolin","F","6-9","Sr","","","C",0,[32,3,17.0,5.5,4.7,0.6,13.3],[30,41.9,122.9,17.2,61.0,7,23,30.4,6.9,16.4,3.1,6.4],["ORtg","122.9"]],
+  ["30","Ethan Lathan","F","6-10","Fr","","","C",0,[5,0,2.2,1.8,1.0,0,null],[4,0.7,150.5,27.1,71.4,0,0,0,0,0,0,-4.2],["GP","5"]]],
+ slots:["G","G/W","W","F","C"],
+ extra:()=>{const LU=[["Andrews · Meadow · Buchanan · Keene · Fielder",218,25,397,356,117.6,107.4,10.2],["Andrews · Meadow · Buchanan · Carmichael · Fielder",97,18,178,195,110.1,124.9,-14.8],["Andrews · Meadow · Buchanan · Keene · Parolin",75,25,147,136,119.7,105.3,14.5],["Neto · Andrews · Meadow · Buchanan · Fielder",55,17,92,107,99.1,112.2,-13.2],["Neto · Meadow · Buchanan · Keene · Fielder",36,15,70,49,118.8,81.9,36.9],["Neto · Meadow · Buchanan · Keene · Parolin",34,14,67,46,131.3,84.6,46.7],["Neto · Meadow · Carmichael · Ahrens · Parolin",31,17,56,58,108.5,124.8,-16.3],["Andrews · Buchanan · Keene · Carmichael · Fielder",31,17,64,56,124.0,101.3,22.7]];
+  const nc=v=>pc(50+Math.max(-45,Math.min(45,v*2)));
+  return `<section><div class="shead"><h2>Results</h2><span class="label">Margin by game · orange = win · blue = loss · conference games shaded</span></div><div class="panel" style="margin-top:14px"><div id="results"></div></div></section>
+  <section><div class="shead"><h2>Top lineups</h2><span class="label">Most-used 5-man units · rebuilt from play-by-play · all 32 games passed the minutes check</span></div><div class="panel" style="margin-top:14px"><table><thead><tr><th class="l">Lineup</th><th>Min</th><th>GP</th><th>PF-PA</th><th><span data-def="ortg">ORtg</span></th><th>DRtg</th><th><span data-def="net">Net</span></th></tr></thead><tbody>${LU.map(l=>`<tr><td class="l" style="color:#fff">${l[0].replace("Keene","<b style='color:var(--good)'>Keene</b>")}</td><td style="font-weight:700">${l[1]}</td><td class="m">${l[2]}</td><td class="m">${l[3]}-${l[4]}</td><td>${l[5].toFixed(1)}</td><td>${l[6].toFixed(1)}</td><td><span class="chip" style="background:${nc(l[7])}">${sg(l[7])}</span></td></tr>`).join("")}</tbody></table><div class="cap">Ratings are points per 100 estimated possessions with that unit on the floor. Anything under ~100 minutes is noisy: read the direction, not the exact number. Keene highlighted for the "glue" key above.</div></div></section>`},
+ after:()=>{const R=[["11/3",2269,"HPU","H",78,79,0],["11/8",3084,"UVU","H",101,77,0],["11/12",292,"UTRGV","H",85,65,0],["11/15",147,"MTST","H",62,58,0],["11/19",2724,"WICH","H",62,59,0],["11/24",30,"USC","N",67,70,0],["11/25",152,"NCST","N",70,81,0],["11/27",2124,"CHAM","N",102,76,0],["12/6",2086,"BUT","A",77,68,0],["12/11",2184,"DUQ","H",86,64,0],["12/14",2608,"SMC","N",68,67,0],["12/21",2440,"NEV","A",66,81,1],["12/31",167,"UNM","H",62,53,1],["1/4",21,"SDSU","A",107,110,1],["1/8",2253,"GCU","H",58,75,1],["1/11",328,"USU","H",68,93,1],["1/14",2439,"UNLV","A",85,89,1],["1/17",36,"CSU","H",79,73,1],["1/21",2751,"WYO","A",81,65,1],["1/24",2005,"AF","H",96,54,1],["1/28",23,"SJSU","A",89,58,1],["1/31",2253,"GCU","A",69,86,1],["2/4",2440,"NEV","H",91,87,1],["2/8",167,"UNM","A",91,90,1],["2/14",2439,"UNLV","H",83,86,1],["2/19",328,"USU","A",56,75,1],["2/21",23,"SJSU","H",84,69,1],["2/25",2751,"WYO","H",72,62,1],["3/1",278,"FRES","A",69,53,1],["3/4",21,"SDSU","H",86,77,1],["3/7",36,"CSU","A",78,67,1],["3/12",23,"SJSU","N",74,84,2]];
+  const W=1180,H=230,m={t:16,b:58,l:34,r:10},x=d3.scaleBand(R.map((r,i)=>i),[m.l,W-m.r]).padding(.18),y=d3.scaleLinear([-30,45],[H-m.b,m.t]);
+  const s=d3.select("#results").append("svg").attr("viewBox",`0 0 ${W} ${H}`).style("width","100%");
+  const c0=R.findIndex(r=>r[6]);s.append("rect").attr("x",x(c0)-4).attr("y",m.t).attr("width",W-m.r-x(c0)+4).attr("height",H-m.b-m.t).attr("fill","#202226");
+  s.append("text").attr("x",x(c0)).attr("y",m.t+12).attr("font-size",10).attr("fill","#8a8e95").attr("font-family","IBM Plex Mono").text("MOUNTAIN WEST");
+  [-20,0,20,40].forEach(v=>{s.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",y(v)).attr("y2",y(v)).attr("stroke",v?"#2e3034":"#6b6e75");s.append("text").attr("x",m.l-6).attr("y",y(v)+3).attr("text-anchor","end").attr("font-size",10).attr("fill","#8a8e95").text(v>0?"+"+v:v)});
+  R.forEach((r,i)=>{const mg=r[4]-r[5],g=s.append("g").on("mousemove",e=>tipOn(e,`<b>${r[0]} · ${r[3]=="A"?"at ":r[3]=="N"?"vs ":""}${r[2]}</b><br>${mg>0?"W":"L"} ${r[4]}-${r[5]}${r[6]==2?"<br>MWC tournament":""}`)).on("mouseleave",tipOff);
+   g.append("rect").attr("x",x(i)).attr("width",x.bandwidth()).attr("y",y(Math.max(0,mg))).attr("height",Math.abs(y(mg)-y(0))).attr("rx",2).attr("fill",mg>0?GOOD:BAD).attr("opacity",r[6]==2?1:.88).attr("stroke",r[6]==2?"#fff":"none");
+   g.append("image").attr("href",`https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa/500-dark/${r[1]}.png&w=40&h=40`).attr("x",x(i)+x.bandwidth()/2-9).attr("y",H-m.b+8).attr("width",18).attr("height",18);
+   g.append("text").attr("x",x(i)+x.bandwidth()/2).attr("y",H-m.b+40).attr("text-anchor","middle").attr("font-size",8.5).attr("fill","#8a8e95").attr("font-family","IBM Plex Mono").text(r[0]);});
+ },
+ foot:`Sources: ESPN box scores and play-by-play (32 games), Barttorvik 2023-24 to 2025-26 (D-I games only, so GP is 30), KenPom rank as of Mar 2, 2026 (KenPom's archive blocked the final-rank lookup). Lineups were rebuilt by replaying substitutions; every game's rebuilt minutes matched the box score within 2.5 min.`};
+
+// ---------- render ----------
+function render(t){
+ const P=t.P,mid=t.mode=="proj";
+ let h=`${t.banner?`<div class="banner">${t.banner}</div>`:""}
+ <div class="hero"><div class="game"><div><div style="display:flex;gap:14px;align-items:center">${LG(t.id,60,t.ab)}<div><h1>${t.name}</h1><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">${CF(t.conf[0],t.conf[1])}${KP(t.kp,t.kpNote||"")}</div></div></div>
+ <div style="font-size:12.5px;color:#b9bdc4;margin-top:10px">${t.coach}</div></div><div>${t.game}</div></div>
+ <div class="kpis">${t.kpis.map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
+ <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
+ <div class="grid" style="grid-template-columns:2.25fr 1fr"><div class="panel"><div class="depth">${t.slots.map(s=>{const ps=P.filter(p=>p[7]==s);const tot=d3.sum(ps,p=>mid?p[9][0]:p[9][2]);
+  return `<div class="pos"><div class="ph"><span>${s}</span><span>${tot.toFixed(0)} min</span></div>${ps.map(p=>{const mp=mid?p[9][0]:p[9][2],pp=mid?p[9][1]:p[9][3];
+   const tg=p[5]=="T"?'<span class="tag new">NEW</span>':p[5]=="F"?'<span class="tag fr">FR</span>':'';const fr=mid?(p[5]=="T"?`<span>· ${p[6].replace(/ '\d+/,"")}</span>`:p[5]==""?'<span>· ret.</span>':''):`<span>· GS ${p[9][1]}</span>`;
+   return `<div class="pc${p[8]?' st':''}"><div class="nm">${p[1]}<span>#${p[0]}</span></div><div class="meta">${tg}<span>${p[3]} · ${p[4]}</span>${fr}</div><div class="mbar"><i style="width:${mp/36*100}%;background:${p[8]?'#f2f3f4':'#8a8e95'}"></i></div><div class="row"><span>${mp.toFixed(0)} mpg${pp!=null?` · <b>${pp}</b> ppg`:''}</span><span style="font-family:var(--mono);font-size:10px">${p[11][0]} <b>${p[11][1]}</b></span></div></div>`}).join("")}</div>`}).join("")}</div><div class="cap">${t.depthCap}</div></div>
+ <div class="panel"><div class="label ptitle"><span>${mid?"Projected leaders":"Season leaders"}</span><span>${t.leadHdr}</span></div>${t.leaders.map(([g,L])=>`<div class="lgrp"><div class="label" style="margin-bottom:5px">${g}</div>${L.map((l,i)=>`<div class="lrow"><span class="r">${i+1}</span><span>${l[0]}</span><span class="v">${l[1]}</span><span class="ls">${l[2]}</span></div>`).join("")}</div>`).join("")}</div></div></section>
+ <section><div class="shead"><h2>Team trends</h2><span class="label">${t.trendHdr}</span></div><div class="story">${t.story}</div><div class="panel" style="margin-top:14px"><div class="tgrid" id="trends"></div><div class="cap">Dashed line = 2025-26 D-I average. Latest dot colored by national percentile (orange = strong, blue = weak). Grey = style stat.</div></div></section>
+ <section><div class="shead"><h2>Scouting keys</h2><span class="label">What the numbers say · for staff review</span></div><div class="keys grid">${t.keys.map(([c,a,b,p])=>`<div class="key" style="border-left-color:${c}"><span class="label">${a}</span><h3>${b}</h3><p>${p}</p></div>`).join("")}</div></section>
+ ${t.extra()}
+ <section><div class="shead"><h2>Full roster</h2><span class="label">${t.midHdr[0]} · ${t.advHdr}</span></div><div class="panel" style="margin-top:14px;overflow-x:auto"><table><thead>
+ <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="7">${t.midHdr[0]}</th><th class="grp sep" colspan="${mid?11:10}">${t.advHdr}</th></tr>
+ <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th class="l">Cl</th>${t.midHdr[1].map((c,i)=>`<th${i==0?' class="sep"':''}>${c}</th>`).join("")}${mid?'<th class="l sep">Team</th><th>GP</th>':'<th class="sep">GP</th>'}<th><span data-def="minp">Min%</span></th><th><span data-def="ortg">ORtg</span></th><th><span data-def="usg">USG</span></th><th><span data-def="ts">TS%</span></th><th>3P</th><th><span data-def="ast">AST%</span></th><th><span data-def="tov">TOV%</span></th><th><span data-def="blk">BLK%</span></th><th><span data-def="bpm">BPM</span></th></tr></thead><tbody>
+ ${[...P].sort((a,b)=>(mid?b[9][0]-a[9][0]:b[9][2]-a[9][2])).map(p=>{const v=p[9],A=p[10];const tg=p[5]=="T"?' <span class="tag new">NEW</span>':p[5]=="F"?' <span class="tag fr">FR</span>':'';
+  const mc=mid?(v.length>1?`<td class="sep">${v[0].toFixed(1)}</td><td style="font-weight:700">${f1(v[1])}</td><td>${f1(v[2])}</td><td>${f1(v[3])}</td><td>${v[4]==null?"—":v[4].toFixed(1)}</td><td>${chip("bpm",v[5],sg(v[5]))}</td><td class="m">${v[6]}</td>`:`<td class="sep">${v[0].toFixed(1)}</td><td class="m l" colspan="6">${p[5]=="F"?"freshman / intl: no projection":"small sample: no projection"}</td>`)
+   :`<td class="sep m">${v[0]}</td><td class="m">${v[1]}</td><td>${v[2].toFixed(1)}</td><td style="font-weight:700">${v[3].toFixed(1)}</td><td>${v[4].toFixed(1)}</td><td>${v[5].toFixed(1)}</td><td class="m">${v[6]==null?"—":v[6].toFixed(1)}</td>`;
+  const q=A&&A[1]>=20;const ac=A?`${mid?`<td class="l sep" style="color:#b9bdc4">${p[6]}</td><td class="m">${A[0]}</td>`:`<td class="sep m">${A[0]}</td>`}<td class="m">${A[1].toFixed(0)}</td><td>${q?chip("ortg",A[2],A[2].toFixed(1)):A[2].toFixed(1)}</td><td>${A[3].toFixed(1)}</td><td>${q?chip("ts",A[4],A[4].toFixed(1)):A[4].toFixed(1)}</td><td>${A[6]>=40?chip("p3",A[7],A[7].toFixed(1))+` <span class="m" style="font-size:10.5px">${A[6]}</span>`:`<span class="m">${A[5]}/${A[6]}</span>`}</td><td>${A[8].toFixed(1)}</td><td>${A[9].toFixed(1)}</td><td>${A[10].toFixed(1)}</td><td>${q?chip("bpm",A[11],sg(A[11])):sg(A[11])}</td>`:`<td class="l sep m" colspan="${mid?11:10}">no D-I history</td>`;
+  return `<tr><td class="l m">${p[0]}</td><td class="l" style="color:#fff;font-weight:600">${p[1]}${tg}</td><td class="l m">${p[2]}</td><td class="m">${p[3]}</td><td class="l m">${p[4]}</td>${mc}${ac}</tr>`}).join("")}
+ </tbody></table><div class="cap">Chips = percentile among 2,284 D-I rotation players in 2025-26 (shown at 20%+ minutes). 3P% chips need 40+ attempts.${mid?" Confidence: H = 2+ seasons, M = one season or level jump, L = small sample.":""}</div></div></section>
+ <footer>${t.foot} Logos: ESPN.</footer>`;
+ document.getElementById("page").innerHTML=h;
+ // trends
+ const tg=document.getElementById("trends");const yrs=t.yrs;
+ t.trends.forEach(([k,name,vals,proj,better,avg])=>{const W=290,H=170,m={t:40,b:30,l:26,r:30},svg=d3.select(tg).append("svg").attr("viewBox",`0 0 ${W} ${H}`),x=d3.scalePoint(yrs,[m.l,W-m.r]);
+  const all=vals.map(v=>v[0]).concat([avg],proj?[proj]:[]),e=d3.extent(all),pad=(e[1]-e[0])*.35||1,y=d3.scaleLinear([e[0]-pad,e[1]+pad],better=="low"?[m.t,H-m.b]:[H-m.b,m.t]);
+  svg.append("text").attr("x",12).attr("y",20).attr("font-size",11.5).attr("font-weight",500).attr("fill","#d6d8db").attr("letter-spacing",".06em").attr("data-def",k).text(name.toUpperCase());
+  svg.append("text").attr("x",W-12).attr("y",20).attr("text-anchor","end").attr("font-size",9.5).attr("fill","#6b6e75").text(better=="style"?"style":better=="low"?"↓ better":"↑ better");
+  svg.append("line").attr("x1",m.l-10).attr("x2",W-m.r+10).attr("y1",y(avg)).attr("y2",y(avg)).attr("stroke","#6b6e75").attr("stroke-dasharray","4 4");
+  svg.append("text").attr("x",W-m.r+10).attr("y",y(avg)+12).attr("text-anchor","end").attr("font-size",9).attr("fill","#8a8e95").text("D-I "+avg);
+  const pts=vals.map((v,i)=>[yrs[i],v[0],v[1]]),li=pts.length-1;
+  svg.append("path").attr("d",d3.line().x(d=>x(d[0])).y(d=>y(d[1]))(pts)).attr("stroke","#8a8e95").attr("stroke-width",1.8).attr("fill","none");
+  if(proj)svg.append("path").attr("d",d3.line().x(d=>x(d[0])).y(d=>y(d[1]))([pts[li],[yrs[li+1],proj]])).attr("stroke","#8a8e95").attr("stroke-dasharray","3 3").attr("fill","none");
+  pts.forEach((d,i)=>{const L=i==li,col=d[2]==null?"#c9ccd2":pc(d[2]);svg.append("circle").attr("cx",x(d[0])).attr("cy",y(d[1])).attr("r",L?6.5:4.5).attr("fill",L?col:"#26282c").attr("stroke",L?"#fff":col).attr("stroke-width",L?2:1.8).on("mousemove",e=>tipOn(e,`${d[0]} · ${name} ${d[1]}${d[2]!=null?` · ${d[2]}th pct`:""}`)).on("mouseleave",tipOff);
+   svg.append("text").attr("x",x(d[0])).attr("y",y(d[1])-11).attr("text-anchor","middle").attr("font-size",L?13.5:11).attr("font-weight",L?700:500).attr("fill",L?"#fff":"#b9bdc4").text(d[1].toFixed(1))});
+  if(proj){svg.append("path").attr("d",d3.symbol(d3.symbolDiamond,70)()).attr("transform",`translate(${x(yrs[li+1])},${y(proj)})`).attr("fill","#16171a").attr("stroke","#f2f3f4").attr("stroke-width",1.5);svg.append("text").attr("x",x(yrs[li+1])).attr("y",y(proj)-11).attr("text-anchor","middle").attr("font-size",11).attr("fill","#d6d8db").text(proj.toFixed(1))}
+  yrs.forEach((yy,i)=>svg.append("text").attr("x",x(yy)).attr("y",H-9).attr("text-anchor","middle").attr("font-size",10).attr("fill",i>li&&!proj?"#4a4d53":"#9aa0a8").text(i>li&&!proj?"—":yy));});
+ if(t.after)t.after();
+}
+{const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);if(i>=0)document.querySelector(`.tab[data-i="${i}"]`).click();else render(T.uw);}
+</script>
+</body>
+</html>
