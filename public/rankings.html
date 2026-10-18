@@ -11,109 +11,223 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
 <link rel="stylesheet" href="/assets/app.css">
 <style>
-.pwrap{max-width:1240px;margin:auto;padding:24px 24px 32px}
+.pwrap{max-width:1480px;margin:auto;padding:24px 24px 32px}
 .pwrap h1{font-size:28px;margin-top:6px}
 td a{color:#fff}
 td a:hover{text-decoration:underline;text-underline-offset:3px}
 tr.me td{background:rgba(255,255,255,.06)}
-.weights{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.weights span{font-family:var(--mono);font-size:10.5px;color:var(--soft);background:var(--card);border-radius:4px;padding:3px 7px}
-.weights b{color:#fff}
-@media (max-width:900px){.pwrap{padding:16px 16px 28px}.notes{grid-template-columns:1fr!important}}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.filters select,.filters input{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:6px 8px;font:12px var(--mono)}
+.filters input{width:190px}
+.filters label{font:10.5px var(--mono);color:var(--muted);letter-spacing:.5px;text-transform:uppercase;display:flex;gap:6px;align-items:center}
+.filters .count{margin-left:auto;font:11px var(--mono);color:var(--soft)}
+th.sort{cursor:pointer;user-select:none;white-space:nowrap}
+th.sort:hover{color:#fff}
+th.sorted{color:#fff}
+th.sorted::after{content:attr(data-arrow);margin-left:3px;font-size:9px}
+td.st{font-variant-numeric:tabular-nums}
+.pager{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:10px;font:11px var(--mono);color:var(--soft)}
+.pager button{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:5px;padding:4px 10px;font:11px var(--mono);cursor:pointer}
+.pager button:disabled{opacity:.35;cursor:default}
+.mini{display:inline-block;min-width:30px;text-align:center;border-radius:3px;padding:1px 4px;font:10.5px var(--mono);color:#fff}
+@media (max-width:900px){.pwrap{padding:16px 16px 28px}.filters input{width:100%}.filters .count{margin-left:0}.notes{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
 <main class="pwrap">
-  <div class="label">Rankings · 2025-26 · D-I rotation players</div>
-  <h1>Skill scores</h1>
-  <div class="cap" style="margin-top:4px">Every skill score uses the same 1–100 scale and tiers (Elite 95+, Plus 80–95, Solid 60–80, Average 40–60, Below 20–40, Poor under 20). Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
-  <div class="ptabs" id="skills"></div>
-  <div id="body"></div>
-  <footer>Scores rank 2025-26 D-I rotation players. Player names link to Bronco IQ player pages when that player is in the current data set.</footer>
+  <div class="label">Rankings · 2025-26 skill scores · every D-I player with 50+ minutes</div>
+  <h1>Skill rankings</h1>
+  <div class="cap" style="margin-top:4px">Same 1–100 scale and tiers for every skill (Elite 95+, Plus 80–95, Solid 60–80, Average 40–60, Below 20–40, Poor under 20). Stat colors show where each number ranks among D-I players with 200+ minutes. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>. Click any column header to sort. Hover dotted names for definitions.</div>
+  <div class="ptabs" id="views"></div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px"><div class="seg" id="skills"></div></div>
+  <div class="filters" id="filters"></div>
+  <div class="panel scroll" style="margin-top:12px" id="table"></div>
+  <div class="pager" id="pager"></div>
+  <div class="grid notes" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px" id="notes"></div>
+  <footer>Scores and stats come from the RStudio skill model and the 10-season play-by-play archive. Player names link to Bronco IQ player pages when that player is in the current data set.</footer>
 </main>
 <script type="module">
-import { pc, chip, f1, esc, getJSON, topBar, shortSchool } from "/assets/core.js";
+import { pc, esc, getJSON, topBar, addDefs } from "/assets/core.js";
 import { tierOf } from "/assets/scores.js";
 topBar("rankings");
 
+addDefs({
+  drk: ["D-I rank", "Rank among all D-I players with 200+ minutes in 2025-26 for this skill score."],
+  cls: ["Class", "Class in that season (Fr., So., Jr., Sr.)."],
+  pos: ["Position", "Listed roster position: G guard, F forward, C center."],
+  ht: ["Height", "Listed roster height."],
+  usg: ["Usage %", "Share of team possessions he used while on the floor (shots, free-throw trips, turnovers)."],
+  fga40: ["FGA/40", "Field goal attempts per 40 minutes."],
+  tpa40: ["3PA/40", "Three-point attempts per 40 minutes."],
+  rimr: ["Rim rate", "Share of his shots taken at the rim."],
+  mid: ["Mid %", "Field goal % on mid-range twos."],
+  unast: ["Unassisted %", "Share of his made field goals that were NOT assisted - how much he creates his own shot."],
+  ast40: ["AST/40", "Assists per 40 minutes."],
+  astp: ["AST %", "Share of teammates' made baskets he assisted while on the floor."],
+  tov40: ["TOV/40", "Turnovers per 40 minutes. Lower is better."],
+  tovp: ["TOV %", "Turnovers per 100 plays he finished (shots + 0.44 free-throw attempts + turnovers). Lower is better."],
+  orapm: ["Off. RAPM", "Offensive regularized plus-minus: points per 100 possessions his team's offense gains with him on the floor, adjusted for teammates and opponents."],
+  reb40: ["REB/40", "Total rebounds per 40 minutes."],
+  oreb40: ["OREB/40", "Offensive rebounds per 40 minutes."],
+  dreb40: ["DREB/40", "Defensive rebounds per 40 minutes."],
+  orbp: ["OREB %", "Share of available offensive rebounds he grabbed while on the floor."],
+  drbp: ["DREB %", "Share of available defensive rebounds he grabbed while on the floor."],
+  trbp: ["REB %", "Share of all available rebounds he grabbed while on the floor."],
+  pb40: ["Putbacks/40", "Made putbacks per 40 minutes."],
+  stl40: ["STL/40", "Steals per 40 minutes."],
+  blk40: ["BLK/40", "Blocks per 40 minutes."],
+  stlp: ["STL %", "Share of opponent possessions that ended in his steal while on the floor."],
+  blkp: ["BLK %", "Share of opponent two-point attempts he blocked while on the floor."],
+  pf40: ["Fouls/40", "Personal fouls per 40 minutes. Lower is better."],
+  rapm: ["Net RAPM", "Regularized plus-minus, offense + defense: points per 100 possessions his team gains with him on the floor, adjusted for teammates and opponents."],
+  drapm: ["Def. RAPM", "Defensive regularized plus-minus: points per 100 possessions his team's defense saves with him on the floor, adjusted for teammates and opponents. Positive = better."],
+});
+
+// Stat columns per skill: [key, header, decimals, direction (1 = higher is better, -1 = lower is better, 0 = no color)]
+const SKILLS = {
+  sc: { title: "Scoring", def: "scorescore", stats: [["ppg", "PPG", 1, 1], ["pts40", "PTS/40", 1, 1], ["usg", "USG%", 1, 1], ["ts", "TS%", 1, 1], ["efg", "eFG%", 1, 1], ["fga40", "FGA/40", 1, 1], ["p3", "3P%", 1, 1], ["tpa40", "3PA/40", 1, 1], ["tpar", "3PAr", 1, 0], ["ftr", "FTr", 1, 1], ["ft", "FT%", 1, 1], ["rim", "Rim%", 1, 1], ["rimr", "Rim rate", 1, 0], ["mid", "Mid%", 1, 1], ["unast", "Unast%", 1, 0]] },
+  pl: { title: "Playmaking", def: "playscore", stats: [["apg", "APG", 1, 1], ["ast40", "AST/40", 1, 1], ["astp", "AST%", 1, 1], ["tov40", "TOV/40", 1, -1], ["tovp", "TOV%", 1, -1], ["ato", "AST/TO", 2, 1], ["usg", "USG%", 1, 1], ["unast", "Unast%", 1, 0], ["orapm", "ORAPM", 2, 1]] },
+  rb: { title: "Rebounding", def: "rebscore", stats: [["rpg", "RPG", 1, 1], ["reb40", "REB/40", 1, 1], ["oreb40", "OREB/40", 1, 1], ["dreb40", "DREB/40", 1, 1], ["orbp", "OREB%", 1, 1], ["drbp", "DREB%", 1, 1], ["trbp", "REB%", 1, 1], ["pb40", "Putbacks/40", 1, 1]] },
+  df: { title: "Defense", def: "dscore", stats: [["spg", "SPG", 1, 1], ["bpg", "BPG", 1, 1], ["stl40", "STL/40", 1, 1], ["blk40", "BLK/40", 1, 1], ["stlp", "STL%", 1, 1], ["blkp", "BLK%", 1, 1], ["drbp", "DREB%", 1, 1], ["pf40", "Fouls/40", 1, -1], ["drapm", "DRAPM", 2, 1], ["rapm", "Net RAPM", 2, 1]] },
+};
+const PAC12 = ["Boise St.", "Colorado St.", "Fresno St.", "Gonzaga", "Oregon St.", "San Diego St.", "Texas St.", "Utah St.", "Washington St."];
+
 const index = (await getJSON("/data/index.json")).players;
-const byId = new Map(index.map((p) => [p.id, p]));
 const norm = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 const byName = new Map(index.map((p) => [norm(`${p.first_name} ${p.last_name}`), p]));
-const link = (name, id) => { const p = (id && byId.get(id)) || byName.get(norm(name)); return p ? `<a href="/player/${encodeURIComponent(p.id)}">${esc(name)}</a>` : esc(name); };
-const load = async (k) => { try { return await getJSON(`/data/scores/${k}.json`); } catch { return null; } };
-const [SK, DF] = await Promise.all([load("skills"), load("defense")]);
+const link = (name) => { const p = byName.get(norm(name)); return p ? `<a href="/player/${encodeURIComponent(p.id)}">${esc(name)}</a>` : esc(name); };
 
-const V11 = { scoring: ["Scoring", "scorescore"], playmaking: ["Playmaking", "playscore"], rebounding: ["Rebounding", "rebscore"] };
-const SKILLS = [
-  ...Object.entries(V11).map(([k, [title]]) => ({ key: k, title, data: SK, render: (D) => renderSkill(D, k) })),
-  { key: "defense", title: "Defense", data: DF, render: renderDefense },
-];
-const skillsEl = document.getElementById("skills"), body = document.getElementById("body");
-skillsEl.innerHTML = SKILLS.map((s) => `<button data-k="${s.key}">${s.title}${s.data ? ` <span class="label" style="font-size:9.5px">${s.data.version}</span>` : ""}</button>`).join("");
-function show(key) {
-  const s = SKILLS.find((x) => x.key === key) || SKILLS[0];
-  skillsEl.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.k === s.key));
-  history.replaceState(null, "", "#" + s.key);
-  s.render(s.data);
+const unpack = (D) => D.rows.map((r) => Object.fromEntries(D.cols.map((c, i) => [c, r[i]])));
+const [NAT, BSU] = await Promise.all([getJSON("/data/rankings/national-2025-26.json"), getJSON("/data/rankings/bsu-last10.json")]);
+const nat = unpack(NAT), bsu = unpack(BSU);
+
+// Percentiles and D-I ranks come from the 200+ minute national pool.
+const ref = nat.filter((r) => r.min >= 200);
+const sortedVals = {};
+const pctOf = (k, v) => {
+  if (v == null) return null;
+  const a = (sortedVals[k] ||= ref.map((r) => r[k]).filter((x) => x != null).sort((x, y) => x - y));
+  if (!a.length) return null;
+  let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < v) lo = m + 1; else hi = m; }
+  let up = lo; while (up < a.length && a[up] === v) up++;
+  return (100 * (lo + up) / 2) / a.length;
+};
+const drank = {};
+for (const k of Object.keys(SKILLS)) {
+  const m = new Map(); ref.filter((r) => r[k] != null).sort((a, b) => b[k] - a[k]).forEach((r, i) => m.set(r, i + 1)); drank[k] = m;
 }
-skillsEl.querySelectorAll("button").forEach((b) => (b.onclick = () => show(b.dataset.k)));
+const roster = nat.filter((r) => byName.has(norm(r.name)));
 
-function scopeBar(scopes, cur, onPick) {
-  const html = `<div class="seg" id="scope">${scopes.map(([k, l]) => `<button data-s="${k}" class="${k === cur ? "on" : ""}">${l}</button>`).join("")}</div>`;
-  setTimeout(() => document.querySelectorAll("#scope button").forEach((b) => (b.onclick = () => onPick(b.dataset.s))));
-  return html;
-}
+const VIEWS = {
+  nat: { title: "National", rows: nat, minDefault: 200, filters: ["q", "pos", "cls", "conf", "team", "min"] },
+  pac: { title: "PAC-12", rows: nat.filter((r) => PAC12.includes(r.team)), minDefault: 100, filters: ["q", "pos", "cls", "team", "min"] },
+  bsu10: { title: "BSU Last 10", rows: bsu, minDefault: 100, filters: ["q", "pos", "cls", "season", "min"] },
+  bsu27: { title: "BSU '26-27", rows: roster, minDefault: 0, filters: ["q", "pos", "cls"] },
+};
+const TEXT = ["name", "team", "conf", "cls", "pos", "season", "ht"];
+const LOWBEST = new Set(["drk", "tov40", "tovp", "pf40"]);
 
-// ======================================================= v1.1 SKILLS (RStudio skill model)
-function renderSkill(D, key, scope = "nat") {
-  if (!D) { body.innerHTML = `<div class="note">Skill score data isn't in this build.</div>`; return; }
-  const [title, def] = V11[key], ci = D.cols.indexOf(key), C = Object.fromEntries(D.cols.map((c, i) => [c, i]));
-  const ranked = D.rows.filter((r) => r[C.ref] && r[ci] != null).sort((a, b) => b[ci] - a[ci]);
-  const rank = new Map(ranked.map((r, i) => [r, i + 1]));
-  const all = D.rows.filter((r) => r[ci] != null).sort((a, b) => b[ci] - a[ci]);
-  const onRoster = (r) => byName.has(norm(r[C.name]));
-  const sets = {
-    nat: ranked.slice(0, 25),
-    mwc: ranked.filter((r) => r[C.conf] === "MWC").slice(0, 10),
-    bsu: all.filter((r) => r[C.team] === "Boise St."),
-    roster: all.filter(onRoster),
+const st = { view: "nat", skill: "sc", sort: "score", dir: -1, page: 0, f: {} };
+const PER = 100;
+const skAlias = { scoring: "sc", playmaking: "pl", rebounding: "rb", defense: "df" };
+const hv = location.hash.slice(1).split("/");
+if (VIEWS[hv[0]]) st.view = hv[0];
+if (skAlias[hv[0]]) st.skill = skAlias[hv[0]];
+if (SKILLS[hv[1]]) st.skill = hv[1];
+
+const $ = (id) => document.getElementById(id);
+$("views").innerHTML = Object.entries(VIEWS).map(([k, v]) => `<button data-v="${k}">${v.title}</button>`).join("");
+$("views").querySelectorAll("button").forEach((b) => (b.onclick = () => { st.view = b.dataset.v; st.f = {}; st.page = 0; render(); }));
+$("skills").innerHTML = Object.entries(SKILLS).map(([k, s]) => `<button data-s="${k}">${s.title.toUpperCase()}</button>`).join("");
+$("skills").querySelectorAll("button").forEach((b) => (b.onclick = () => { st.skill = b.dataset.s; st.sort = "score"; st.dir = -1; st.page = 0; render(); }));
+
+const uniq = (rows, k) => [...new Set(rows.map((r) => r[k]).filter(Boolean))].sort();
+function buildFilters() {
+  const V = VIEWS[st.view], rows = V.rows, f = st.f;
+  if (f.min == null) f.min = V.minDefault;
+  const sel = (key, label, opts) => `<label>${label}<select data-f="${key}"><option value="">All</option>${opts.map((o) => `<option ${String(f[key] ?? "") === String(o) ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label>`;
+  const parts = {
+    q: `<input data-f="q" placeholder="Search player or team" value="${esc(f.q || "")}">`,
+    pos: sel("pos", "Pos", ["G", "F", "C"]),
+    cls: sel("cls", "Class", ["Fr.", "So.", "Jr.", "Sr."]),
+    conf: sel("conf", "Conf", uniq(rows, "conf")),
+    team: sel("team", "Team", uniq(f.conf ? rows.filter((r) => r.conf === f.conf) : rows, "team")),
+    season: sel("season", "Season", uniq(rows, "season").reverse()),
+    min: `<label>Min. minutes<select data-f="min">${[0, 50, 100, 200, 400, 600].map((m) => `<option value="${m}" ${+f.min === m ? "selected" : ""}>${m}+</option>`).join("")}</select></label>`,
   };
-  const others = Object.keys(V11).filter((k) => k !== key);
-  body.innerHTML = `<section><div class="shead"><h2><span data-def="${def}">${title} score</span></h2><span class="label">${D.version} · RStudio skill model · ${D.pool.toLocaleString()} players</span>
-      <div style="margin-left:auto">${scopeBar([["nat", "NATIONAL TOP 25"], ["mwc", "MOUNTAIN WEST TOP 10"], ["bsu", "BOISE ST. '26"], ["roster", "2026-27 ROSTER"]], scope, (s) => renderSkill(D, key, s))}</div></div>
-    <div class="panel scroll" style="margin-top:12px"><table><thead><tr><th>#</th><th class="l">Player</th><th class="l">Team</th><th class="l">Conf</th><th>Min</th><th><span data-def="mpg">MPG</span></th><th><span data-def="ppg">PPG</span></th><th><span data-def="${def}">${title.toUpperCase()}</span></th><th class="l">Tier</th>
-      ${others.map((k) => `<th class="${k === others[0] ? "sep" : ""}"><span data-def="${V11[k][1]}">${V11[k][0]}</span></th>`).join("")}</tr></thead><tbody>
-    ${sets[scope].map((r) => `<tr class="${onRoster(r) ? "me" : ""}"><td class="m">${rank.get(r)?.toLocaleString() ?? "—"}</td><td class="l">${link(r[C.name])}</td><td class="l m">${esc(r[C.team])}</td><td class="l m">${esc(r[C.conf])}</td><td class="m">${r[C.min].toLocaleString()}</td><td class="m">${f1(r[C.mpg])}</td><td class="m">${f1(r[C.ppg])}</td>
-      <td><span class="chip" style="background:${pc(r[ci])}">${r[ci].toFixed(1)}</span></td><td class="l m">${tierOf(r[ci])}</td>
-      ${others.map((k) => { const v = r[C[k]]; return `<td class="${k === others[0] ? "sep" : ""}">${v == null ? "—" : `<span class="chip" style="background:${pc(v)}">${v.toFixed(1)}</span>`}</td>`; }).join("")}</tr>`).join("") || `<tr><td colspan="11" class="m l">No players in this group.</td></tr>`}
-    </tbody></table>
-    <div class="cap">Ranks count only the ${D.pool.toLocaleString()} D-I players with 200+ minutes in ${D.season}. Players with 50–199 minutes still get a score (shrunk toward average) but show "—" for rank. Highlighted rows are on Boise St.'s 2026-27 roster.</div>
-    <div class="grid notes" style="grid-template-columns:1fr 1fr;margin-top:14px">
-      <div class="cap" style="margin-top:0"><b style="color:var(--text)">Where it comes from.</b> These scores come from the RStudio skill model (player_skill_components_2026_v1_1), built on the 10-season play-by-play and box score archive. Same 1–100 scale and tiers as every other Bronco IQ score.</div>
-      <div class="cap" style="margin-top:0"><b style="color:var(--text)">Small samples.</b> Under 50 minutes: no score. 50–199 minutes: score uses the low-sample method (inputs pulled toward average). 200+ minutes: the reference group everyone is ranked against.</div>
-    </div></div></section>`;
+  $("filters").innerHTML = V.filters.map((k) => parts[k]).join("") + `<span class="count" id="count"></span>`;
+  $("filters").querySelectorAll("[data-f]").forEach((el) => {
+    const go = () => { const k = el.dataset.f; f[k] = el.value === "" ? undefined : el.value; if (k === "conf") { f.team = undefined; buildFilters(); } st.page = 0; draw(); };
+    el.tagName === "INPUT" ? (el.oninput = go) : (el.onchange = go);
+  });
 }
 
-// ======================================================= DEFENSE
-function renderDefense(D, scope = "nat") {
-  if (!D) { body.innerHTML = `<div class="note">DEF score data isn't in this build.</div>`; return; }
-  const L = D.lists;
-  body.innerHTML = `<section><div class="shead"><h2><span data-def="defscore">DEF score</span></h2><span class="label">${D.version} · ${D.pool.toLocaleString()} players</span>
-      <div style="margin-left:auto">${scopeBar([["nat", "NATIONAL TOP 10"], ["mwc", "MOUNTAIN WEST TOP 10"], ["bsu", "BOISE ST. '26"]], scope, (s) => renderDefense(D, s))}</div></div>
-    <div class="weights">${D.weights.map(([l, w]) => `<span>${esc(l)} <b>${w > 0 ? "" : "−"}${Math.abs(w)}%</b></span>`).join("")}</div>
-    <div class="panel scroll" style="margin-top:12px"><table><thead><tr><th>#</th><th class="l">Player</th><th class="l">Team</th><th class="l">Role</th><th>Min%</th><th><span data-def="defscore">DEF</span></th><th class="l">Tier</th><th>v1 #</th><th><span data-def="drapm">DRAPM</span></th><th>Poss</th><th>DBPM*</th><th>Adj DRtg*</th><th>STL%</th><th>BLK%</th><th>DRB%</th><th>Fouls/40</th></tr></thead><tbody>
-    ${L[scope].map((r) => { const mv = r.v1rank == null ? null : r.v1rank - r.rank;
-      return `<tr class="${r.isRef ? "me" : ""}"><td class="m">${r.isRef ? "—" : r.rank.toLocaleString()}</td><td class="l">${link(r.name)}</td><td class="l m">${esc(r.team)}</td><td class="l m">${esc(r.role)}</td><td class="m">${r.minPct}</td>
-      <td><span class="chip" style="background:${pc(r.score)}">${r.score.toFixed(1)}</span></td><td class="l m">${tierOf(r.score)}</td>
-      <td class="m">${mv == null ? "—" : `${r.v1rank.toLocaleString()} <span style="color:${mv > 0 ? "#f08a5d" : mv < 0 ? "#7fa6f0" : "var(--muted)"};font-family:var(--mono);font-size:10.5px">${mv > 0 ? "▲" + mv : mv < 0 ? "▼" + -mv : "="}</span>`}</td>
-      <td style="color:${r.drapm > 1 ? "#f08a5d" : r.drapm < -1 ? "#7fa6f0" : "var(--text)"}">${(r.drapm > 0 ? "+" : "") + r.drapm.toFixed(2)}</td><td class="m">${r.rapmPoss.toLocaleString()}</td><td>${(r.dbpm > 0 ? "+" : "") + r.dbpm.toFixed(1)}</td><td>${r.adjd.toFixed(1)}</td><td>${r.stl.toFixed(1)}</td><td>${r.blk.toFixed(1)}</td><td>${r.drb.toFixed(1)}</td><td>${r.pf.toFixed(1)}</td></tr>`; }).join("")}
-    </tbody></table>
-    <div class="cap">* = team halo damped 50% in the score. ▲/▼ = places moved since v1. ${scope === "bsu" ? "Wheeler-Thomas is shown for reference (North Dakota St. in 2025-26)." : ""} The full national table arrives with the data migration.</div>
-    <div class="grid notes" style="grid-template-columns:1fr 1fr 1fr;margin-top:14px">${D.notes.map((n) => `<div class="cap" style="margin-top:0">${n}</div>`).join("")}</div></div></section>`;
+function filtered() {
+  const V = VIEWS[st.view], f = st.f, q = norm(f.q);
+  return V.rows.filter((r) =>
+    (!q || norm(r.name).includes(q) || norm(r.team).includes(q)) &&
+    (!f.pos || r.pos === f.pos) && (!f.cls || r.cls === f.cls) && (!f.conf || r.conf === f.conf) &&
+    (!f.team || r.team === f.team) && (!f.season || r.season === f.season) && (r.min ?? 0) >= (+f.min || 0));
 }
 
-show(location.hash.slice(1) || "scoring");
+const fmt = (v, d) => (v == null ? "—" : (+v).toFixed(d));
+const dash = `<span class="m" style="color:var(--muted)">—</span>`;
+const mini = (v) => (v == null ? dash : `<span class="mini" style="background:${pc(v)}">${v.toFixed(0)}</span>`);
+
+function draw() {
+  const S = SKILLS[st.skill], k = st.skill;
+  const showSeason = st.view === "bsu10", showConf = st.view === "nat";
+  const val = (r, key) => (key === "score" ? r[k] : key === "drk" ? drank[k].get(r) : r[key]);
+  const rows = filtered().sort((a, b) => {
+    const x = val(a, st.sort), y = val(b, st.sort);
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return (typeof x === "string" ? x.localeCompare(y) : x - y) * st.dir;
+  });
+  const pages = Math.max(1, Math.ceil(rows.length / PER)); st.page = Math.min(st.page, pages - 1);
+  const slice = rows.slice(st.page * PER, st.page * PER + PER);
+  $("count").textContent = `${rows.length.toLocaleString()} players`;
+  const others = Object.keys(SKILLS).filter((x) => x !== k);
+  const th = (key, label, def, cls = "") => `<th class="sort ${cls} ${st.sort === key ? "sorted" : ""}" data-k="${key}" data-arrow="${st.dir < 0 ? "▼" : "▲"}">${def ? `<span data-def="${def}">${label}</span>` : label}</th>`;
+  $("table").innerHTML = `<table><thead><tr><th>#</th>${th("name", "Player", null, "l")}${showSeason ? th("season", "Season", null, "l") : ""}${th("team", "Team", null, "l")}${showConf ? th("conf", "Conf", null, "l") : ""}${th("cls", "Cls", "cls", "l")}${th("pos", "Pos", "pos", "l")}${th("ht", "Ht", "ht", "l")}${th("gp", "GP", "gp")}${th("mpg", "MPG", "mpg")}
+    ${th("score", S.title.toUpperCase(), S.def, "sep")}<th class="l">Tier</th>${showSeason ? "" : th("drk", "D-I rk", "drk")}
+    ${S.stats.map(([sk, label], i) => th(sk, label, sk, i === 0 ? "sep" : "")).join("")}
+    ${others.map((o, i) => th(o, SKILLS[o].title.slice(0, 4).toUpperCase(), SKILLS[o].def, i === 0 ? "sep" : "")).join("")}</tr></thead><tbody>
+    ${slice.map((r, i) => {
+      const sc = r[k], rk = drank[k].get(r);
+      const hl = st.view !== "bsu27" && r.season === NAT.season && byName.has(norm(r.name));
+      return `<tr class="${hl ? "me" : ""}"><td class="m">${(st.page * PER + i + 1).toLocaleString()}</td><td class="l">${link(r.name)}</td>${showSeason ? `<td class="l m">${r.season}</td>` : ""}<td class="l m">${esc(r.team)}</td>${showConf ? `<td class="l m">${esc(r.conf)}</td>` : ""}<td class="l m">${esc(r.cls)}</td><td class="l m">${esc(r.pos)}</td><td class="l m">${esc(r.ht)}</td><td class="m">${r.gp ?? "—"}</td><td class="m">${fmt(r.mpg, 1)}</td>
+        <td class="sep">${sc == null ? dash : `<span class="chip" style="background:${pc(sc)}">${sc.toFixed(1)}</span>`}</td><td class="l m">${sc == null ? "—" : tierOf(sc)}</td>${showSeason ? "" : `<td class="m">${rk ? rk.toLocaleString() : "—"}</td>`}
+        ${S.stats.map(([sk, , d, dir], j) => { const v = r[sk], p = dir ? pctOf(sk, v) : null; const col = p == null || Math.abs(p - 50) < 10 ? "var(--text)" : pc(dir > 0 ? p : 100 - p);
+          return `<td class="st ${j === 0 ? "sep" : ""}" style="color:${col}">${fmt(v, d)}</td>`; }).join("")}
+        ${others.map((o, j) => `<td class="${j === 0 ? "sep" : ""}">${mini(r[o])}</td>`).join("")}</tr>`;
+    }).join("") || `<tr><td colspan="30" class="m l">No players match these filters.</td></tr>`}
+    </tbody></table>`;
+  $("table").querySelectorAll("th.sort").forEach((h) => (h.onclick = () => {
+    const key = h.dataset.k;
+    if (st.sort === key) st.dir *= -1; else { st.sort = key; st.dir = TEXT.includes(key) || LOWBEST.has(key) ? 1 : -1; }
+    st.page = 0; draw();
+  }));
+  $("pager").innerHTML = pages > 1 ? `<button id="pv" ${st.page ? "" : "disabled"}>‹ Prev</button><span>Page ${st.page + 1} of ${pages}</span><button id="nx" ${st.page < pages - 1 ? "" : "disabled"}>Next ›</button>` : "";
+  if (pages > 1) {
+    const jump = (d) => { st.page += d; draw(); scrollTo({ top: $("table").offsetTop - 80 }); };
+    $("pv").onclick = () => jump(-1); $("nx").onclick = () => jump(1);
+  }
+  history.replaceState(null, "", `#${st.view}/${st.skill}`);
+}
+
+function render() {
+  $("views").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === st.view));
+  $("skills").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.s === st.skill));
+  buildFilters();
+  const V = st.view;
+  $("notes").innerHTML = [
+    `<b style="color:var(--text)">Who's included.</b> ${V === "nat" ? `All ${nat.length.toLocaleString()} D-I players with 50+ minutes in 2025-26. The default filter is 200+ minutes, the group every score is ranked against.` : V === "pac" ? "2025-26 players on the nine 2026-27 Pac-12 teams: Boise St., Colorado St., Fresno St., Gonzaga, Oregon St., San Diego St., Texas St., Utah St., Washington St." : V === "bsu10" ? `Every Boise St. player-season from ${BSU.seasons[0]} through ${BSU.seasons[BSU.seasons.length - 1]}. Stats cover all ten seasons; skill scores exist for 2025-26 so far.` : "Players on Boise St.'s 2026-27 roster, with their 2025-26 season wherever they played. Incoming freshmen have no college stats yet."}`,
+    `<b style="color:var(--text)">Reading the colors.</b> Each stat is colored by where it ranks among the ${ref.length.toLocaleString()} D-I players with 200+ minutes in 2025-26 (orange = top, blue = bottom, white = middle). For turnovers and fouls lower is better, so low numbers are orange.${V === "bsu10" ? " Past seasons are compared against 2025-26 players." : ""}`,
+    `<b style="color:var(--text)">Where it comes from.</b> Skill scores: RStudio skill model v1.1 (Scoring, Creation = Playmaking, Rebounding, Defense). Rate stats (USG%, AST%, REB%, STL%, BLK%) use team and opponent totals from the same archive. RAPM is national regularized plus-minus.`,
+  ].map((n) => `<div class="cap" style="margin-top:0">${n}</div>`).join("");
+  draw();
+}
+render();
 </script>
 </body>
 </html>

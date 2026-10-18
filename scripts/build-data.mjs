@@ -3,7 +3,7 @@
 // During the formatting phase data-src/ holds a sample export. When the data
 // moves into Bronco IQ's own database, this script (or the Worker API that
 // replaces it) produces the same file shapes, so the pages don't change.
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, existsSync, cpSync } from "node:fs";
 import { join } from "node:path";
 import { derive, seasonPercentiles } from "../src/stats.js";
 
@@ -85,6 +85,8 @@ for (const p of roster.players) {
 }
 mkdirSync(join(out, "scores"), { recursive: true });
 for (const [k, s] of Object.entries(scores)) write(`scores/${k}.json`, s);
+// Rankings tables (built by scripts/build-rankings.mjs from the RStudio exports).
+if (existsSync(src("rankings"))) cpSync(src("rankings"), join(out, "rankings"), { recursive: true });
 write("roster.json", { team: roster.team, season: roster.season, espnTeamId: roster.espnTeamId, players: rosterRows });
 write("index.json", { players: index });
 write("meta.json", { builtAt: new Date().toISOString(), pools: Object.fromEntries(Object.entries(pool).map(([s, m]) => [s, m.ppg[0]])), source: roster._about });

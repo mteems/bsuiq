@@ -3,24 +3,10 @@
 // The CSV is written by RECRUITING_HUB_V3/scripts/00_inventory_for_site.R
 // (data/site_export/). Output: data-src/scores/skills-2025-26.json
 import { readFileSync, writeFileSync } from "node:fs";
+import { parseCSV } from "./lib-csv.mjs";
 
 const file = process.argv[2];
 if (!file) { console.error("usage: node scripts/import-skills.mjs <csv>"); process.exit(1); }
-
-function parseCSV(text) {
-  const rows = []; let row = [], f = "", q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-    else if (c === '"') q = true;
-    else if (c === ",") { row.push(f); f = ""; }
-    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
-    else f += c;
-  }
-  if (f || row.length) { row.push(f); rows.push(row); }
-  const [h, ...body] = rows.filter((r) => r.length > 1);
-  return body.map((r) => Object.fromEntries(h.map((k, i) => [k, r[i]])));
-}
 
 const num = (v) => (v === "" || v === "NA" || v == null ? null : +v);
 const r1 = (v) => (v == null ? null : Math.round(v * 10) / 10);
