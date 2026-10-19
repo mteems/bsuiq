@@ -28,6 +28,7 @@ const STATS = {
   d_tp: { l: "Opp. 3P%", side: "def", dir: -1, g: (g) => (g.d_tpa ? (100 * g.d_tpm) / g.d_tpa : null), def: "Opponents' three-point %." },
   pace: { l: "Pace", side: "pace", dir: 0, g: (g) => (40 * (g.poss + g.dposs)) / 2 / g.mins, def: "Possessions per 40 minutes." },
 };
+const wavg = (games, k, w) => { const G = games.filter((g) => g[k] != null); const d = sum(G, w); return d ? G.reduce((a, g) => a + g[k] * g[w], 0) / d : null; };
 function agg(games) {
   const s = (k) => sum(games, k), poss = s("poss"), dposs = s("dposs");
   const A = {
@@ -36,7 +37,8 @@ function agg(games) {
     ftr: (100 * s("fta")) / s("fga"), tpr: (100 * s("tpa")) / s("fga"), tp: (100 * s("tpm")) / s("tpa"), rim: (100 * s("rimm")) / s("rima"),
     d_efg: (100 * (s("d_fgm") + 0.5 * s("d_tpm"))) / s("d_fga"), d_tov: (100 * s("d_to")) / dposs, d_orb: (100 * s("d_orb")) / (s("d_orb") + s("drb")),
     d_ftr: (100 * s("d_fta")) / s("d_fga"), d_tp: (100 * s("d_tpm")) / s("d_tpa"),
-    tpp: games.reduce((a, g) => a + g.tpp * g.poss, 0) / poss, dtpp: games.reduce((a, g) => a + g.dtpp * g.dposs, 0) / dposs,
+    // seconds per possession only exist for play-by-play games
+    tpp: wavg(games, "tpp", "poss"), dtpp: wavg(games, "dtpp", "dposs"),
   };
   A.net = A.ortg - A.drtg;
   return A;
@@ -52,14 +54,15 @@ export function renderTeamData(S, D, DIST, opts = {}) {
   const pctl = (k, v, dir) => { const r = rank(k, v, dir), a = dist[k]; return r == null ? null : 100 * (1 - (r - 1) / (a.length - 1 || 1)); };
   const tone = (p) => (p == null ? "var(--text)" : p >= 70 ? GOOD_T : p <= 30 ? BAD_T : "var(--text)");
   const games = D.games.map((g, i) => ({ ...g, i, w: g.pts > g.op, m: g.pts - g.op }));
-  const st = { win: "all" }, summary = {};
+  const st = { win: "all", d1: false }, summary = {};
+  const ND = games.filter((g) => g.nd).length;
   const uid = "td" + Math.random().toString(36).slice(2, 7), I = (s) => `${uid}_${s}`;
   const put = (el, html) => { if (el) el.innerHTML = html; };
 
-  put(S.toggle, `<div class="seg tdwin" id="${I("win")}">${WINDOWS.map(([k, l]) => `<button data-w="${k}" class="${k === "all" ? "on" : ""}">${l}</button>`).join("")}</div><div class="label" id="${I("wl")}" style="margin-top:6px"></div>`);
+  put(S.toggle, `<div class="seg tdwin" id="${I("win")}">${WINDOWS.map(([k, l]) => `<button data-w="${k}" class="${k === "all" ? "on" : ""}">${l}</button>`).join("")}</div>${ND ? `<div class="seg tdwin tdd1" id="${I("d1")}" style="margin-top:8px"><button data-d="0" class="on">ALL GAMES</button><button data-d="1">D-I ONLY</button></div>` : ""}<div class="label" id="${I("wl")}" style="margin-top:6px"></div>`);
   put(S.trends, `<section><div class="shead"><h2>Snapshot</h2><span class="label" id="${I("snaplbl")}"></span></div>
     <div class="tdkpis" id="${I("kpis")}"></div>
-    <div class="panel" style="margin-top:12px"><div class="label ptitle"><span>Every game · margin</span><span>orange = win · blue = loss · faded = outside the window</span></div><div id="${I("strip")}"></div></div></section>
+    <div class="panel" style="margin-top:12px"><div class="label ptitle"><span>Every game · margin</span><span>orange = win · blue = loss · faded = outside the window${ND ? " · outlined = non-D-I opponent" : ""}</span></div><div id="${I("strip")}"></div></div></section>
   <section><div class="shead"><h2>What wins and loses their games</h2><span class="label">averages in wins vs losses · biggest swings first</span></div>
     <div class="story" id="${I("wlstory")}"></div><div id="${I("wlbody")}"></div></section>`);
   put(S.pace, `<div class="story" id="${I("pacestory")}"></div>
@@ -76,7 +79,7 @@ export function renderTeamData(S, D, DIST, opts = {}) {
   const $ = (s) => document.getElementById(I(s)) || { set innerHTML(v) {}, set textContent(v) {}, querySelectorAll: () => [], clientWidth: 0, replaceChildren() {} };
 
   const inWin = () => {
-    const all = games;
+    const all = st.d1 ? games.filter((g) => !g.nd) : games;
     if (st.win === "conf") return all.filter((g) => g.conf);
     if (st.win === "l10") return all.slice(-10);
     if (st.win === "l5") return all.slice(-5);
@@ -104,8 +107,8 @@ export function renderTeamData(S, D, DIST, opts = {}) {
   function snapshot(W, A, set) {
     const wins = W.filter((g) => g.w).length, cw = games.filter((g) => g.conf && g.w).length, cg = games.filter((g) => g.conf).length;
     const tile = (label, def, val, k, dir, sub) => { const r = rank(k, val, dir || 1), p = dir ? pctl(k, val, dir) : null;
-      return `<div class="kpi"><span class="label" data-def="${def}">${label}</span><b style="color:${tone(p)}">${f1(val)}</b><div class="sub">${r ? `${ord(r)} of ${NT} in D-I` : ""}${sub ? ` · ${sub}` : ""}</div></div>`; };
-    $("kpis").innerHTML = `<div class="kpi"><span class="label">Record</span><b>${wins}-${W.length - wins}</b><div class="sub">${st.win === "all" ? `${cw}-${cg - cw} in conference` : `season ${games.filter((g) => g.w).length}-${games.filter((g) => !g.w).length}`} · avg margin ${A.net >= 0 ? "+" : ""}${f1(sum(W, "m") / W.length)}</div></div>`
+      return `<div class="kpi"><span class="label" data-def="${def}">${label}</span><b style="color:${tone(p)}">${f1(val)}</b><div class="sub">${[r ? `${ord(r)} of ${NT} in D-I` : "", sub].filter(Boolean).join(" · ")}</div></div>`; };
+    $("kpis").innerHTML = `<div class="kpi"><span class="label">Record</span><b>${wins}-${W.length - wins}</b><div class="sub">${st.win === "all" ? (cg ? `${cw}-${cg - cw} in conference · ` : "") : `season ${games.filter((g) => g.w).length}-${games.filter((g) => !g.w).length} · `}avg margin ${A.net >= 0 ? "+" : ""}${f1(sum(W, "m") / W.length)}</div></div>`
       + tile("Offense", "ortg", A.ortg, "ortg", 1, "pts / 100 poss") + tile("Defense", "drtg", A.drtg, "drtg", -1, "allowed / 100") + tile("Net rating", "netrtg", A.net, "net", 1, "") + tile("Pace", "pace", A.pace, "pace", 0, "poss / 40");
     // margin strip
     const box = $("strip"), w = box.clientWidth || 900, h = 150, m = { t: 14, b: 22, l: 30, r: 8 };
@@ -115,13 +118,15 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     svg.append("line").attr("x1", m.l).attr("x2", w - m.r).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "#3a3d42");
     [-20, -10, 10, 20].filter((v) => Math.abs(v) <= mx).forEach((v) => svg.append("text").attr("x", m.l - 6).attr("y", y(v) + 3).attr("text-anchor", "end").attr("class", "tdax").text((v > 0 ? "+" : "") + v));
     svg.selectAll("rect").data(games).join("rect").attr("x", (g) => x(g.i)).attr("width", x.bandwidth()).attr("y", (g) => Math.min(y(0), y(g.m))).attr("height", (g) => Math.max(1.5, Math.abs(y(g.m) - y(0))))
-      .attr("rx", 2).attr("fill", (g) => (g.w ? GOOD : BAD)).attr("opacity", (g) => (set.has(g.i) ? 1 : 0.18))
-      .on("mousemove", (e, g) => tipOn(e, `<b>${g.w ? "W" : "L"} ${g.pts}-${g.op}</b> ${g.loc === "A" ? "@" : g.loc === "N" ? "vs" : "vs"} ${g.opp}${g.loc === "N" ? " (neutral)" : ""}<br>${g.d}${g.conf ? " · conference" : ""}`)).on("mouseleave", tipOff);
+      .attr("rx", 2).attr("fill", (g) => (g.nd ? "none" : g.w ? GOOD : BAD)).attr("stroke", (g) => (g.nd ? (g.w ? GOOD : BAD) : null)).attr("stroke-width", 1.5).attr("stroke-dasharray", (g) => (g.nd ? "3 2" : null)).attr("opacity", (g) => (set.has(g.i) ? 1 : 0.18))
+      .on("mousemove", (e, g) => tipOn(e, `<b>${g.w ? "W" : "L"} ${g.pts}-${g.op}</b> ${g.loc === "A" ? "@" : g.loc === "N" ? "vs" : "vs"} ${g.opp}${g.loc === "N" ? " (neutral)" : ""}<br>${g.d}${g.conf ? " · conference" : ""}${g.nd ? "<br>non-D-I opponent · ESPN box score, possessions estimated" : g.x ? "<br>ESPN box score, possessions estimated" : ""}`)).on("mouseleave", tipOff);
     // month ticks
     let prev = "";
     games.forEach((g) => { const mo = new Date(g.d + "T12:00").toLocaleString("en-US", { month: "short" }); if (mo !== prev) { svg.append("text").attr("x", x(g.i)).attr("y", h - 6).attr("class", "tdax").text(mo); prev = mo; } });
     box.replaceChildren(svg.node());
-    $("snaplbl").textContent = `${D.team} · ${D.season} · D-I games only`;
+    const nd = W.filter((g) => g.nd).length;
+    $("snaplbl").textContent = `${D.team} · ${D.season} · ${nd ? `${W.length - nd} D-I + ${nd} non-D-I game${nd > 1 ? "s" : ""} · ranks vs D-I teams` : "D-I games"}${D.boxOnly ? " · box scores" : ""}`;
+    if (!NT) $("snaplbl").textContent = `${D.team} · ${D.season} · ${W.length} games · box scores${D.src ? " (" + D.src + ")" : ""}`;
     summary.trends = `${wins}-${W.length - wins} · net ${A.net >= 0 ? "+" : ""}${f1(A.net)}`;
   }
 
@@ -196,8 +201,9 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     const pr = rank("pace", A.pace, 1), tr = rank("tpp", A.tpp, -1), dr = rank("dtpp", A.dtpp, 1);
     const avg = d3.mean(dist.pace || [68]);
     const speed = pr == null ? "" : pr <= NT * 0.25 ? "play fast" : pr >= NT * 0.75 ? "play slow" : "play at an average pace";
-    summary.pace = `${f1(A.pace)} poss · ${ord(pr || 0)}`;
-    $("pacestory").innerHTML = `<b>They ${speed}</b>: ${f1(A.pace)} possessions per 40 (${ord(pr)} fastest of ${NT}). On offense they take <b>${f1(A.tpp)} seconds</b> per possession (${ord(tr)} quickest); opponents take <b>${f1(A.dtpp)}</b> against them (${ord(dr)} longest), ${A.dtpp > d3.mean(dist.dtpp || [17]) + 0.4 ? "so their defense makes teams work deep into the clock" : A.dtpp < d3.mean(dist.dtpp || [17]) - 0.4 ? "so opponents get shots up quickly against them" : "about average"}.`;
+    summary.pace = `${f1(A.pace)} poss${pr ? " · " + ord(pr) : ""}`;
+    if (pr == null) { $("pacestory").innerHTML = `<b>${f1(A.pace)} possessions per 40</b> (estimated from box scores; no D-I comparison for this team).`; }
+    else $("pacestory").innerHTML = `<b>They ${speed}</b>: ${f1(A.pace)} possessions per 40 (${ord(pr)} fastest of ${NT}). On offense they take <b>${f1(A.tpp)} seconds</b> per possession (${ord(tr)} quickest); opponents take <b>${f1(A.dtpp)}</b> against them (${ord(dr)} longest), ${A.dtpp > d3.mean(dist.dtpp || [17]) + 0.4 ? "so their defense makes teams work deep into the clock" : A.dtpp < d3.mean(dist.dtpp || [17]) - 0.4 ? "so opponents get shots up quickly against them" : "about average"}.`;
     // pace by game
     const box = $("pacechart"), w = box.clientWidth || 700, h = 200, m = { t: 12, b: 22, l: 30, r: 10 };
     const vals = games.map((g) => ({ g, v: STATS.pace.g(g) }));
@@ -213,12 +219,13 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     const bar = (label, v, k, dir, note) => { const a = dist[k] || [], lo = a[0], hi = a[a.length - 1], X = (z) => ((z - lo) / (hi - lo)) * 100, r = rank(k, v, dir);
       const dots = a.map((z) => `<i style="left:${X(z)}%"></i>`).join("");
       return `<div class="tdtpp"><div class="tdtpph"><span>${label}</span><b>${f1(v)} s</b></div><div class="tdbee">${dots}<em style="left:${X(v)}%"></em></div><div class="tdtppx"><span>${f1(lo)} s</span><span class="m">${r ? ord(r) + " " + note : ""}</span><span>${f1(hi)} s</span></div></div>`; };
-    $("tpp").innerHTML = bar("Their offense", A.tpp, "tpp", -1, "quickest") + bar("Opponents vs their defense", A.dtpp, "dtpp", 1, "longest") + `<div class="cap">Each grey tick is one D-I team; the white mark is them in this window.</div>`;
+    $("tpp").innerHTML = A.tpp == null ? `<div class="cap">Seconds per possession need play-by-play data${D.boxOnly ? ", which these games don't have" : ""}.</div>` : bar("Their offense", A.tpp, "tpp", -1, "quickest") + bar("Opponents vs their defense", A.dtpp, "dtpp", 1, "longest") + `<div class="cap">Each grey tick is one D-I team; the white mark is them in this window.</div>`;
   }
 
   // ------------------------------------------------------------ shooting
   function chart(boxId, raw, notes) {
     const box = $(boxId); if (!box.tagName) return;
+    if (D.boxOnly) { box.innerHTML = `<div class="cap">Shot charts need play-by-play shot locations, which aren't loaded for 2026-27 games yet (box scores only).</div>`; return; }
     if (raw.length < 30) { box.innerHTML = `<div class="cap">Not enough charted shots in this window (${raw.length}).</div>`; return; }
     renderShotChart(box, { shots: raw, games: [], pron: "team", noAssist: true, source: "play-by-play shot locations", notes });
   }
@@ -237,7 +244,7 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     const strengths = F.filter((f) => f[3] && f[0] !== "drtg").map((f) => ({ l: f[1], v: f[2], r: r(f[0], f[2], f[3]) })).filter((f) => f.r).sort((a, b) => a.r - b.r);
     const best = strengths[0], worst = strengths[strengths.length - 1];
     $("defstory").innerHTML = best ? `<b>Their defense is ${ord(rank("drtg", A.drtg, -1))} in D-I</b> (${f1(A.drtg)} points allowed per 100). Strength: <b>${best.l}</b> (${f1(best.v)}, ${ord(best.r)}). Weak spot: <b>${worst.l}</b> (${f1(worst.v)}, ${ord(worst.r)}).` : "";
-    summary.defense = `${f1(A.drtg)} DRtg · ${ord(rank("drtg", A.drtg, -1) || 0)}`;
+    summary.defense = `${f1(A.drtg)} DRtg${rank("drtg", A.drtg, -1) ? " · " + ord(rank("drtg", A.drtg, -1)) : ""}`;
     chart("defshots", D.shots.def.filter((s) => set.has(s[0])), "Shots their opponents took against them. Warm = opponents shot well there (bad for this defense).");
     const P = (opts.players || []).filter((p) => p.df != null).sort((a, b) => b.df - a.df);
     $("defplayers").innerHTML = P.length ? `<table><thead><tr><th class="l">Player</th><th class="l">Pos</th><th>MPG</th><th>DEF</th><th>D-I rk</th><th>DRAPM</th><th>STL%</th><th>BLK%</th><th>DREB%</th></tr></thead><tbody>${P.map((p) => `<tr><td class="l">${p.name}</td><td class="l m">${p.pos || ""}</td><td class="m">${f1(p.mpg)}</td><td><span class="chip" style="background:${p.df >= 50 ? (p.df >= 80 ? GOOD : "#a8583a") : p.df <= 20 ? BAD : "#4b5a78"}">${f1(p.df)}</span></td><td class="m">${p.rk_df || "—"}</td><td>${p.drapm == null ? "—" : (p.drapm > 0 ? "+" : "") + p.drapm.toFixed(2)}</td><td>${f1(p.stlp)}</td><td>${f1(p.blkp)}</td><td>${f1(p.drbp)}</td></tr>`).join("")}</tbody></table><div class="cap">2025-26 season, full year (not windowed). DEF score needs 40%+ of team minutes.</div>` : `<div class="cap">No DEF scores for this roster.</div>`;
@@ -259,7 +266,7 @@ export function renderTeamData(S, D, DIST, opts = {}) {
       const wPct = (Math.abs(l.net) / maxN) * 50, col = l.net >= 0 ? GOOD : BAD;
       return `<div class="tdlu"><div class="tdlun">${nameOf(l.li)}</div><div class="tdlub"><s></s><i style="${l.net >= 0 ? `left:50%;width:${wPct}%` : `left:${50 - wPct}%;width:${wPct}%`};background:${col};opacity:${(0.35 + 0.65 * (l.poss / maxP)).toFixed(2)}"></i></div>
         <span class="m" style="color:${l.net >= 0 ? GOOD_T : BAD_T}">${l.net >= 0 ? "+" : ""}${f1(l.net)}</span><span class="m">${Math.round(l.poss)} poss</span><span class="m">${f1(l.ortg)} / ${f1(l.drtg)}</span></div>`;
-    }).join("") + `<div class="cap">Net = points scored minus allowed per 100 possessions (ORtg / DRtg shown right). Small samples swing a lot: treat lineups under ~50 possessions as a hint, not a verdict. Team overall: ${teamNet >= 0 ? "+" : ""}${f1(teamNet)}.</div>` : `<div class="cap">No lineup data for this window.</div>`;
+    }).join("") + `<div class="cap">${ND ? "Lineups come from play-by-play, so non-D-I games aren't included. " : ""}Net = points scored minus allowed per 100 possessions (ORtg / DRtg shown right). Small samples swing a lot: treat lineups under ~50 possessions as a hint, not a verdict. Team overall: ${teamNet >= 0 ? "+" : ""}${f1(teamNet)}.</div>` : `<div class="cap">${D.boxOnly ? "Lineups need play-by-play data, which isn't loaded for 2026-27 games yet (box scores only)." : "No lineup data for this window."}</div>`;
     const best = L.filter((l) => l.poss >= 40).sort((a, b) => b.net - a.net);
     // on/off per player
     const P = Lx.names.map((nm, pi) => {
@@ -279,6 +286,7 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     $("lustory").innerHTML = starters ? `<b>Their most-used group (${nameOf(starters.li)}) is ${starters.net >= 0 ? "+" : ""}${f1(starters.net)} per 100</b> over ${Math.round(starters.poss)} possessions${best[0] && best[0].li !== starters.li ? `; their best unit with 40+ possessions is ${nameOf(best[0].li)} at ${best[0].net >= 0 ? "+" : ""}${f1(best[0].net)}` : ""}.${swing.length ? ` Biggest on/off swing: <b>${swing[0].nm}</b> (${swing[0].diff >= 0 ? "+" : ""}${f1(swing[0].diff)})${swing.length > 1 ? `; weakest: ${swing[swing.length - 1].nm} (${f1(swing[swing.length - 1].diff)})` : ""}.` : ""}` : "";
   }
 
+  $("d1").querySelectorAll("button").forEach((b) => (b.onclick = () => { $("d1").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); st.d1 = b.dataset.d === "1"; draw(); }));
   $("win").querySelectorAll("button").forEach((b) => (b.onclick = () => { $("win").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); st.win = b.dataset.w; draw(); }));
   draw();
 }

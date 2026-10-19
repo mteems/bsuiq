@@ -123,9 +123,18 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .rname{font-size:18px;font-weight:750;letter-spacing:-.01em;line-height:1.15;margin-top:2px}
 .rchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .rwin{margin-top:16px}
+.rseason{margin-top:14px}
+.rseason .seg{display:grid;grid-template-columns:1fr 1fr;width:100%}
+.rseason .seg button{padding:8px 6px;font-size:11px;font-weight:500}
+.rseason .lock{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;border:1px solid var(--line);border-radius:7px;padding:7px 9px;text-align:center}
+.ysched{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 14px;margin-top:10px}
+.ysched div{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line2)}
+.ysched .m{font-family:var(--mono);font-size:10.5px;color:var(--muted);min-width:44px}
+.ysched b.w{color:#f08a5d}.ysched b.l{color:#7fa6f0}
 .rwin .tdwin{display:grid;grid-template-columns:1fr 1fr;width:100%}
 .rwin .tdwin button{padding:7px 6px;font-size:10.5px;border-bottom:1px solid var(--line)}
 .rwin .tdwin button:first-child{grid-column:1/-1}
+.rwin .tdd1 button:first-child{grid-column:auto}
 .rnav{display:flex;flex-direction:column;gap:2px;margin-top:16px}
 .rnav button{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;border-left:2px solid #2e3034;padding:8px 10px;cursor:pointer;color:var(--muted)}
 .rnav button b{font-family:var(--ui);font-size:14px;font-weight:650;color:#b9bdc4}
@@ -155,6 +164,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
  .rwin .tdwin button{flex:none}
  .rail{position:sticky;top:52px;z-index:25;max-height:none;overflow:visible;background:var(--bg);padding:10px 0 8px;border-bottom:1px solid var(--line)}
  .rteam,.rchips{display:none}
+ .rseason{margin-top:0;margin-bottom:8px}
  .rwin{margin-top:0}.rwin .tdwin{display:flex;width:auto}.rwin .tdwin button:first-child{grid-column:auto}.rwin .label{display:none}
  .rnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;margin-top:8px;gap:4px}
  .rnav::-webkit-scrollbar{display:none}
@@ -220,15 +230,18 @@ async function loadLiveRanks(){
  try{const r=await fetch("/api/ranks");if(!r.ok)return;LIVE=await r.json();}catch{}
 }
 // 2026-27 conference by opponent (fallback when live data lacks it). Torvik codes.
-const CONF26={"Washington":"B10","Butler":"BE","Oakland":"Horz","Nebraska":"B10","Sam Houston":"CUSA","Idaho St.":"BSky","Drake":"MVC","North Texas":"Amer","North Dakota St.":"Sum","Wichita St.":"Amer","TAMU-CC":"Slnd","Utah Valley":"BW","Santa Clara":"WCC","New Mexico":"MWC","Lamar":"Slnd","Utah St.":"P12","Oregon St.":"P12","Washington St.":"P12","Gonzaga":"P12","Fresno St.":"P12","San Diego St.":"P12","Texas St.":"P12","Colorado St.":"P12","Boise St. '26":"MWC","Bismarck St.":"NSIC","West Coast Baptist":"NCCAA"};
-const CONFS={B10:["big_ten","Big Ten"],BE:["big_east","Big East"],Horz:["horizon","Horizon League"],CUSA:["conference_usa","Conference USA"],BSky:["big_sky","Big Sky"],MVC:["missouri_valley","Missouri Valley"],Amer:["american","American"],Sum:["summit_league","Summit League"],Slnd:["southland","Southland"],BW:["big_west","Big West"],WCC:["wcc","WCC"],MWC:["mountain_west","Mountain West"],P12:["pac_12","Pac-12"],ACC:["acc","ACC"],SEC:["sec","SEC"],B12:["big_12","Big 12"],A10:["atlantic_10","Atlantic 10"],NSIC:["","NSIC · D-II"],NCCAA:["","NCCAA"]};
-const confOf=name=>{const tn=TR_ALIAS[name]||name,L=LIVE.torvik;let c=null;if(L?.conf&&name!=="Boise St. '26"){const i=L.list.indexOf(tn);if(i>=0)c=L.conf[i];}return c||CONF26[name]||null;};
+const CONF26={"Washington":"B10","Butler":"BE","Oakland":"Horz","Nebraska":"B10","Sam Houston":"CUSA","Idaho St.":"BSky","Drake":"MVC","North Texas":"Amer","North Dakota St.":"Sum","Wichita St.":"Amer","TAMU-CC":"Slnd","Utah Valley":"BW","Santa Clara":"WCC","New Mexico":"MWC","Lamar":"Slnd","Utah St.":"P12","Oregon St.":"P12","Washington St.":"P12","Gonzaga":"P12","Fresno St.":"P12","San Diego St.":"P12","Texas St.":"P12","Colorado St.":"P12","Boise St. '26":"MWC","Bismarck St.":"NAIA","West Coast Baptist":"NCCAA"};
+const CONFS={B10:["big_ten","Big Ten"],BE:["big_east","Big East"],Horz:["horizon","Horizon League"],CUSA:["conference_usa","Conference USA"],BSky:["big_sky","Big Sky"],MVC:["missouri_valley","Missouri Valley"],Amer:["american","American"],Sum:["summit_league","Summit League"],Slnd:["southland","Southland"],BW:["big_west","Big West"],WCC:["wcc","WCC"],MWC:["mountain_west","Mountain West"],P12:["pac_12","Pac-12"],ACC:["acc","ACC"],SEC:["sec","SEC"],B12:["big_12","Big 12"],A10:["atlantic_10","Atlantic 10"],SB:["sun_belt","Sun Belt"],WAC:["wac","WAC"],NAIA:["","NAIA · Frontier"],NCCAA:["","NCCAA"]};
+// 2025-26 conferences where realignment changed them for 2026-27.
+const CONF25={"Utah St.":"MWC","Oregon St.":"WCC","Washington St.":"WCC","Gonzaga":"WCC","Fresno St.":"MWC","San Diego St.":"MWC","Texas St.":"SB","Colorado St.":"MWC","Utah Valley":"WAC","Boise St.":"MWC"};
+const confOf=name=>{if(VIEWYR==="2025-26"&&CONF25[name])return CONF25[name];const tn=TR_ALIAS[name]||name,L=LIVE.torvik;let c=null;if(L?.conf&&name!=="Boise St. '26"){const i=L.list.indexOf(tn);if(i>=0)c=L.conf[i];}return c||CONF26[name]||null;};
 const confChip=name=>{const c=confOf(name);if(!c)return"";const [k,n]=CONFS[c]||["",c];return k?CF(k,n):`<span class="cf" style="padding-left:8px">${n}</span>`;};
 const livePos=(src,nm)=>{const i=LIVE[src]?.list?.indexOf(nm);return i>=0?i+1:null;};
 // Ranks for one opponent tab: live first, snapshot (XR) second.
 function ranksFor(o,t){
  const name=o[1],x=XR[name]||{},tn=TR_ALIAS[name]||name,sample=!!x.final;
  const out={};
+ if(!sample&&VIEWYR==="2025-26"){out.tr={rk:livePos("torvik_prev",tn)||x.tr26||null,note:"final 2025-26"};return out;}
  out.kp=sample?{rk:t?.kp?+t.kp:null,note:"Mar 2 (final)"}:{rk:livePos("kenpom",tn)||(t?.kp?+t.kp:null),note:"2026-27"};
  out.tr=sample?{rk:livePos("torvik_prev",tn)||x.tr,note:"final 2025-26"}:{rk:livePos("torvik",tn)||x.tr,note:(x.tr26||livePos("torvik_prev",tn))?`last season #${livePos("torvik_prev",tn)||x.tr26}`:"2026-27"};
  out.em=sample?null:{rk:livePos("evanmiya",emName(name))||x.em,note:"2026-27"};
@@ -237,7 +250,7 @@ function ranksFor(o,t){
 }
 function rankTile(o,t){
  if(!XR[o[1]]&&!(t&&t.kp))return"";
- const R=ranksFor(o,t),sample=o[1]==="Boise St. '26",B={kp:livePos("kenpom","Boise St."),tr:livePos("torvik","Boise St.")||XR._bsu?.tr,em:livePos("evanmiya","Boise State")||XR._bsu?.em};
+ const R=ranksFor(o,t),sample=o[1]==="Boise St. '26"||VIEWYR==="2025-26",B={kp:livePos("kenpom","Boise St."),tr:livePos("torvik","Boise St.")||XR._bsu?.tr,em:livePos("evanmiya","Boise State")||XR._bsu?.em};
  const cell=(key,label,icon,r,bsu)=>r?`<div class="rkc" title="${label}: ${r.note||""}"><div class="rkh"><img alt="" src="${icon}" onerror="this.remove()">${label}</div><b>${r.rk?"#"+r.rk:key==="ap"?"NR":"—"}</b><div class="rks">${!sample&&bsu?`BSU #${bsu}`:(r.note||"")}</div></div>`:"";
  return `<div class="kpi rktile"><span class="label">Team rankings${sample?" · final":""}</span><div class="rkg">
   ${cell("kp","KenPom","https://kenpom.com/assets/favicon.ico",R.kp,B.kp)}${cell("tr","T-Rank","https://barttorvik.com/favicon.ico",R.tr,B.tr)}${R.em?cell("em","EvanMiya","https://evanmiya.com/favicon.ico",R.em,B.em):""}${R.ap?cell("ap","AP","https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-basketball.png",R.ap,null):""}
@@ -273,14 +286,16 @@ const chip=(k,v,t)=>`<span class="chip" style="background:${pc(pctOf(k,v))}" tit
 const sg=v=>(v>0?"+":"")+v.toFixed(1),f1=v=>v==null?"—":(+v).toFixed(1);
 
 // ---------- tabs ----------
-const OPP=[["bsu26","Boise St. '26","SAMPLE · final",68,"BSU"],["uw","Washington","Oct 17 · EXH",264,"UW"],["","Bismarck St.","Oct 29 · EXH","/assets/logos/bismarck-st.png","BIS"],["","West Coast Baptist","Nov 4","/assets/logos/west-coast-baptist.png","WCB"],["","Butler","Nov 8",2086],["","Oakland","Nov 11",2473],["","Nebraska","Nov 15 · N",158],["","Sam Houston","Nov 20",2534],["","Idaho St.","Nov 24",304],["","Drake","Nov 27 · N",2181],["","North Texas","Nov 28 · N",249],["","North Dakota St.","Nov 29 · N",2449],["","Wichita St.","Dec 5 · A",2724],["","TAMU-CC","Dec 12",357],["","Utah Valley","Dec 16",3084],["","Santa Clara","Dec 21 · N",2541],["","New Mexico","Dec 23 · N",167],["","Lamar","Dec 29",2320],["","Utah St.","Jan 6 · A · P12",328],["","Oregon St.","Jan 9 · P12",204],["","Washington St.","Jan 13 · P12",265],["","Gonzaga","Jan 16 · A · P12",2250],["","Fresno St.","Jan 20 · A · P12",278],["","San Diego St.","Jan 23 · P12",21],["","Texas St.","Jan 30 · A · P12",326],["","Colorado St.","Feb 18 · A · P12",36]];
+const OPP=[["bsu26","Boise St. '26","SAMPLE · final",68,"BSU"],["uw","Washington","Oct 17 · EXH",264,"UW"],["","Bismarck St.","Oct 29 · EXH","/assets/logos/bismarck-st.png","BIS"],["","West Coast Baptist","Nov 4","/assets/logos/west-coast-baptist.png","WCB",110418],["","Butler","Nov 8",2086],["","Oakland","Nov 11",2473],["","Nebraska","Nov 15 · N",158],["","Sam Houston","Nov 20",2534],["","Idaho St.","Nov 24",304],["","Drake","Nov 27 · N",2181],["","North Texas","Nov 28 · N",249],["","North Dakota St.","Nov 29 · N",2449],["","Wichita St.","Dec 5 · A",2724],["","TAMU-CC","Dec 12",357],["","Utah Valley","Dec 16",3084],["","Santa Clara","Dec 21 · N",2541],["","New Mexico","Dec 23 · N",167],["","Lamar","Dec 29",2320],["","Utah St.","Jan 6 · A · P12",328],["","Oregon St.","Jan 9 · P12",204],["","Washington St.","Jan 13 · P12",265],["","Gonzaga","Jan 16 · A · P12",2250],["","Fresno St.","Jan 20 · A · P12",278],["","San Diego St.","Jan 23 · P12",21],["","Texas St.","Jan 30 · A · P12",326],["","Colorado St.","Feb 18 · A · P12",36]];
 document.getElementById("tabs").innerHTML=OPP.map((o,i)=>`<button class="tab${i==1?' on':''}${i==0?' sample':''}" data-i="${i}" title="${o[1]} · ${o[2]}">${LG(o[3],30,o[4]||o[1].slice(0,3).toUpperCase())}<small>${i==0?"'26":o[2].split(" · ")[0].replace(/^(\w+) (\d+)$/,(m,a,b)=>a.slice(0,3)+" "+b)}</small></button>`).join("");
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));b.classList.add("on");const o=OPP[+b.dataset.i];history.replaceState(null,"","#"+(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-")));
- if(T[o[0]])render(T[o[0]],o);else{const dt=dataTeam(o[1]);
+ const yr=o[0]==="bsu26"?"2025-26":SEASON;VIEWYR=yr;
+ if(T[o[0]]&&(o[0]==="bsu26"||yr==="2026-27"))render(T[o[0]],o);else{const dt=dataTeam(o[1]),last=yr==="2025-26",has=!!TIDX[dt];
   document.getElementById("page").innerHTML=shell(o,{
-   trends:TIDX[dt]?`<div class="cap" style="margin:0 0 4px">Written scouting report not built yet. Everything here comes straight from last season's game, lineup and shot data.</div><div id="td-trends"></div>`:`<div class="note" style="margin-top:12px">No D-I game data for ${o[1]}. ${o[2].includes("EXH")?"Exhibition opponent.":"Non-D-I opponent."}</div>`,
-   personnel:TIDX[dt]?`<div id="td-roster"></div>`:"",lineups:`<div id="td-lineups"></div>`,pace:`<div id="td-pace"></div>`,shooting:`<div id="td-shooting"></div>`,defense:`<div id="td-defense"></div>`},"");
-  wireShell();loadTeamData(dt);}scrollTo(0,0)});
+   trends:last?(has?`<div class="cap" style="margin:0 0 4px">Last season (2025-26): every game, lineup and shot from the play-by-play data, plus any games against non-D-I teams from ESPN box scores.</div><div id="td-trends"></div>`:`<div class="cap" style="margin:0 0 4px">Last season (2025-26). ${o[1]} is not a D-I team, so there's no play-by-play: these are box scores${eid(o)?" from ESPN":" from their athletics site"}, with possessions estimated and no national ranks.</div><div id="td-trends"></div>`)
+    :`<div class="cap" style="margin:0 0 4px">Upcoming season (2026-27). ${T[o[0]]?"":"Written scouting report not built yet. "}Games appear here as they're played; switch to 2025-26 with the season buttons for last season's full data.</div><div id="td-sched"></div><div id="td-trends"></div>`,
+   personnel:last?`<div id="td-roster"></div>`:`<div id="td-roster"><div class="loading">Loading 2026-27 roster…</div></div>`,lineups:`<div id="td-lineups"></div>`,pace:`<div id="td-pace"></div>`,shooting:`<div id="td-shooting"></div>`,defense:`<div id="td-defense"></div>`},"");
+  wireShell();loadTeamData(dt,o,yr);}scrollTo(0,0)});
 
 // ---------- team data ----------
 // player: [jersey,name,pos,ht,cls,tag(T/F/""),from,slot,starter,mid{...},adv[gp,min,ortg,usg,ts,tpm,tpa,p3,ast,tov,blk,bpm],advLabel,key]
@@ -453,6 +468,7 @@ function shell(o,parts,foot){
  return `<div class="scout"><aside class="rail" id="rail">
   <div class="rteam">${LG(o[3],44,o[4]||String(o[1]).slice(0,3).toUpperCase())}<div><div class="label">${o[2]||""}</div><div class="rname">${name}</div></div></div>
   <div class="rchips">${confChip(o[1])}</div>
+  <div class="rseason">${o[0]==="bsu26"?`<div class="lock">2025-26 sample only</div>`:`<div class="seg" id="rail-season">${["2026-27","2025-26"].map(y=>`<button data-y="${y}" class="${y===SEASON?"on":""}" title="${y==="2026-27"?"Upcoming season: this year's roster and games":"Last season: full 2025-26 game, lineup and shot data"}">${y}</button>`).join("")}</div>`}</div>
   <div class="rwin" id="rail-toggle"></div>
   <nav class="rnav">${SECS.map(([k,l])=>`<button data-k="${k}"><b>${l}</b><span id="rh-${k}"></span></button>`).join("")}</nav>
  </aside><div class="smain">${SECS.map(([k,l])=>`<section class="ssec" id="sec-${k}"><h2 class="sh">${l}</h2>${k==="trends"&&!parts._t&&rankTile(o)?`<div class="kpis rkrow">${rankTile(o)}</div>`:""}${parts[k]||`<div class="cap">Nothing here yet for this opponent.</div>`}</section>`).join("")}${foot||""}</div></div>`;
@@ -460,6 +476,7 @@ function shell(o,parts,foot){
 let spy=null;
 function wireShell(){
  const rail=document.getElementById("rail");if(!rail)return;
+ rail.querySelectorAll("#rail-season button").forEach(b=>b.onclick=()=>{if(b.dataset.y===SEASON)return;SEASON=b.dataset.y;try{localStorage.setItem("biq-season",SEASON)}catch{}const y=scrollY;document.querySelector(".tab.on")?.click();scrollTo(0,0);});
  rail.querySelectorAll(".rnav button").forEach(b=>b.onclick=()=>{const el=document.getElementById("sec-"+b.dataset.k);if(el){const off=innerWidth<=1050?52+rail.offsetHeight+6:64;scrollTo({top:el.getBoundingClientRect().top+scrollY-off,behavior:"smooth"});}});
  if(spy)spy.disconnect();
  const vis=new Map();
@@ -473,30 +490,134 @@ const setHead=(k,v)=>{const el=document.getElementById("rh-"+k);if(el&&v!=null)e
 // 2025-26 player lines for any D-I team (Rankings data): personnel table + defenders.
 let NATP=null;
 async function teamPlayers(team){
- if(!NATP){try{const d=await (await fetch("/data/rankings/national-2025-26.json")).json();NATP=d.rows.map(r=>Object.fromEntries(d.cols.map((c,i)=>[c,r[i]])));}catch{NATP=[];}}
- return NATP.filter(p=>p.team===team);
+ return (await allPlayers()).filter(p=>p.team===team);
 }
 const fx=v=>v==null?"—":(+v).toFixed(1);
 function personnelHTML(P){
  const rows=[...P].sort((a,b)=>b.min-a.min);
- return `<div class="cap" style="margin:0 0 10px">Last season's players (${rows[0]?.season||"2025-26"}). The 2026-27 roster and depth chart come with the written report.</div>
+ return `<div class="cap" style="margin:0 0 10px">Last season's players (${rows[0]?.season||"2025-26"}). Click 2026-27 in the season buttons for this year's roster.</div>
  <div class="panel" style="overflow-x:auto"><table class="dtab"><thead><tr><th class="l">Player</th><th class="l">Cls</th><th class="l">Pos</th><th class="l">Ht</th><th>GP</th><th>MPG</th><th>PPG</th><th>RPG</th><th>APG</th><th>TS%</th><th>USG%</th><th class="sep">SCOR</th><th>PLAY</th><th>REB</th><th>DEF</th></tr></thead><tbody>
  ${rows.map(p=>`<tr><td class="l" style="color:#fff;font-weight:600">${p.name}</td><td class="l m">${p.cls||""}</td><td class="l m">${p.pos||""}</td><td class="l m">${p.ht||""}</td><td class="m">${p.gp??"—"}</td><td>${fx(p.mpg)}</td><td style="font-weight:700">${fx(p.ppg)}</td><td>${fx(p.rpg)}</td><td>${fx(p.apg)}</td><td>${fx(p.ts)}</td><td>${fx(p.usg)}</td>${["sc","pl","rb","df"].map((k,i)=>`<td class="${i==0?"sep":""}">${p[k]==null?'<span class="m">—</span>':`<span class="chip" style="background:${scol(p[k])}">${Math.round(p[k])}</span>`}</td>`).join("")}</tr>`).join("")}
  </tbody></table><div class="cap">Skill scores: 50 = D-I average, 70 = top 7%, 80+ = top 1%. Players with 50+ minutes.</div></div>`;
 }
 const scol=v=>pc(50+Math.max(-45,Math.min(45,(v-50)*1.5)));
-async function loadTeamData(team){
- const slot=id=>document.getElementById(id);
- if(!team||!TIDX[team]){["trends","lineups","pace","shooting","defense"].forEach(k=>{const el=slot("td-"+k);if(el&&k!=="trends")el.innerHTML=`<div class="cap">No D-I game data.</div>`;});return;}
- const marker=slot("rail");
+// ---------- seasons: 2026-27 (upcoming) vs 2025-26 (last season) ----------
+let SEASON="2026-27",VIEWYR="2026-27";try{const v=localStorage.getItem("biq-season");if(v==="2025-26"||v==="2026-27")SEASON=v;}catch{}
+let R27=null;const rosters27=async()=>R27||(R27=await fetch("/data/rosters-2027.json").then(r=>r.ok?r.json():{teams:{},d1:[]}).catch(()=>({teams:{},d1:[]})));
+const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json();}finally{clearTimeout(t);}};
+const nn=s=>String(s||"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b\.?/g,"").replace(/[^a-z]/g,"");
+const eid=o=>o?(typeof o[3]==="number"?o[3]:o[5]||null):null;
+const oslug=o=>o[1].toLowerCase().replace(/[^a-z]+/g,"-").replace(/-$/,"");
+// ESPN games (any opponent, incl. non-D-I) turned into the same per-game rows as the data files.
+// Possessions are estimated from the box score: FGA − OREB + TO + 0.475 × FTA.
+const estPoss=b=>b.fga-b.orb+b.to+0.475*b.fta;
+async function espnGames(espnId,season,have=[]){
+ if(typeof espnId!=="number")return {games:[],posted:false};
+ const R=await rosters27(),D1=new Set(R.d1||[]);
+ const S=await getJ(`/api/espn/schedule/${espnId}?season=${season}`);
+ const dd=(a,b)=>Math.abs(Date.parse(a)-Date.parse(b))/864e5;
+ const todo=S.games.filter(g=>g.done&&g.pts!=null&&!have.some(h=>h.oid===g.oid&&dd(h.d,g.d)<=1.5));
+ const out=[];
+ for(let i=0;i<todo.length;i+=6)await Promise.all(todo.slice(i,i+6).map(async g=>{try{
+  const B=await getJ(`/api/espn/box/${g.id}`),me=B.teams[String(espnId)],op=B.teams[String(g.oid)];if(!me||!op||!me.fga)return;
+  const row={d:g.d,opp:g.opp,oid:g.oid,loc:g.loc,conf:!!B.conf,pts:g.pts,op:g.op,poss:Math.round(estPoss(me)*10)/10,dposs:Math.round(estPoss(op)*10)/10,mins:40+5*Math.max(0,(g.per||2)-2),tpp:null,dtpp:null,nd:D1.size?!D1.has(g.oid):false,x:1};
+  for(const k of ["fga","fgm","tpa","tpm","fta","ftm","orb","drb","to","ast","blk"]){row[k]=me[k];row["d_"+k]=op[k];}
+  out.push(row);}catch{}}));
+ return {games:out,posted:S.games.length>0,sched:S.games};
+}
+// Add ESPN-only games (non-D-I opponents, anything the play-by-play missed) into a data file.
+function mergeGames(D,extra){
+ if(!extra.length)return D;
+ const all=[...D.games.map((g,i)=>({g,i})),...extra.map(g=>({g,i:-1}))].sort((a,b)=>a.g.d.localeCompare(b.g.d));
+ const map=new Map();all.forEach((x,ni)=>{if(x.i>=0)map.set(x.i,ni);});
+ return {...D,games:all.map(x=>x.g),lineups:{...D.lineups,rows:D.lineups.rows.map(r=>[map.get(r[0]),...r.slice(1)])},shots:{off:D.shots.off.map(r=>[map.get(r[0]),...r.slice(1)]),def:D.shots.def.map(r=>[map.get(r[0]),...r.slice(1)])}};
+}
+// 2026-27 roster: ESPN live (class, hometown) over the stored export (weights, returner flags).
+async function roster27(o){
+ const R=await rosters27(),id=eid(o),st=R.teams[oslug(o)]||R.teams[id]||null;
+ let live=null;if(id&&!st?.players?.length)try{const j=await getJ(`/api/espn/roster/${id}?season=2027`,6000);if(j.players?.length)live=j.players;}catch{}
+ const base=live||st?.players||[];if(!base.length)return null;
+ const sm=new Map((st?.players||[]).map(p=>[nn(p.name),p]));
+ return {src:live?"ESPN (live)":st?.src||"ESPN",last:st?.last||null,level:st?.level||null,players:base.map(p=>{const q=sm.get(nn(p.name))||{};return {...q,...p,wt:p.wt||q.wt||null,ht:p.ht||q.ht||"",ret:!!q.ret};})};
+}
+async function allPlayers(){if(!NATP){try{const d=await (await fetch("/data/rankings/national-2025-26.json")).json();NATP=d.rows.map(r=>Object.fromEntries(d.cols.map((c,i)=>[c,r[i]])));}catch{NATP=[];}}return NATP;}
+// Join each 2026-27 player to his 2025-26 line (any D-I team).
+const extraLine=(p,team,season)=>({name:p.name,team,season,gp:p.gp,mpg:p.mpg,ppg:p.ppg,rpg:p.rpg,apg:p.gp?p.ast/p.gp:null,ts:p.fga+p.fta?100*p.pts/(2*(p.fga+0.44*p.fta)):null,usg:null,p3:p.tpa?100*p.tpm/p.tpa:null,spg:p.gp?p.stl/p.gp:null,bpg:p.gp?p.blk/p.gp:null});
+async function joinLast(roster,team){
+ const A=await allPlayers(),by=new Map();for(const p of A){const k=nn(p.name);if(!by.has(k))by.set(k,[]);by.get(k).push(p);}
+ if(roster.last?.players)for(const p of roster.last.players){const k=nn(p.name);by.set(k,[extraLine(p,team,roster.last.season),...(by.get(k)||[])]);}
+ return roster.players.map(p=>{const c=by.get(nn(p.name))||[];const L=c.find(x=>x.team===team)||(c.length===1?c[0]:c.sort((a,b)=>(b.mpg||0)-(a.mpg||0))[0])||null;
+  const ret=p.ret||L?.team===team,cls=String(p.cls||p.year||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,2);
+  const tag=ret?"":L?"NEW":/^FR/.test(cls)||!cls?"FR":"NEW";
+  // no live class: move last season's class up a year
+  const up={FR:"SO",SO:"JR",JR:"SR",SR:"GR",GR:"GR"},lc=String(L?.cls||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,2);
+  return {...p,L,ret,tag,cls:cls||(lc?up[lc]||"":"")};});
+}
+function upcomingHTML(rows,team,src,last){
+ const sorted=[...rows].sort((a,b)=>(!!b.L-!!a.L)||((b.L?.mpg||0)-(a.L?.mpg||0)));
+ const ret=rows.filter(r=>r.ret),tr=rows.filter(r=>!r.ret&&r.L),nw=rows.filter(r=>!r.ret&&!r.L);
+ const teamMin=(last?.players||(NATP||[]).filter(p=>p.team===team)).reduce((a,p)=>a+(p.mpg||0)*(p.gp||0),0),retMin=ret.reduce((a,r)=>a+(r.L?.team===team?(r.L.mpg||0)*(r.L.gp||0):0),0);
+ const trPpg=tr.reduce((a,r)=>a+(r.L.ppg||0),0),top=sorted.find(r=>r.L);
+ const kp=(l,v,sub)=>`<div class="kpi"><span class="label">${l}</span><b>${v}</b><div class="sub">${sub}</div></div>`;
+ const lastName=n=>String(n).split(" ").filter(w=>!/^(Jr\.?|Sr\.?|II|III|IV)$/.test(w)).slice(-1)[0];
+ return `<div class="tdkpis" style="margin-top:0">${kp("Players",rows.length,`on the 2026-27 roster · ${src}`)}${kp("Returners",ret.length,teamMin?`${Math.round(100*retMin/teamMin)}% of last season's minutes back`:"from last season")}${kp("D-I transfers",tr.length,tr.length?`${fx(trPpg)} combined ppg last season`:"none")}${kp("Freshmen / other",nw.length,"no 2025-26 D-I stats")}${kp("Top returning scorer",top?lastName(top.name):"—",top?`${fx(top.L.ppg)} ppg${top.L.team!==team?" at "+top.L.team:""}`:"")}</div>
+ <div class="panel" style="overflow-x:auto;margin-top:12px"><table class="dtab"><thead>
+ <tr><th class="l" colspan="7">2026-27 roster</th><th class="grp sep" colspan="9">2025-26 season (any D-I team${src&&!/ESPN/.test(src)?" or their own":""})</th><th class="grp sep" colspan="4">Skill scores</th></tr>
+ <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th>Wt</th><th class="l">Cl</th><th class="l">Hometown</th><th class="l sep">Team</th><th>GP</th><th>MPG</th><th>PPG</th><th>RPG</th><th>APG</th><th><span data-def="ts">TS%</span></th><th><span data-def="usg">USG%</span></th><th><span data-def="p3">3P%</span></th><th class="sep">SCOR</th><th>PLAY</th><th>REB</th><th>DEF</th></tr></thead><tbody>
+ ${sorted.map(r=>{const L=r.L,tg=r.tag==="NEW"?' <span class="tag new">NEW</span>':r.tag==="FR"?' <span class="tag fr">FR</span>':"";
+  return `<tr><td class="l m">${r.jersey??""}</td><td class="l pl" style="color:#fff;font-weight:600">${r.name}${tg}</td><td class="l m">${r.pos||""}</td><td class="m">${r.ht||""}</td><td class="m">${r.wt||"—"}</td><td class="l m">${r.cls||""}</td><td class="l m">${r.home||""}</td>
+  ${L?`<td class="l sep" style="color:${L.team===team?"var(--muted)":"#d6d8db"}">${L.team===team?"same":L.team}</td><td class="m">${L.gp??"—"}</td><td>${fx(L.mpg)}</td><td style="font-weight:700">${fx(L.ppg)}</td><td>${fx(L.rpg)}</td><td>${fx(L.apg)}</td><td>${fx(L.ts)}</td><td>${fx(L.usg)}</td><td>${fx(L.p3)}</td>${["sc","pl","rb","df"].map((k,i)=>`<td class="${i==0?"sep":""}">${L[k]==null?'<span class="m">—</span>':`<span class="chip" style="background:${scol(L[k])}">${Math.round(L[k])}</span>`}</td>`).join("")}`
+   :`<td class="l sep m" colspan="13">${r.ret?"returner · under 50 minutes last season":r.prev?`from ${r.prev}`:r.tag==="FR"?(/^FR/.test(r.cls)?"freshman: no college stats yet":"freshman / international: no D-I history"):"no 2025-26 D-I stats (non-D-I, JUCO or international)"}</td>`}</tr>`;}).join("")}
+ </tbody></table><div class="cap">Roster: ${src}. No tag = returner · <span class="tag new">NEW</span> = transfer in · <span class="tag fr">FR</span> = freshman / international. Last-season lines are matched by name to 2025-26 D-I players with 50+ minutes. Skill scores: 50 = D-I average, 70 = top 7%, 80+ = top 1%.</div></div>`;
+}
+function schedHTML(sched){
+ if(!sched?.length)return `<div class="panel" style="margin-top:10px"><div class="label ptitle"><span>2026-27 schedule</span></div><div class="cap" style="margin:0">ESPN hasn't posted their 2026-27 schedule yet. Results fill in here automatically once it does.</div></div>`;
+ const done=sched.filter(g=>g.done&&g.pts!=null);
+ return `<div class="panel" style="margin-top:10px"><div class="label ptitle"><span>2026-27 schedule</span><span>${done.length?`${done.filter(g=>g.pts>g.op).length}-${done.filter(g=>g.pts<g.op).length} so far`:"no games played yet"}</span></div><div class="ysched">${sched.map(g=>`<div><span class="m">${new Date(g.d+"T12:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>${LG(g.oid||null,18,"")}<span>${g.loc==="A"?"@ ":g.loc==="N"?"vs ":""}${g.opp}</span>${g.done&&g.pts!=null?`<b class="${g.pts>g.op?"w":"l"}" style="margin-left:auto">${g.pts>g.op?"W":"L"} ${g.pts}-${g.op}</b>`:""}</div>`).join("")}</div></div>`;
+}
+const noGames=(msg)=>{for(const k of ["lineups","pace","shooting","defense"]){const el=document.getElementById("td-"+k);if(el)el.innerHTML=`<div class="cap">${msg}</div>`;}const tg=document.getElementById("rail-toggle");if(tg)tg.innerHTML="";};
+async function loadTeamData(team,o,yr="2025-26"){
+ const slot=id=>document.getElementById(id),marker=slot("rail");
+ const stale=()=>slot("rail")!==marker;
+ const sumCb=S=>{for(const k of ["trends","lineups","pace","shooting","defense"])setHead(k,S[k]);document.querySelectorAll("#td-defense table, #td-lineups table").forEach(sortableTable);};
+ const S6=()=>({toggle:slot("rail-toggle"),trends:slot("td-trends"),lineups:slot("td-lineups"),pace:slot("td-pace"),shooting:slot("td-shooting"),defense:slot("td-defense")});
+ if(yr==="2026-27"){
+  const espnId=eid(o);
+  // roster
+  const ro=slot("td-roster");
+  if(ro)try{const R=o&&await roster27(o);if(stale())return;
+   if(!R){ro.innerHTML=`<div class="cap">No 2026-27 roster loaded for ${o?.[1]||team} yet.</div>`;}
+   else{const rows=await joinLast(R,team);if(stale())return;ro.innerHTML=upcomingHTML(rows,team,R.src,R.last);ro.querySelectorAll("table").forEach(sortableTable);
+    setHead("personnel",`${rows.filter(r=>r.ret).length} back · ${rows.filter(r=>!r.ret).length} new`);}
+  }catch(e){ro.innerHTML=`<div class="cap">Roster unavailable (${e.message}).</div>`;}
+  // games
+  let G={games:[],posted:false};try{G=await espnGames(espnId,2027);}catch{}
+  if(stale())return;
+  const sc=slot("td-sched");if(sc)sc.innerHTML=espnId?schedHTML(G.sched):`<div class="cap" style="margin-top:10px">${o[1]} isn't on ESPN, so 2026-27 results are entered by hand from their athletics site.</div>`;
+  if(!G.games.length){noGames(`No 2026-27 games played yet. Click <b>2025-26</b> in the season buttons for last season's ${TIDX[team]?"lineups, pace, shooting and defense":"data"}.`);return;}
+  const R=o&&await roster27(o).catch(()=>null),P=R?(await joinLast(R,team)).filter(r=>r.L).map(r=>({...r.L,name:r.name})):[];
+  const D={team:o[1],season:"2026-27",games:G.games.sort((a,b)=>a.d.localeCompare(b.d)),lineups:{names:[],defs:[],rows:[]},shots:{off:[],def:[]},boxOnly:true};
+  renderTeamData(S6(),D,TDIST,{players:P,onSummary:sumCb});return;
+ }
+ if(!team||!TIDX[team]){
+  // non-D-I opponent: box scores from their own site (stored) or ESPN, no play-by-play
+  const R=o?await roster27(o).catch(()=>null):null,last=R?.last;let games=[],src="";
+  if(last?.games?.length){games=last.games.map(g=>({...g,poss:Math.round(estPoss(g)*10)/10,dposs:Math.round(estPoss({fga:g.d_fga,orb:g.d_orb,to:g.d_to,fta:g.d_fta})*10)/10,mins:40,tpp:null,dtpp:null,conf:false,oid:0}));src=last.src;}
+  else if(eid(o)){try{games=(await espnGames(eid(o),2026)).games.map(g=>({...g,nd:false}));src="ESPN box scores (games vs D-I teams only)";}catch{}}
+  if(stale())return;
+  const ro=slot("td-roster");if(ro&&last?.players)ro.innerHTML=`<div class="cap" style="margin:0 0 10px">2025-26 players (${last.src}).</div><div class="panel" style="overflow-x:auto"><table class="dtab"><thead><tr><th class="l">Player</th><th>GP</th><th>MPG</th><th>PPG</th><th>RPG</th><th>APG</th><th><span data-def="ts">TS%</span></th><th>3P%</th><th>3PA</th><th>SPG</th><th>BPG</th></tr></thead><tbody>${last.players.map(p=>extraLine(p,team,"")).map(L=>`<tr><td class="l" style="color:#fff;font-weight:600">${L.name}</td><td class="m">${L.gp}</td><td>${fx(L.mpg)}</td><td style="font-weight:700">${fx(L.ppg)}</td><td>${fx(L.rpg)}</td><td>${fx(L.apg)}</td><td>${fx(L.ts)}</td><td>${fx(L.p3)}</td><td class="att">${last.players.find(x=>x.name===L.name).tpa}</td><td>${fx(L.spg)}</td><td>${fx(L.bpg)}</td></tr>`).join("")}</tbody></table></div>`,ro.querySelectorAll("table").forEach(sortableTable);
+  if(!games.length){["lineups","pace","shooting","defense"].forEach(k=>{const el=slot("td-"+k);if(el)el.innerHTML=`<div class="cap">No 2025-26 game data for ${o?.[1]||team}.</div>`;});return;}
+  const tr=slot("td-trends");if(tr&&!tr.innerHTML)tr.innerHTML="";
+  renderTeamData(S6(),{team:o[1],season:"2025-26",games:games.sort((a,b)=>a.d.localeCompare(b.d)),lineups:{names:[],defs:[],rows:[]},shots:{off:[],def:[]},boxOnly:true,src},null,{players:[],onSummary:sumCb});return;}
  try{
-  const [D,P]=await Promise.all([(await fetch(`/data/teams/${TIDX[team]}.json`)).json(),teamPlayers(team)]);
-  if(slot("rail")!==marker)return;
+  let [D,P]=await Promise.all([(await fetch(`/data/teams/${TIDX[team]}.json`)).json(),teamPlayers(team)]);
+  if(stale())return;
+  try{const X=await espnGames(D.espnId,2026,D.games);D=mergeGames(D,X.games);}catch{}
+  if(stale())return;
   const ro=slot("td-roster");if(ro){ro.innerHTML=personnelHTML(P);ro.querySelectorAll("table").forEach(sortableTable);}
   const top=[...P].sort((a,b)=>(b.ppg||0)-(a.ppg||0))[0];
   if(!document.getElementById("rh-personnel").innerHTML&&top)setHead("personnel",`top scorer ${top.name.split(" ").filter(w=>!/^(Jr\.?|Sr\.?|II|III|IV)$/.test(w)).slice(-1)[0]} ${fx(top.ppg)}`);
-  renderTeamData({toggle:slot("rail-toggle"),trends:slot("td-trends"),lineups:slot("td-lineups"),pace:slot("td-pace"),shooting:slot("td-shooting"),defense:slot("td-defense")},D,TDIST,
-   {players:P,onSummary:S=>{for(const k of ["trends","lineups","pace","shooting","defense"])setHead(k,S[k]);document.querySelectorAll("#td-defense table, #td-lineups table").forEach(sortableTable);}});
+  renderTeamData(S6(),D,TDIST,{players:P,onSummary:sumCb});
  }catch(e){const el=slot("td-trends");if(el)el.innerHTML=`<div class="cap">Game data unavailable (${e.message}).</div>`;}
 }
 
@@ -537,7 +658,7 @@ function render(t,o){
  document.querySelectorAll("#page table.dtab").forEach(sortableTable);
  setHead("personnel",t.leaders?.[0]?.[1]?.[0]?`${mid?"proj. ":""}top scorer ${String(t.leaders[0][1][0][0]).split(" ").filter(w=>!/^(Jr\.?|Sr\.?|II|III|IV)$/.test(w)).slice(-1)[0]} ${t.leaders[0][1][0][1]}`:"");
  wireDepth(t);
- loadTeamData(t.dataTeam);
+ loadTeamData(t.dataTeam,o||OPP.find(x=>x[0]===t.key),t.key==="bsu26"?"2025-26":SEASON);
  // trends
  const tg=document.getElementById("trends");const yrs=t.yrs;
  t.trends.forEach(([k,name,vals,proj,better,avg])=>{const W=290,H=170,m={t:40,b:30,l:26,r:30},svg=d3.select(tg).append("svg").attr("viewBox",`0 0 ${W} ${H}`),x=d3.scalePoint(yrs,[m.l,W-m.r]);
@@ -561,7 +682,7 @@ for(const k in T)T[k].key=k;
  const [ti,td]=await Promise.all([fetch("/data/teams/_index.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/data/teams/_dist.json").then(r=>r.ok?r.json():null).catch(()=>null)]);
  if(ti)TIDX=Object.fromEntries(ti.teams.map(x=>[x.team,x.slug]));TDIST=td;
  await loadLiveRanks();}
-{const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);if(i>=0)document.querySelector(`.tab[data-i="${i}"]`).click();else render(T.uw);}
+{const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);document.querySelector(`.tab[data-i="${i>=0?i:1}"]`).click();}
 </script>
 </body>
 </html>

@@ -197,3 +197,10 @@ th[data-dir="asc"]::after{content:" ▲";font-size:8px}
 .smain .dtab{font-size:12px}
 .smain .dtab td,.smain .dtab th{padding-left:5px;padding-right:5px}
 .smain .dtab td .chip{min-width:38px;padding:2px 4px}
+/* breathing room on both sides of every vertical divider */
+table th.sep,table td.sep{padding-left:14px}
+table th:has(+ .sep),table td:has(+ .sep){padding-right:14px}
+.smain table th.sep,.smain table td.sep{padding-left:10px}
+.smain table th:has(+ .sep),.smain table td:has(+ .sep){padding-right:10px}
+th.grp{padding-left:10px;padding-right:10px}
+thead tr:last-child th{padding-top:7px;padding-bottom:8px;vertical-align:bottom}

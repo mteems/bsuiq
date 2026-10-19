@@ -122,6 +122,63 @@ async function gameLog(espnId, season, ctx) {
   return parseGameLog(await res.json());
 }
 
+// ---------- ESPN team data (any team, any game incl. non-D-I and exhibitions) ----------
+const ESPN_MBB = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball";
+async function espnCached(url, ctx, ttl) {
+  const cache = typeof caches !== "undefined" ? caches.default : null, key = new Request(url);
+  let res = cache ? await cache.match(key) : null;
+  if (!res) {
+    const up = await fetch(url, { headers: { accept: "application/json" } });
+    if (!up.ok) throw new Error(`ESPN ${up.status}`);
+    res = new Response(await up.text(), { headers: { "content-type": "application/json", "cache-control": `public, max-age=${ttl}` } });
+    if (cache) ctx.waitUntil(cache.put(key, res.clone()));
+  }
+  return res.json();
+}
+// Schedule: every game with score and opponent (ESPN id, name), completed or not.
+export function parseSchedule(j, teamId) {
+  return (j.events || []).map((e) => {
+    const c = e.competitions?.[0] || {}, me = (c.competitors || []).find((x) => String(x.id) === String(teamId)), op = (c.competitors || []).find((x) => String(x.id) !== String(teamId));
+    const sc = (x) => (x?.score == null ? null : +(x.score.value ?? x.score.displayValue ?? x.score));
+    return { id: e.id, d: e.date ? new Date(Date.parse(e.date) - 7 * 3600e3).toISOString().slice(0, 10) : "", per: c.status?.period || 2, done: !!c.status?.type?.completed, loc: c.neutralSite ? "N" : me?.homeAway === "home" ? "H" : "A",
+      opp: op?.team?.shortDisplayName || op?.team?.displayName || "", oid: +op?.id || 0, pts: sc(me), op: sc(op), type: e.seasonType?.name || "" };
+  });
+}
+// Team box score totals for one game, for both teams.
+export function parseBox(j) {
+  const out = {};
+  for (const t of j.boxscore?.teams || []) {
+    const s = {}; for (const x of t.statistics || []) s[x.name] = x.displayValue;
+    const pair = (k) => String(s[k] || "").split("-").map(Number);
+    const [fgm, fga] = pair("fieldGoalsMade-fieldGoalsAttempted"), [tpm, tpa] = pair("threePointFieldGoalsMade-threePointFieldGoalsAttempted"), [ftm, fta] = pair("freeThrowsMade-freeThrowsAttempted");
+    out[t.team?.id] = { fgm, fga, tpm, tpa, ftm, fta, orb: +s.offensiveRebounds || 0, drb: +s.defensiveRebounds || 0, ast: +s.assists || 0, stl: +s.steals || 0, blk: +s.blocks || 0, to: +(s.totalTurnovers ?? s.turnovers) || 0 };
+  }
+  return out;
+}
+export function parseRoster(j) {
+  const ht = (s) => { const m = String(s || "").match(/(\d+)'\s*(\d+)/); return m ? `${m[1]}-${m[2]}` : ""; };
+  return (j.athletes || []).map((a) => ({ id: a.id, name: a.displayName, jersey: a.jersey ?? "", pos: a.position?.abbreviation || "", ht: ht(a.displayHeight), wt: a.weight || null,
+    cls: a.experience?.abbreviation || "", home: a.birthPlace?.displayText || [a.birthPlace?.city, a.birthPlace?.state || a.birthPlace?.country].filter(Boolean).join(", ") }));
+}
+async function espnApi(path, url, ctx) {
+  let m;
+  if ((m = path.match(/^\/api\/espn\/schedule\/(\d+)$/))) {
+    const season = url.searchParams.get("season") || seasonYear();
+    const j = await espnCached(`${ESPN_MBB}/teams/${m[1]}/schedule?season=${season}&seasontype=2`, ctx, 3 * 3600);
+    return json({ team: j.team?.displayName, season: +season, games: parseSchedule(j, m[1]) });
+  }
+  if ((m = path.match(/^\/api\/espn\/box\/(\d+)$/))) {
+    const j = await espnCached(`${ESPN_MBB}/summary?event=${m[1]}`, ctx, 30 * 86400);
+    return json({ teams: parseBox(j), conf: !!j.header?.competitions?.[0]?.conferenceCompetition });
+  }
+  if ((m = path.match(/^\/api\/espn\/roster\/(\d+)$/))) {
+    const season = url.searchParams.get("season") || seasonYear();
+    const j = await espnCached(`${ESPN_MBB}/teams/${m[1]}/roster?season=${season}`, ctx, 12 * 3600);
+    return json({ team: j.team?.displayName, season: +season, players: parseRoster(j) });
+  }
+  return null;
+}
+
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "private, no-store" } });
 
 // ---------------------------------------------------------------- router
@@ -257,6 +314,9 @@ export default {
       catch (e) { return json({ error: "gamelog_unavailable", detail: String(e.message || e) }, 502); }
     }
     if (path === "/api/positions") return positionsApi(request, env);
+    if (path.startsWith("/api/espn/")) {
+      try { const r = await espnApi(path, url, ctx); if (r) return r; } catch (e) { return json({ error: "espn_unavailable", detail: String(e.message || e) }, 502); }
+    }
     if (path === "/api/ranks") {
       if (!env.STAFF) return json({});
       if (url.searchParams.get("refresh") === "torvik") await refreshTorvik(env);
