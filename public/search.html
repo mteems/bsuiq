@@ -705,13 +705,44 @@ function expandedHTML(p) {
   const head = ["Season history", "Year", "GP", "MIN", "PTS", "REB", "AST", "STL", "TO", "FG%", "2P%", "3P%", "FT%", "eFG%", "USG%"].map((l) => `<div>${l}</div>`).join("");
   return `<div class="xp"><div class="hist"><div class="hrow hh">${head}</div>${s ? histRow(s, "current") : ""}${old.map((x) => histRow(x, "prev")).join("")}${c ? histRow(c, "career") : ""}</div><div class="gx">${gamesHTML(p)}</div></div>`;
 }
+// ESPN game log parser (same as the worker's parseGameLog), for the in-browser fallback.
+const madeAtt = (v) => { const [m, a] = String(v ?? "").split("-").map((x) => Number.parseFloat(x) || 0); return [m || 0, a || 0]; };
+function parseGameLog(j, season) {
+  const names = j.names || [], events = j.events || {}, rows = new Map();
+  for (const st of j.seasonTypes || []) for (const cat of st.categories || []) {
+    if (cat.type && cat.type !== "event") continue;
+    for (const e of cat.events || []) {
+      const ev = events[e.eventId]; if (!ev) continue;
+      const s = Object.fromEntries(names.map((n, i) => [n, e.stats?.[i]])), f = (k) => Number.parseFloat(s[k]) || 0;
+      const [fgm, fga] = madeAtt(s["fieldGoalsMade-fieldGoalsAttempted"]), [tpm, tpa] = madeAtt(s["threePointFieldGoalsMade-threePointFieldGoalsAttempted"]), [ftm, fta] = madeAtt(s["freeThrowsMade-freeThrowsAttempted"]);
+      const home = String(ev.team?.id ?? "") === String(ev.homeTeamId ?? ""), n = (v) => (v == null || v === "" ? null : +v);
+      rows.set(e.eventId, { id: e.eventId, date: ev.gameDate || "", opp: ev.opponent?.displayName || ev.opponent?.abbreviation || "Opponent", oppId: ev.opponent?.id || null, atVs: ev.atVs || "", result: ev.gameResult || "", tm: n(home ? ev.homeTeamScore : ev.awayTeamScore), op: n(home ? ev.awayTeamScore : ev.homeTeamScore), min: f("minutes"), pts: f("points"), reb: f("totalRebounds"), ast: f("assists"), stl: f("steals"), blk: f("blocks"), to: f("turnovers"), fgm, fga, tpm, tpa, ftm, fta, season });
+    }
+  }
+  return [...rows.values()];
+}
+const endYear = (s) => +String(s).slice(0, 4) + 1;
+async function gamesDirect(espn, seasons) {
+  const out = [], errors = [];
+  await Promise.all(seasons.map(async (s) => {
+    try {
+      const r = await fetch(`https://site.web.api.espn.com/apis/common/v3/sports/basketball/mens-college-basketball/athletes/${espn}/gamelog?region=us&lang=en&contentorigin=espn&season=${endYear(s)}`);
+      if (!r.ok) throw new Error("ESPN " + r.status);
+      out.push(...parseGameLog(await r.json(), s));
+    } catch (e) { errors.push(`${s}: ${e.message || e}`); }
+  }));
+  const seen = new Set();
+  return { games: out.filter((g) => (seen.has(g.id) ? false : seen.add(g.id))).sort((a, b) => b.date.localeCompare(a.date)), errors };
+}
 async function loadGames(p) {
   if (!p.espn || GAMES.has(p.id)) return;
   GAMES.set(p.id, { loading: true });
+  const seasons = [...new Set(p.seasons.map((s) => s.season))].slice(0, 6);
   try {
-    const seasons = [...new Set(p.seasons.map((s) => s.season))].slice(0, 6).join(",");
-    const r = await getJSON(`/api/hub/games/espn-${p.espn}?seasons=${seasons}`);
-    GAMES.set(p.id, { games: r.games || [], errors: r.errors || [] });
+    let r = await getJSON(`/api/hub/games/espn-${p.espn}?seasons=${seasons.join(",")}`).catch(() => ({ games: [], errors: ["server"] }));
+    // If ESPN turns the server away, ask ESPN straight from the browser.
+    if (!r.games?.length && r.errors?.length) r = await gamesDirect(p.espn, seasons);
+    GAMES.set(p.id, { games: r.games || [], errors: r.errors || [], error: !r.games?.length && r.errors?.length === seasons.length ? r.errors.join("; ") : "" });
   } catch (e) { GAMES.set(p.id, { games: [], error: String(e.message || e) }); }
   if (expanded.has(p.id)) replaceRow(p.id);
 }

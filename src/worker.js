@@ -110,12 +110,12 @@ export function parseGameLog(payload) {
 }
 
 async function gameLog(espnId, season, ctx) {
-  const url = `https://site.web.api.espn.com/apis/common/v3/sports/basketball/mens-college-basketball/athletes/${espnId}/gamelog?season=${seasonEndYear(season)}`;
+  const url = `https://site.web.api.espn.com/apis/common/v3/sports/basketball/mens-college-basketball/athletes/${espnId}/gamelog?region=us&lang=en&contentorigin=espn&season=${seasonEndYear(season)}`;
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const key = new Request(url);
   let res = cache ? await cache.match(key) : null;
   if (!res) {
-    const up = await fetch(url, { headers: { accept: "application/json" } });
+    const up = await fetch(url, { headers: { accept: "application/json", "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36", referer: "https://www.espn.com/" } });
     if (!up.ok) throw new Error(`ESPN ${up.status}`);
     res = new Response(await up.text(), { headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" } });
     if (cache) ctx.waitUntil(cache.put(key, res.clone()));
