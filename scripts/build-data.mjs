@@ -66,6 +66,22 @@ function playerScores(p) {
       out.skills = { version: SK.version, season: SK.season, pool: SK.pool, team: r[1], min: r[3], mpg: r[4], ref: !!r[6], s: sk };
     }
   }
+  // No 2025-26 skill row (e.g. his last D-I season was earlier): use that season's national rankings.
+  if (!out.skills) {
+    const last = p.seasons[p.seasons.length - 1];
+    const f = last && src(`rankings/national-${last.season}.json`);
+    if (f && existsSync(f)) {
+      const R = JSON.parse(readFileSync(f, "utf8")), C = Object.fromEntries(R.cols.map((c, i) => [c, i]));
+      const hit = R.rows.filter((x) => normName(x[C.name]) === normName(`${p.first_name} ${p.last_name}`));
+      const NR = hit.length === 1 ? hit[0] : hit.find((x) => normName(x[C.team]).slice(0, 5) === normName(last.school).slice(0, 5));
+      if (NR) {
+        const sk = {}, pool = (key) => R.rows.filter((x) => x[C["rk_" + key]] != null).length;
+        for (const [k, key] of [["scoring", "sc"], ["playmaking", "pl"], ["rebounding", "rb"], ["defense", "df"]])
+          if (NR[C[key]] != null) sk[k] = { score: NR[C[key]], rank: NR[C["rk_" + key]], pool: pool(key) };
+        if (Object.keys(sk).length) out.skills = { version: "rankings", season: last.season, pool: pool("sc"), team: NR[C.team], min: Math.round(NR[C.min] || 0), mpg: null, ref: true, s: sk };
+      }
+    }
+  }
   return out;
 }
 

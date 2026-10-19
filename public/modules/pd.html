@@ -359,7 +359,7 @@ function pmStory(X){
   if(s2u!=null&&s2>=15&&s2u>=.7&&t3a!=null&&t3a>=.7)c2=" He creates his own twos, but his threes mostly come off passes.";
   else if(all!=null&&D.fgm>=20&&all>=.6)c2=" He creates most of his own shots.";
   else if(all!=null&&D.fgm>=20&&all<=.35)c2=" Most of his makes come off passes.";
-  let t=`<b>A ${load}${noun}${sec}.${c2}</b>`;
+  let t=(D.gamesDI<10?`<b>Small sample (${D.gamesDI} D-I game${D.gamesDI==1?"":"s"}, ${f0(D.minutes)} minutes): read this as a hint, not a verdict.</b> `:"")+`<b>A ${load}${noun}${sec}.${c2}</b>`;
   if(D.usg!=null)t+=` He used ${f1(D.usg)}% of possessions and turned it over on ${f1(D.tovp)}%${bp!=null?(bp<=2?`, one of the highest rates among D-I players with similar usage`:bp>=98?`, one of the lowest rates among D-I players with similar usage`:`, ${bp>=50?`better than ${bp}%`:`worse than ${100-bp}%`} of D-I players with similar usage`):""}.`;
   const bits=[];
   if(rim.t>=8)bits.push(`${Math.round((rim.t-rim.a)/rim.t*100)}% of his made layups`);

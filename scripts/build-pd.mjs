@@ -37,6 +37,7 @@ const TID = new Map();
 for (const g of parseCSV(readFileSync(join(dir, "team_games_2026.csv"), "utf8"))) if (g.team_ncaa_team_id && g.team_espn_team_id) TID.set(g.team_ncaa_team_id, g.team_espn_team_id);
 const search = JSON.parse(readFileSync(join(root, "search/players.json"), "utf8"));
 const byEspn = new Map(search.players.map((r) => [String(r[search.pcols.indexOf("espn")]), r[0]]));
+const TIDBYNAME = new Map(search.players.filter((r) => r[search.pcols.indexOf("tid")]).map((r) => [r[search.pcols.indexOf("team")], String(r[search.pcols.indexOf("tid")])]));
 const TEAMD = new Map(); for (const t of parseCSV(readFileSync(join(dir, "team_strength_adjusted.csv"), "utf8"))) TEAMD.set(`${t.season}|${t.team}`, n(t.adjusted_def_rating));
 
 // ---------------------------------------------------------------- Torvik, by season
@@ -172,7 +173,7 @@ for (const p of roster.players) {
     .map(([k, l, b, dim]) => [k, l, rd(oo.on[k]), rd(oo.off[k]), b, dim || 0]).filter((r) => r[2] != null && r[3] != null) : [];
   const out = {
     id: p.id, cid, espn, name: `${p.first_name} ${p.last_name}`, first: p.first_name, last: p.last_name,
-    season: label(Y), year: Y, team: cur.team, teamShort: TEAMSHORT(cur.team), teamEspn: TID.get(cur.team_ncaa_team_id) || null, conf, confName: cur.conference, confShort: CONFSHORT(cur.conference), role,
+    season: label(Y), year: Y, team: cur.team, teamShort: TEAMSHORT(cur.team), teamEspn: TID.get(cur.team_ncaa_team_id) || TIDBYNAME.get(cur.team) || null, conf, confName: cur.conference, confShort: CONFSHORT(cur.conference), role,
     arcTeams: [...new Set(years.map((y) => mine.find((m) => +m.season === y)?.team).filter(Boolean).map(TEAMSHORT))], torvikYears: years.map((y, i) => (careerT[i] ? 1 : 0)),
     gamesDI: v.games_played, minutes: v.minutes, pts: v.points, fga: v.fga, fta: v.fta, ast: v.assists, tov: v.turnovers, fgm, unast: v.unassisted_fgm || 0,
     poolN: T?.pool.length || 0, roleN: rolePool.length, confN: confPool.length, torvik: !!tme,
