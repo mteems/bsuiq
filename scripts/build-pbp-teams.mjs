@@ -1,6 +1,6 @@
 // Team pages for opponents outside our NCAA play-by-play pipeline (Bismarck State, West Coast
 // Baptist), built from the play-by-play the staff collected from box-score sites.
-//   node scripts/build-pbp-teams.mjs <folder with all_play_by_play.csv, games.csv, scoring_validation.csv>
+//   node scripts/build-pbp-teams.mjs data-src/pbp-teams   (the staff zip: all_play_by_play.csv, games.csv, scoring_validation.csv)
 // Writes data-src/teams/<slug>.json in the same shape as scripts/build-teams.mjs (games, lineups),
 // plus shot types without locations (zones) and per-player season lines, and adds the teams to
 // data-src/teams/_index.json (run after build-teams.mjs, which rewrites the index).
