@@ -138,6 +138,13 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .ssec+.ssec{margin-top:18px;border-top:1px solid #34363b}
 .sh{font-size:24px;font-weight:750;letter-spacing:-.02em;margin-bottom:4px}
 .ssec>section:first-of-type,.ssec>.hero:first-of-type{margin-top:12px}
+.rktile{background:linear-gradient(135deg,#24262a,#1e1f22);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:12px}
+.rkg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+.rkc{background:#2a2c31;border-radius:10px;padding:14px 16px}
+.rkh{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#cfd3d9;font-weight:600}.rkh img{width:16px;height:16px;border-radius:3px}
+.rkc>b{display:block;font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:8px}
+.rks{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:4px}
+.rkb{font-family:var(--mono);font-size:10.5px;color:#b9bdc4;margin-top:8px;padding-top:8px;border-top:1px solid #3a3d42}
 .note{background:#24262a;border:1px dashed #4a4d53;border-radius:8px;padding:12px;font-size:13px;color:#cfd3d9}
 @media (max-width:1050px){
  .scout{grid-template-columns:minmax(0,1fr);gap:0;padding:0 16px 24px}
@@ -207,15 +214,33 @@ const EM=(rk,sfx="")=>`<span class="kp" title="EvanMiya team ratings"><img alt="
 const TR_ALIAS={"Sam Houston":"Sam Houston St.","TAMU-CC":"Texas A&M Corpus Chris","Boise St. '26":"Boise St."};
 const EM_ALIAS={"Sam Houston":"Sam Houston State","TAMU-CC":"Texas A&M-Corpus Christi"};
 const emName=n=>EM_ALIAS[n]||n.replace(/ St\.$/," State");
+let LIVE={};
 async function loadLiveRanks(){
- try{const r=await fetch("/api/ranks");if(!r.ok)return;const L=await r.json();
-  const pos=(src,nm)=>{const i=L[src]?.list?.indexOf(nm);return i>=0?i+1:null;};
-  for(const name of Object.keys(XR)){if(name==="_bsu")continue;const x=XR[name];
-   if(x.final){const v=pos("torvik_prev",TR_ALIAS[name]||name);if(v)x.tr=v;continue;}
-   const t=pos("torvik",TR_ALIAS[name]||name),e=pos("evanmiya",emName(name)),tp=pos("torvik_prev",TR_ALIAS[name]||name);
-   if(t)x.tr=t;if(e)x.em=e;if(tp)x.tr26=tp;}
-  XR._updated={torvik:L.torvik?.updated,evanmiya:L.evanmiya?.updated};
- }catch{}
+ try{const r=await fetch("/api/ranks");if(!r.ok)return;LIVE=await r.json();}catch{}
+}
+// 2026-27 conference by opponent (fallback when live data lacks it). Torvik codes.
+const CONF26={"Washington":"B10","Butler":"BE","Oakland":"Horz","Nebraska":"B10","Sam Houston":"CUSA","Idaho St.":"BSky","Drake":"MVC","North Texas":"Amer","North Dakota St.":"Sum","Wichita St.":"Amer","TAMU-CC":"Slnd","Utah Valley":"BW","Santa Clara":"WCC","New Mexico":"MWC","Lamar":"Slnd","Utah St.":"P12","Oregon St.":"P12","Washington St.":"P12","Gonzaga":"P12","Fresno St.":"P12","San Diego St.":"P12","Texas St.":"P12","Colorado St.":"P12","Boise St. '26":"MWC","Bismarck St.":"NSIC","West Coast Baptist":"NCCAA"};
+const CONFS={B10:["big_ten","Big Ten"],BE:["big_east","Big East"],Horz:["horizon","Horizon League"],CUSA:["conference_usa","Conference USA"],BSky:["big_sky","Big Sky"],MVC:["missouri_valley","Missouri Valley"],Amer:["american","American"],Sum:["summit_league","Summit League"],Slnd:["southland","Southland"],BW:["big_west","Big West"],WCC:["wcc","WCC"],MWC:["mountain_west","Mountain West"],P12:["pac_12","Pac-12"],ACC:["acc","ACC"],SEC:["sec","SEC"],B12:["big_12","Big 12"],A10:["atlantic_10","Atlantic 10"],NSIC:["","NSIC · D-II"],NCCAA:["","NCCAA"]};
+const confOf=name=>{const tn=TR_ALIAS[name]||name,L=LIVE.torvik;let c=null;if(L?.conf&&name!=="Boise St. '26"){const i=L.list.indexOf(tn);if(i>=0)c=L.conf[i];}return c||CONF26[name]||null;};
+const confChip=name=>{const c=confOf(name);if(!c)return"";const [k,n]=CONFS[c]||["",c];return k?CF(k,n):`<span class="cf" style="padding-left:8px">${n}</span>`;};
+const livePos=(src,nm)=>{const i=LIVE[src]?.list?.indexOf(nm);return i>=0?i+1:null;};
+// Ranks for one opponent tab: live first, snapshot (XR) second.
+function ranksFor(o,t){
+ const name=o[1],x=XR[name]||{},tn=TR_ALIAS[name]||name,sample=!!x.final;
+ const out={};
+ out.kp=sample?{rk:t?.kp?+t.kp:null,note:"Mar 2 (final)"}:{rk:livePos("kenpom",tn)||(t?.kp?+t.kp:null),note:"2026-27"};
+ out.tr=sample?{rk:livePos("torvik_prev",tn)||x.tr,note:"final 2025-26"}:{rk:livePos("torvik",tn)||x.tr,note:(x.tr26||livePos("torvik_prev",tn))?`last season #${livePos("torvik_prev",tn)||x.tr26}`:"2026-27"};
+ out.em=sample?null:{rk:livePos("evanmiya",emName(name))||x.em,note:"2026-27"};
+ if(!sample&&LIVE.ap){const id=typeof o[3]==="number"?String(o[3]):null;const rk=id?LIVE.ap.ids?.[id]:null;out.ap={rk:rk||null,note:rk?(LIVE.ap.week||"AP poll"):(LIVE.ap.others?.[id]?`others receiving votes (${LIVE.ap.others[id]} pts)`:"not ranked")};}
+ return out;
+}
+function rankTile(o,t){
+ if(!XR[o[1]]&&!(t&&t.kp))return"";
+ const R=ranksFor(o,t),B={kp:livePos("kenpom","Boise St."),tr:livePos("torvik","Boise St.")||XR._bsu?.tr,em:livePos("evanmiya","Boise State")||XR._bsu?.em};
+ const cell=(key,label,icon,r,bsu)=>r?`<div class="rkc"><div class="rkh"><img alt="" src="${icon}" onerror="this.remove()"><span>${label}</span></div><b>${r.rk?"#"+r.rk:key==="ap"?"NR":"—"}</b><div class="rks">${r.note||""}</div>${bsu&&!t?.final&&o[1]!=="Boise St. '26"?`<div class="rkb">Boise St. #${bsu}</div>`:""}</div>`:"";
+ return `<div class="rktile"><div class="label rkl">Team rankings${o[1]==="Boise St. '26"?" · end of 2025-26":" · 2026-27"}</div><div class="rkg">
+  ${cell("kp","KenPom","https://kenpom.com/assets/favicon.ico",R.kp,B.kp)}${cell("tr","T-Rank","https://barttorvik.com/favicon.ico",R.tr,B.tr)}${R.em?cell("em","EvanMiya","https://evanmiya.com/favicon.ico",R.em,B.em):""}${R.ap?cell("ap","AP Top 25","https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-basketball.png",R.ap,null):""}
+ </div><div class="cap" style="margin-top:8px">KenPom (kenpom.com), Barttorvik T-Rank (barttorvik.com) and EvanMiya (evanmiya.com), refreshed nightly.${R.ap?" AP poll via ESPN, refreshed nightly.":" The AP poll appears here once the 2026-27 poll is out."}</div></div>`;
 }
 const XCHIPS=name=>{const x=XR[name];if(!x)return"";return x.final?TR(x.tr,"<span style='color:#8a8e95'> · final</span>"):TR(x.tr)+EM(x.em);};
 const KP=(rk,sfx="")=>`<span class="kp"><img alt="" src="https://kenpom.com/assets/favicon.ico" onerror="this.remove()">KenPom <b>#${rk}</b>${sfx}</span>`;
@@ -426,10 +451,10 @@ function shell(o,parts,foot){
  const name=o[1]==="Boise St. '26"?"Boise State '26":o[1];
  return `<div class="scout"><aside class="rail" id="rail">
   <div class="rteam">${LG(o[3],44,o[4]||String(o[1]).slice(0,3).toUpperCase())}<div><div class="label">${o[2]||""}</div><div class="rname">${name}</div></div></div>
-  ${XR[o[1]]?`<div class="rchips">${XCHIPS(o[1])}</div>`:""}
+  <div class="rchips">${confChip(o[1])}</div>
   <div class="rwin" id="rail-toggle"></div>
   <nav class="rnav">${SECS.map(([k,l])=>`<button data-k="${k}"><b>${l}</b><span id="rh-${k}"></span></button>`).join("")}</nav>
- </aside><div class="smain">${SECS.map(([k,l])=>`<section class="ssec" id="sec-${k}"><h2 class="sh">${l}</h2>${parts[k]||`<div class="cap">Nothing here yet for this opponent.</div>`}</section>`).join("")}${foot||""}</div></div>`;
+ </aside><div class="smain">${SECS.map(([k,l])=>`<section class="ssec" id="sec-${k}"><h2 class="sh">${l}</h2>${k==="trends"?rankTile(o,parts._t):""}${parts[k]||`<div class="cap">Nothing here yet for this opponent.</div>`}</section>`).join("")}${foot||""}</div></div>`;
 }
 let spy=null;
 function wireShell(){
@@ -479,7 +504,7 @@ function render(t,o){
  const P=t.P,mid=t.mode=="proj";
  const H0=`${t.banner?`<div class="banner">${t.banner}</div>`:""}
  <div class="hero"><div class="game"><div><span class="label">Head coach</span><div style="font-size:15px;font-weight:650;margin-top:4px">${t.coach}</div></div><div>${t.game}</div></div>
- <div class="kpis">${t.kpis.map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
+ <div class="kpis">${t.kpis.filter(k=>k[0]!=="kenpom").map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
 `;
  const HD=` <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
  <div class="grid g-depth"><div class="panel" id="depthbox">${depthHTML(t)}</div>
@@ -501,7 +526,7 @@ function render(t,o){
  </tbody></table><div class="cap">Chips = percentile among 2,284 D-I rotation players in 2025-26 (shown at 20%+ minutes). 3P% chips need 40+ attempts.${mid?" Confidence: H = 2+ seasons, M = one season or level jump, L = small sample.":""}</div></div></section>
 `;
  const h=shell(o||OPP.find(x=>x[0]===t.key)||[t.key,t.name,"",t.id,t.ab],{
-  trends:H0+'<div id="td-trends"></div>'+HT,
+  _t:t,trends:H0+'<div id="td-trends"></div>'+HT,
   personnel:HD+HK+(t.extraSlot==="personnel"?HX:"")+HR,
   lineups:'<div id="td-lineups"></div>'+(t.extraSlot==="lineups"?HX:""),
   pace:'<div id="td-pace"></div>',shooting:'<div id="td-shooting"></div>',defense:'<div id="td-defense"></div>'},

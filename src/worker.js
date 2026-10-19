@@ -161,13 +161,15 @@ async function positionsApi(request, env) {
 //  - Cron (wrangler.jsonc "triggers") fetches Barttorvik's CSV directly.
 //  - EvanMiya has no file to download, so a nightly scheduled task reads its
 //    ratings table in a browser and POSTs it here with the RANKS_TOKEN secret.
-const RANK_SOURCES = ["torvik", "torvik_prev", "evanmiya"];
+const RANK_SOURCES = ["torvik", "torvik_prev", "evanmiya", "kenpom"];
 const seasonYear = (d = new Date()) => (d.getUTCMonth() >= 6 ? d.getUTCFullYear() + 1 : d.getUTCFullYear());
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type, x-ranks-token" };
-async function putRanks(env, source, season, list) {
+async function putRanks(env, source, season, list, conf) {
   const clean = list.map((x) => String(x).trim()).filter(Boolean).slice(0, 400);
   if (clean.length < 300) throw new Error(`only ${clean.length} teams`);
-  await env.STAFF.put("ranks:" + source, JSON.stringify({ season, updated: new Date().toISOString(), list: clean }));
+  const rec = { season, updated: new Date().toISOString(), list: clean };
+  if (Array.isArray(conf) && conf.length === clean.length) rec.conf = conf.map((c) => String(c).slice(0, 12));
+  await env.STAFF.put("ranks:" + source, JSON.stringify(rec));
   return clean.length;
 }
 async function ingestRanks(request, env) {
@@ -179,7 +181,7 @@ async function ingestRanks(request, env) {
     if (!env.RANKS_TOKEN || !env.STAFF || !safeEqual(q.get("token") || "", env.RANKS_TOKEN)) return new Response("unauthorized", { status: 401 });
     try {
       if (!RANK_SOURCES.includes(q.get("source"))) throw new Error("bad source");
-      const n = await putRanks(env, q.get("source"), +q.get("season") || seasonYear(), (q.get("list") || "").split("|"));
+      const n = await putRanks(env, q.get("source"), +q.get("season") || seasonYear(), (q.get("list") || "").split("|"), q.get("conf") ? q.get("conf").split("|") : null);
       return new Response(`<!doctype html><title>saved</title><body style="font:16px system-ui;background:#16171a;color:#fff;padding:40px">Saved ${n} teams for ${q.get("source")}.</body>`, { headers: { "content-type": "text/html" } });
     } catch (e) { return new Response("error: " + (e.message || e), { status: 400 }); }
   }
@@ -188,20 +190,35 @@ async function ingestRanks(request, env) {
   try {
     const b = await request.json();
     if (!RANK_SOURCES.includes(b.source)) throw new Error("bad source");
-    const n = await putRanks(env, b.source, +b.season || seasonYear(), b.list || []);
+    const n = await putRanks(env, b.source, +b.season || seasonYear(), b.list || [], b.conf);
     return new Response(JSON.stringify({ ok: true, source: b.source, teams: n }), { headers: { ...CORS, "content-type": "application/json" } });
   } catch (e) { return new Response(JSON.stringify({ error: String(e.message || e) }), { status: 400, headers: { ...CORS, "content-type": "application/json" } }); }
 }
 async function torvikList(year) {
   const r = await fetch(`https://barttorvik.com/${year}_team_results.csv`, { headers: { "user-agent": "Mozilla/5.0 (Bronco IQ nightly)" } });
   if (!r.ok) throw new Error("torvik " + r.status);
-  return (await r.text()).trim().split(/\r?\n/).slice(1).map((l) => l.split(",")).filter((c) => +c[0]).sort((a, b) => +a[0] - +b[0]).map((c) => c[1]);
+  const rows = (await r.text()).trim().split(/\r?\n/).slice(1).map((l) => l.split(",")).filter((c) => +c[0]).sort((a, b) => +a[0] - +b[0]);
+  return { list: rows.map((c) => c[1]), conf: rows.map((c) => c[2]) };
+}
+// AP Top 25 from ESPN (stored by ESPN team id). Only kept when the poll is for the current season.
+async function refreshAP(env) {
+  const r = await fetch("https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings");
+  if (!r.ok) throw new Error("espn " + r.status);
+  const j = await r.json(), ap = (j.rankings || []).find((x) => /^AP/i.test(x.name || x.shortName || ""));
+  if (!ap) throw new Error("no AP poll");
+  const season = ap.season?.year || +String(ap.date || "").slice(0, 4);
+  if (season !== seasonYear()) { await env.STAFF.delete("ranks:ap"); return "no poll yet for " + seasonYear(); }
+  const ids = {}; for (const t of ap.ranks || []) if (t.team?.id) ids[t.team.id] = t.current;
+  const others = {}; for (const t of ap.others || []) if (t.team?.id) others[t.team.id] = t.points;
+  await env.STAFF.put("ranks:ap", JSON.stringify({ season, updated: new Date().toISOString(), week: ap.headline || ap.shortHeadline || "", ids, others }));
+  return Object.keys(ids).length;
 }
 async function refreshTorvik(env) {
   const y = seasonYear(), out = {};
   for (const [src, yr] of [["torvik", y], ["torvik_prev", y - 1]]) {
-    try { out[src] = await putRanks(env, src, yr, await torvikList(yr)); } catch (e) { out[src] = String(e.message || e); }
+    try { const t = await torvikList(yr); out[src] = await putRanks(env, src, yr, t.list, t.conf); } catch (e) { out[src] = String(e.message || e); }
   }
+  try { out.ap = await refreshAP(env); } catch (e) { out.ap = String(e.message || e); }
   await env.STAFF.put("ranks:log", JSON.stringify({ at: new Date().toISOString(), out }));
   return out;
 }
@@ -243,7 +260,7 @@ export default {
     if (path === "/api/ranks") {
       if (!env.STAFF) return json({});
       if (url.searchParams.get("refresh") === "torvik") await refreshTorvik(env);
-      const o = {}; for (const s2 of [...RANK_SOURCES, "log"]) o[s2] = await env.STAFF.get("ranks:" + s2, "json");
+      const o = {}; for (const s2 of [...RANK_SOURCES, "ap", "log"]) o[s2] = await env.STAFF.get("ranks:" + s2, "json");
       return json(o);
     }
     if (path.startsWith("/api/")) return json({ error: "not_found" }, 404);
