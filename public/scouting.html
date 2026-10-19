@@ -108,6 +108,54 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .banner{margin-top:16px;background:#24262a;border:1px dashed #4a4d53;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#cfd3d9}
 .ph-empty{padding:60px 20px;text-align:center;color:var(--muted)}
 .g-depth{grid-template-columns:1fr}
+/* ---- shell: opponent strip, left rail, sections ---- */
+.otabs{display:flex!important;flex-wrap:wrap;justify-content:space-between;gap:2px;max-width:1440px!important;padding:2px 24px 0!important}
+.otabs .tab{width:auto!important;flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px 6px!important;border-bottom:2px solid transparent;opacity:.62;transition:opacity .12s}
+.otabs .tab:hover{opacity:1}.otabs .tab.on{opacity:1;border-bottom-color:#f2f3f4}
+.otabs .tab small{font-family:var(--mono);font-size:8.5px;color:#8a8e95;letter-spacing:0;white-space:nowrap}
+.otabs .tab.on small{color:#fff}
+.otabs .tab.sample{background:none;border-right:1px solid var(--line);padding-right:12px!important;margin-right:6px}
+.obrand{max-width:1440px!important}
+.scout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:30px;max-width:1440px;margin:0 auto;padding:0 24px 30px}
+.rail{position:sticky;top:60px;align-self:start;max-height:calc(100vh - 70px);overflow-y:auto;scrollbar-width:none;padding:20px 0 12px}
+.rail::-webkit-scrollbar{display:none}
+.rteam{display:flex;gap:10px;align-items:center}
+.rname{font-size:18px;font-weight:750;letter-spacing:-.01em;line-height:1.15;margin-top:2px}
+.rchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rwin{margin-top:16px}
+.rwin .tdwin{display:grid;grid-template-columns:1fr 1fr;width:100%}
+.rwin .tdwin button{padding:7px 6px;font-size:10.5px;border-bottom:1px solid var(--line)}
+.rwin .tdwin button:first-child{grid-column:1/-1}
+.rnav{display:flex;flex-direction:column;gap:2px;margin-top:16px}
+.rnav button{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;border-left:2px solid #2e3034;padding:8px 10px;cursor:pointer;color:var(--muted)}
+.rnav button b{font-family:var(--ui);font-size:14px;font-weight:650;color:#b9bdc4}
+.rnav button span{font-family:var(--mono);font-size:10.5px;color:#7d8189;min-height:13px}
+.rnav button:hover b{color:#fff}
+.rnav button.on{border-left-color:#f2f3f4;background:rgba(255,255,255,.035)}
+.rnav button.on b{color:#fff}.rnav button.on span{color:#cfd3d9}
+.smain{min-width:0;padding-top:6px}
+.ssec{scroll-margin-top:70px;padding-top:22px}
+.ssec+.ssec{margin-top:18px;border-top:1px solid #34363b}
+.sh{font-size:24px;font-weight:750;letter-spacing:-.02em;margin-bottom:4px}
+.ssec>section:first-of-type,.ssec>.hero:first-of-type{margin-top:12px}
+.note{background:#24262a;border:1px dashed #4a4d53;border-radius:8px;padding:12px;font-size:13px;color:#cfd3d9}
+@media (max-width:1050px){
+ .scout{grid-template-columns:minmax(0,1fr);gap:0;padding:0 16px 24px}
+ .smain .grid{grid-template-columns:minmax(0,1fr)!important}
+ .smain .hero{grid-template-columns:minmax(0,1fr)}
+ .rwin .tdwin{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;max-width:100%}
+ .rwin .tdwin button{flex:none}
+ .rail{position:sticky;top:52px;z-index:25;max-height:none;overflow:visible;background:var(--bg);padding:10px 0 8px;border-bottom:1px solid var(--line)}
+ .rteam,.rchips{display:none}
+ .rwin{margin-top:0}.rwin .tdwin{display:flex;width:auto}.rwin .tdwin button:first-child{grid-column:auto}.rwin .label{display:none}
+ .rnav{flex-direction:row;overflow-x:auto;scrollbar-width:none;margin-top:8px;gap:4px}
+ .rnav::-webkit-scrollbar{display:none}
+ .rnav button{flex:none;border-left:0;border-bottom:2px solid transparent;padding:6px 10px}
+ .rnav button span{display:none}
+ .rnav button.on{border-bottom-color:#f2f3f4}
+ .otabs{justify-content:flex-start}
+}
+@media (max-width:600px){.smain .kpis{grid-template-columns:1fr 1fr}.smain .panel{overflow-x:auto}.sh{font-size:21px}}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px 24px}
 .lgrid .lrow{grid-template-columns:14px minmax(0,1fr) 46px 50px;gap:6px}
 .lgrid .lrow>span:nth-child(2){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -139,7 +187,7 @@ footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:22px}
   <div class="obrand"><b>Opponent scouting</b><span class="label">2026-27 schedule · Boise St. '26 sample first</span></div>
   <div class="otabs" id="tabs"></div>
 </div>
-<div class="wrap" id="page"></div>
+<div id="page"></div>
 
 <script type="module">
 import { d3, addDefs, tipOn, tipOff, topBar } from "/assets/core.js";
@@ -200,14 +248,18 @@ const sg=v=>(v>0?"+":"")+v.toFixed(1),f1=v=>v==null?"—":(+v).toFixed(1);
 
 // ---------- tabs ----------
 const OPP=[["bsu26","Boise St. '26","SAMPLE · final",68,"BSU"],["uw","Washington","Oct 17 · EXH",264,"UW"],["","Bismarck St.","Oct 29 · EXH","/assets/logos/bismarck-st.png","BIS"],["","West Coast Baptist","Nov 4","/assets/logos/west-coast-baptist.png","WCB"],["","Butler","Nov 8",2086],["","Oakland","Nov 11",2473],["","Nebraska","Nov 15 · N",158],["","Sam Houston","Nov 20",2534],["","Idaho St.","Nov 24",304],["","Drake","Nov 27 · N",2181],["","North Texas","Nov 28 · N",249],["","North Dakota St.","Nov 29 · N",2449],["","Wichita St.","Dec 5 · A",2724],["","TAMU-CC","Dec 12",357],["","Utah Valley","Dec 16",3084],["","Santa Clara","Dec 21 · N",2541],["","New Mexico","Dec 23 · N",167],["","Lamar","Dec 29",2320],["","Utah St.","Jan 6 · A · P12",328],["","Oregon St.","Jan 9 · P12",204],["","Washington St.","Jan 13 · P12",265],["","Gonzaga","Jan 16 · A · P12",2250],["","Fresno St.","Jan 20 · A · P12",278],["","San Diego St.","Jan 23 · P12",21],["","Texas St.","Jan 30 · A · P12",326],["","Colorado St.","Feb 18 · A · P12",36]];
-document.getElementById("tabs").innerHTML=OPP.map((o,i)=>`<button class="tab${i==1?' on':''}${i==0?' sample':''}" data-i="${i}">${LG(o[3],20,o[4]||o[1].slice(0,3).toUpperCase())}<span>${o[1]}<small>${o[2]}</small></span></button>`).join("");
+document.getElementById("tabs").innerHTML=OPP.map((o,i)=>`<button class="tab${i==1?' on':''}${i==0?' sample':''}" data-i="${i}" title="${o[1]} · ${o[2]}">${LG(o[3],30,o[4]||o[1].slice(0,3).toUpperCase())}<small>${i==0?"'26":o[2].split(" · ")[0].replace(/^(\w+) (\d+)$/,(m,a,b)=>a.slice(0,3)+" "+b)}</small></button>`).join("");
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));b.classList.add("on");const o=OPP[+b.dataset.i];history.replaceState(null,"","#"+(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-")));
- if(T[o[0]])render(T[o[0]]);else{const dt=dataTeam(o[1]);document.getElementById("page").innerHTML=`<div class="hero" style="grid-template-columns:1fr"><div class="game"><div style="display:flex;gap:14px;align-items:center">${LG(o[3],60,o[4]||o[1].slice(0,3).toUpperCase())}<div><span class="label">${o[2]}</span><h1>${o[1]}</h1>${XR[o[1]]?`<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">${XCHIPS(o[1])}</div>`:""}</div></div><div class="cap" style="margin-top:0">${TIDX[dt]?"Written scouting report not built yet. Everything below comes straight from last season's game, lineup and shot data.":"No D-I game data for this opponent."}</div></div></div><div id="teamdata"></div>`;loadTeamData(dt);}scrollTo(0,0)});
+ if(T[o[0]])render(T[o[0]],o);else{const dt=dataTeam(o[1]);
+  document.getElementById("page").innerHTML=shell(o,{
+   trends:TIDX[dt]?`<div class="cap" style="margin:0 0 4px">Written scouting report not built yet. Everything here comes straight from last season's game, lineup and shot data.</div><div id="td-trends"></div>`:`<div class="note" style="margin-top:12px">No D-I game data for ${o[1]}. ${o[2].includes("EXH")?"Exhibition opponent.":"Non-D-I opponent."}</div>`,
+   personnel:TIDX[dt]?`<div id="td-roster"></div>`:"",lineups:`<div id="td-lineups"></div>`,pace:`<div id="td-pace"></div>`,shooting:`<div id="td-shooting"></div>`,defense:`<div id="td-defense"></div>`},"");
+  wireShell();loadTeamData(dt);}scrollTo(0,0)});
 
 // ---------- team data ----------
 // player: [jersey,name,pos,ht,cls,tag(T/F/""),from,slot,starter,mid{...},adv[gp,min,ortg,usg,ts,tpm,tpa,p3,ast,tov,blk,bpm],advLabel,key]
 const T={};
-T.uw={xr:"Washington",dataTeam:"Washington",id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:"HC Danny Sprinkle (yr 3) · 29-35 at UW",kp:"68",mode:"proj",
+T.uw={extraSlot:"personnel",xr:"Washington",dataTeam:"Washington",id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:"HC Danny Sprinkle (yr 3) · 29-35 at UW",kp:"68",mode:"proj",
  game:`<div class="label">Next up · Exhibition</div><span class="pill" style="background:var(--good);margin-top:6px">SAT OCT 17 · 7:00 PM MT</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">Idaho Central Arena, Boise · Washington's first game of the season</div><div class="cap" style="margin-top:6px">Exhibition: no 2026-27 game data exists yet. Everything below is a projection from each player's prior seasons. Refresh after the box score.</div>`,
  kpis:[["kenpom","Preseason ranks","#68 · #73","","KenPom · T-Rank. <b style='color:#fff'>Boise: #59 · #85</b>. The two models disagree on who's better."],
   ["adjo","Proj. offense","114.0",GOOD,"KenPom AdjO · #57<br>T-Rank 112.6 (#69)"],["adjd","Proj. defense","101.4",GOOD,"KenPom AdjD · #83<br>T-Rank 100.8 (#80)"],
@@ -250,7 +302,7 @@ T.uw={xr:"Washington",dataTeam:"Washington",id:264,ab:"UW",name:"Washington Husk
   <div class="cap">Players from WCC/A10/MWC get a BPM discount (−1.0 to −1.5) for the step up to the Big Ten. Gonzaga counts as high-major. Freshmen/intl: Wini Braga (6-9, 21-year-old from Brazil), Tristan Devers (Australia, NBL development player), Lat Ford (3★, Renton, WA).</div></div></div></section>`},
  foot:`Sources: KenPom (2027 preseason ratings), Barttorvik (player stats 2023-24 to 2025-26; team results; 2026-27 preseason T-Rank), ESPN roster API, UW roster release (Oct 7), Boise State athletics schedule. <b style="color:#b9bdc4">Projection method:</b> weighted average of the last 3 seasons (3/2/1 × minutes), pulled toward a bench-level prior for small samples. Then adjusted for conference level and development, with minutes assigned from the depth chart and usage normalized to the team. Mady Traore has no D-I minutes since 2023-24.`};
 
-T.bsu26={xr:"Boise St. '26",dataTeam:"Boise St.",posSeason:"2025-26",posTeam:"Boise St.",id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
+T.bsu26={extraSlot:"lineups",xr:"Boise St. '26",dataTeam:"Boise St.",posSeason:"2025-26",posTeam:"Boise St.",id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
  banner:`<b style="color:#fff">Sample tab:</b> the template run on Boise State as if scouting them after their last game (Mar 12, 2026). This shows what an opponent tab looks like once real game data exists: actual rotation, results and lineups instead of projections.`,
  game:`<div class="label">Season complete</div><span class="pill" style="background:var(--bad);margin-top:6px">FINAL · L 74-84 vs SAN JOSÉ ST.</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">MWC Tournament 1st round · Mar 12, 2026 · Las Vegas. As the 6 seed, lost to the 11 seed (8-23 before the game).</div>`,
  kpis:[["kenpom","Rankings","#60 · #54","","KenPom (Mar 2) · T-Rank final"],["adjo","Offense","118.3",GOOD,"AdjO · #52 nationally"],["adjd","Defense","103.9",GOOD,"AdjD · #77 · 3rd straight year slipping"],["","Record","20-12","","12-8 MWC · 6th seed"],
@@ -368,27 +420,77 @@ addEventListener("scroll",()=>document.querySelectorAll(".mvm").forEach(m=>m.rem
 let TIDX={},TDIST=null;
 const DATA_NAME={"Boise St. '26":"Boise St.","Lamar":"Lamar University","TAMU-CC":"A&M-Corpus Christi"};
 const dataTeam=n=>DATA_NAME[n]||n;
+// ---------- page shell: left rail + six sections ----------
+const SECS=[["trends","Trends"],["personnel","Personnel"],["lineups","Lineups"],["pace","Pace"],["shooting","Shooting"],["defense","Defense"]];
+function shell(o,parts,foot){
+ const name=o[1]==="Boise St. '26"?"Boise State '26":o[1];
+ return `<div class="scout"><aside class="rail" id="rail">
+  <div class="rteam">${LG(o[3],44,o[4]||String(o[1]).slice(0,3).toUpperCase())}<div><div class="label">${o[2]||""}</div><div class="rname">${name}</div></div></div>
+  ${XR[o[1]]?`<div class="rchips">${XCHIPS(o[1])}</div>`:""}
+  <div class="rwin" id="rail-toggle"></div>
+  <nav class="rnav">${SECS.map(([k,l])=>`<button data-k="${k}"><b>${l}</b><span id="rh-${k}"></span></button>`).join("")}</nav>
+ </aside><div class="smain">${SECS.map(([k,l])=>`<section class="ssec" id="sec-${k}"><h2 class="sh">${l}</h2>${parts[k]||`<div class="cap">Nothing here yet for this opponent.</div>`}</section>`).join("")}${foot||""}</div></div>`;
+}
+let spy=null;
+function wireShell(){
+ const rail=document.getElementById("rail");if(!rail)return;
+ rail.querySelectorAll(".rnav button").forEach(b=>b.onclick=()=>{const el=document.getElementById("sec-"+b.dataset.k);if(el){const off=innerWidth<=1050?52+rail.offsetHeight+6:64;scrollTo({top:el.getBoundingClientRect().top+scrollY-off,behavior:"smooth"});}});
+ if(spy)spy.disconnect();
+ const vis=new Map();
+ spy=new IntersectionObserver(es=>{es.forEach(e=>vis.set(e.target.id,e.isIntersecting?e.intersectionRatio:0));
+  let best=null,bv=0;for(const [k,v] of vis)if(v>bv){bv=v;best=k;}
+  if(best)rail.querySelectorAll(".rnav button").forEach(b=>b.classList.toggle("on","sec-"+b.dataset.k===best));},{rootMargin:"-70px 0px -45% 0px",threshold:[0,.05,.2,.5]});
+ document.querySelectorAll(".ssec").forEach(sct=>spy.observe(sct));
+ rail.querySelector(".rnav button")?.classList.add("on");
+}
+const setHead=(k,v)=>{const el=document.getElementById("rh-"+k);if(el&&v!=null)el.innerHTML=v;};
+// 2025-26 player lines for any D-I team (Rankings data): personnel table + defenders.
+let NATP=null;
+async function teamPlayers(team){
+ if(!NATP){try{const d=await (await fetch("/data/rankings/national-2025-26.json")).json();NATP=d.rows.map(r=>Object.fromEntries(d.cols.map((c,i)=>[c,r[i]])));}catch{NATP=[];}}
+ return NATP.filter(p=>p.team===team);
+}
+const fx=v=>v==null?"—":(+v).toFixed(1);
+function personnelHTML(P){
+ const rows=[...P].sort((a,b)=>b.min-a.min);
+ return `<div class="cap" style="margin:0 0 10px">Last season's players (${rows[0]?.season||"2025-26"}). The 2026-27 roster and depth chart come with the written report.</div>
+ <div class="panel" style="overflow-x:auto"><table><thead><tr><th class="l">Player</th><th class="l">Cls</th><th class="l">Pos</th><th class="l">Ht</th><th>GP</th><th>MPG</th><th>PPG</th><th>RPG</th><th>APG</th><th>TS%</th><th>USG%</th><th class="sep">SCOR</th><th>PLAY</th><th>REB</th><th>DEF</th></tr></thead><tbody>
+ ${rows.map(p=>`<tr><td class="l" style="color:#fff;font-weight:600">${p.name}</td><td class="l m">${p.cls||""}</td><td class="l m">${p.pos||""}</td><td class="l m">${p.ht||""}</td><td class="m">${p.gp??"—"}</td><td>${fx(p.mpg)}</td><td style="font-weight:700">${fx(p.ppg)}</td><td>${fx(p.rpg)}</td><td>${fx(p.apg)}</td><td>${fx(p.ts)}</td><td>${fx(p.usg)}</td>${["sc","pl","rb","df"].map((k,i)=>`<td class="${i==0?"sep":""}">${p[k]==null?'<span class="m">—</span>':`<span class="chip" style="background:${scol(p[k])}">${Math.round(p[k])}</span>`}</td>`).join("")}</tr>`).join("")}
+ </tbody></table><div class="cap">Skill scores: 50 = D-I average, 70 = top 7%, 80+ = top 1%. Players with 50+ minutes.</div></div>`;
+}
+const scol=v=>pc(50+Math.max(-45,Math.min(45,(v-50)*1.5)));
 async function loadTeamData(team){
- const el=document.getElementById("teamdata");if(!el||!team||!TIDX[team])return;
- try{const D=await (await fetch(`/data/teams/${TIDX[team]}.json`)).json();if(document.getElementById("teamdata")!==el)return;renderTeamData(el,D,TDIST);}
- catch(e){el.innerHTML=`<div class="cap">Game data unavailable (${e.message}).</div>`;}
+ const slot=id=>document.getElementById(id);
+ if(!team||!TIDX[team]){["trends","lineups","pace","shooting","defense"].forEach(k=>{const el=slot("td-"+k);if(el&&k!=="trends")el.innerHTML=`<div class="cap">No D-I game data.</div>`;});return;}
+ const marker=slot("rail");
+ try{
+  const [D,P]=await Promise.all([(await fetch(`/data/teams/${TIDX[team]}.json`)).json(),teamPlayers(team)]);
+  if(slot("rail")!==marker)return;
+  const ro=slot("td-roster");if(ro)ro.innerHTML=personnelHTML(P);
+  const top=[...P].sort((a,b)=>(b.ppg||0)-(a.ppg||0))[0];
+  if(!document.getElementById("rh-personnel").innerHTML&&top)setHead("personnel",`top scorer ${top.name.split(" ").filter(w=>!/^(Jr\.?|Sr\.?|II|III|IV)$/.test(w)).slice(-1)[0]} ${fx(top.ppg)}`);
+  renderTeamData({toggle:slot("rail-toggle"),trends:slot("td-trends"),lineups:slot("td-lineups"),pace:slot("td-pace"),shooting:slot("td-shooting"),defense:slot("td-defense")},D,TDIST,
+   {players:P,onSummary:S=>{for(const k of ["trends","lineups","pace","shooting","defense"])setHead(k,S[k]);}});
+ }catch(e){const el=slot("td-trends");if(el)el.innerHTML=`<div class="cap">Game data unavailable (${e.message}).</div>`;}
 }
 
 // ---------- render ----------
-function render(t){
+function render(t,o){
  const P=t.P,mid=t.mode=="proj";
- let h=`${t.banner?`<div class="banner">${t.banner}</div>`:""}
- <div class="hero"><div class="game"><div><div style="display:flex;gap:14px;align-items:center">${LG(t.id,60,t.ab)}<div><h1>${t.name}</h1><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">${CF(t.conf[0],t.conf[1])}${KP(t.kp,t.kpNote||"")}${XCHIPS(t.xr)}</div></div></div>
- <div style="font-size:12.5px;color:#b9bdc4;margin-top:10px">${t.coach}</div></div><div>${t.game}</div></div>
+ const H0=`${t.banner?`<div class="banner">${t.banner}</div>`:""}
+ <div class="hero"><div class="game"><div><span class="label">Head coach</span><div style="font-size:15px;font-weight:650;margin-top:4px">${t.coach}</div></div><div>${t.game}</div></div>
  <div class="kpis">${t.kpis.map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
- <div id="teamdata"></div>
- <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
+`;
+ const HD=` <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
  <div class="grid g-depth"><div class="panel" id="depthbox">${depthHTML(t)}</div>
  <div class="panel"><div class="label ptitle"><span>${mid?"Projected leaders":"Season leaders"}</span><span>${t.leadHdr}</span></div><div class="lgrid">${t.leaders.map(([g,L])=>`<div class="lgrp"><div class="label" style="margin-bottom:5px">${g}</div>${L.map((l,i)=>`<div class="lrow"><span class="r">${i+1}</span><span>${l[0]}</span><span class="v">${l[1]}</span><span class="ls">${l[2]}</span></div>`).join("")}</div>`).join("")}</div></div></div></section>
- <section><div class="shead"><h2>Team trends</h2><span class="label">${t.trendHdr}</span></div><div class="story">${t.story}</div><div class="panel" style="margin-top:14px"><div class="tgrid" id="trends"></div><div class="cap">Dashed line = 2025-26 D-I average. Latest dot colored by national percentile (orange = strong, blue = weak). Grey = style stat.</div></div></section>
- <section><div class="shead"><h2>Scouting keys</h2><span class="label">What the numbers say · for staff review</span></div><div class="keys grid">${t.keys.map(([c,a,b,p])=>`<div class="key" style="border-left-color:${c}"><span class="label">${a}</span><h3>${b}</h3><p>${p}</p></div>`).join("")}</div></section>
- ${t.extra()}
- <section><div class="shead"><h2>Full roster</h2><span class="label">${t.midHdr[0]} · ${t.advHdr}</span></div><div class="panel" style="margin-top:14px;overflow-x:auto"><table><thead>
+`;
+ const HT=` <section><div class="shead"><h2>Team trends</h2><span class="label">${t.trendHdr}</span></div><div class="story">${t.story}</div><div class="panel" style="margin-top:14px"><div class="tgrid" id="trends"></div><div class="cap">Dashed line = 2025-26 D-I average. Latest dot colored by national percentile (orange = strong, blue = weak). Grey = style stat.</div></div></section>
+`;
+ const HK=` <section><div class="shead"><h2>Scouting keys</h2><span class="label">What the numbers say · for staff review</span></div><div class="keys grid">${t.keys.map(([c,a,b,p])=>`<div class="key" style="border-left-color:${c}"><span class="label">${a}</span><h3>${b}</h3><p>${p}</p></div>`).join("")}</div></section>
+`;
+ const HX=t.extra();
+ const HR=` <section><div class="shead"><h2>Full roster</h2><span class="label">${t.midHdr[0]} · ${t.advHdr}</span></div><div class="panel" style="margin-top:14px;overflow-x:auto"><table><thead>
  <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="7">${t.midHdr[0]}</th><th class="grp sep" colspan="${mid?11:10}">${t.advHdr}</th></tr>
  <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th class="l">Cl</th>${t.midHdr[1].map((c,i)=>`<th${i==0?' class="sep"':''}>${c}</th>`).join("")}${mid?'<th class="l sep">Team</th><th>GP</th>':'<th class="sep">GP</th>'}<th><span data-def="minp">Min%</span></th><th><span data-def="ortg">ORtg</span></th><th><span data-def="usg">USG</span></th><th><span data-def="ts">TS%</span></th><th>3P</th><th><span data-def="ast">AST%</span></th><th><span data-def="tov">TOV%</span></th><th><span data-def="blk">BLK%</span></th><th><span data-def="bpm">BPM</span></th></tr></thead><tbody>
  ${[...P].sort((a,b)=>(mid?b[9][0]-a[9][0]:b[9][2]-a[9][2])).map(p=>{const v=p[9],A=p[10];const tg=p[5]=="T"?' <span class="tag new">NEW</span>':p[5]=="F"?' <span class="tag fr">FR</span>':'';
@@ -397,8 +499,16 @@ function render(t){
   const q=A&&A[1]>=20;const ac=A?`${mid?`<td class="l sep" style="color:#b9bdc4">${p[6]}</td><td class="m">${A[0]}</td>`:`<td class="sep m">${A[0]}</td>`}<td class="m">${A[1].toFixed(0)}</td><td>${q?chip("ortg",A[2],A[2].toFixed(1)):A[2].toFixed(1)}</td><td>${A[3].toFixed(1)}</td><td>${q?chip("ts",A[4],A[4].toFixed(1)):A[4].toFixed(1)}</td><td>${A[6]>=40?chip("p3",A[7],A[7].toFixed(1))+` <span class="m" style="font-size:10.5px">${A[6]}</span>`:`<span class="m">${A[5]}/${A[6]}</span>`}</td><td>${A[8].toFixed(1)}</td><td>${A[9].toFixed(1)}</td><td>${A[10].toFixed(1)}</td><td>${q?chip("bpm",A[11],sg(A[11])):sg(A[11])}</td>`:`<td class="l sep m" colspan="${mid?11:10}">no D-I history</td>`;
   return `<tr><td class="l m">${p[0]}</td><td class="l" style="color:#fff;font-weight:600">${p[1]}${tg}</td><td class="l m"><span class="rpos" data-n="${p[1]}">${(()=>{const I=posInfo(t,p);return `<button class="mv" title="Change position">${I.slot} ▾</button>${I.ovr?' <span class="tag staff">STAFF</span>':""}`})()}</span></td><td class="m">${p[3]}</td><td class="l m">${p[4]}</td>${mc}${ac}</tr>`}).join("")}
  </tbody></table><div class="cap">Chips = percentile among 2,284 D-I rotation players in 2025-26 (shown at 20%+ minutes). 3P% chips need 40+ attempts.${mid?" Confidence: H = 2+ seasons, M = one season or level jump, L = small sample.":""}</div></div></section>
- <footer>${t.foot} Logos: ESPN.</footer>`;
+`;
+ const h=shell(o||OPP.find(x=>x[0]===t.key)||[t.key,t.name,"",t.id,t.ab],{
+  trends:H0+'<div id="td-trends"></div>'+HT,
+  personnel:HD+HK+(t.extraSlot==="personnel"?HX:"")+HR,
+  lineups:'<div id="td-lineups"></div>'+(t.extraSlot==="lineups"?HX:""),
+  pace:'<div id="td-pace"></div>',shooting:'<div id="td-shooting"></div>',defense:'<div id="td-defense"></div>'},
+  `<footer>${t.foot} Logos: ESPN.</footer>`);
  document.getElementById("page").innerHTML=h;
+ wireShell(t);
+ setHead("personnel",t.leaders?.[0]?.[1]?.[0]?`${mid?"proj. ":""}top scorer ${String(t.leaders[0][1][0][0]).split(" ").filter(w=>!/^(Jr\.?|Sr\.?|II|III|IV)$/.test(w)).slice(-1)[0]} ${t.leaders[0][1][0][1]}`:"");
  wireDepth(t);
  loadTeamData(t.dataTeam);
  // trends

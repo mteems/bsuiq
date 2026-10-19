@@ -42,33 +42,38 @@ function agg(games) {
   return A;
 }
 
-export function renderTeamData(el, D, DIST) {
+// S = { toggle, trends, lineups, pace, shooting, defense } (elements; any can be null).
+// opts.onSummary(obj) gets one headline per section whenever the window changes.
+// opts.players = [{name, pos, cls, mpg, df, rk_df, drapm, stlp, blkp, drbp}] for the Defense section.
+export function renderTeamData(S, D, DIST, opts = {}) {
   const dist = DIST?.dist || {}, NT = DIST?.teams || 0;
   // D-I rank among teams for a full-season-style value (1 = best).
   const rank = (k, v, dir) => { const a = dist[k]; if (!a || v == null || !isFinite(v)) return null; const better = dir > 0 ? a.filter((x) => x > v).length : a.filter((x) => x < v).length; return better + 1; };
   const pctl = (k, v, dir) => { const r = rank(k, v, dir), a = dist[k]; return r == null ? null : 100 * (1 - (r - 1) / (a.length - 1 || 1)); };
   const tone = (p) => (p == null ? "var(--text)" : p >= 70 ? GOOD_T : p <= 30 ? BAD_T : "var(--text)");
   const games = D.games.map((g, i) => ({ ...g, i, w: g.pts > g.op, m: g.pts - g.op }));
-  const st = { win: "all", shotSide: "off" };
+  const st = { win: "all" }, summary = {};
   const uid = "td" + Math.random().toString(36).slice(2, 7), I = (s) => `${uid}_${s}`;
+  const put = (el, html) => { if (el) el.innerHTML = html; };
 
-  el.innerHTML = `<div class="tdbar"><div class="seg" id="${I("win")}">${WINDOWS.map(([k, l]) => `<button data-w="${k}" class="${k === "all" ? "on" : ""}">${l}</button>`).join("")}</div><span class="label" id="${I("wl")}"></span></div>
-  <section><div class="shead"><h2>Snapshot</h2><span class="label" id="${I("snaplbl")}"></span></div>
+  put(S.toggle, `<div class="seg tdwin" id="${I("win")}">${WINDOWS.map(([k, l]) => `<button data-w="${k}" class="${k === "all" ? "on" : ""}">${l}</button>`).join("")}</div><div class="label" id="${I("wl")}" style="margin-top:6px"></div>`);
+  put(S.trends, `<section><div class="shead"><h2>Snapshot</h2><span class="label" id="${I("snaplbl")}"></span></div>
     <div class="tdkpis" id="${I("kpis")}"></div>
     <div class="panel" style="margin-top:12px"><div class="label ptitle"><span>Every game · margin</span><span>orange = win · blue = loss · faded = outside the window</span></div><div id="${I("strip")}"></div></div></section>
   <section><div class="shead"><h2>What wins and loses their games</h2><span class="label">averages in wins vs losses · biggest swings first</span></div>
-    <div class="story" id="${I("wlstory")}"></div><div id="${I("wlbody")}"></div></section>
-  <section><div class="shead"><h2>Pace</h2><span class="label">possessions per 40 · seconds per possession</span></div>
-    <div class="story" id="${I("pacestory")}"></div>
+    <div class="story" id="${I("wlstory")}"></div><div id="${I("wlbody")}"></div></section>`);
+  put(S.pace, `<div class="story" id="${I("pacestory")}"></div>
     <div class="grid" style="grid-template-columns:1.6fr 1fr;margin-top:12px"><div class="panel"><div class="label ptitle"><span>Pace by game</span><span>dashed = D-I average</span></div><div id="${I("pacechart")}"></div></div>
-    <div class="panel"><div class="label ptitle"><span>Seconds per possession</span><span>vs every D-I team</span></div><div id="${I("tpp")}"></div></div></div></section>
-  <section><div class="shead"><h2>Shooting</h2><span class="label">where they shoot · what they allow</span><div style="margin-left:auto" class="seg" id="${I("shotside")}"><button data-s="off" class="on">THEIR SHOTS</button><button data-s="def">WHAT THEY ALLOW</button></div></div>
-    <div id="${I("shots")}" style="margin-top:12px"></div></section>
-  <section><div class="shead"><h2>Lineups</h2><span class="label">5-man units · player on/off · per 100 possessions</span></div>
-    <div class="story" id="${I("lustory")}"></div>
+    <div class="panel"><div class="label ptitle"><span>Seconds per possession</span><span>vs every D-I team</span></div><div id="${I("tpp")}"></div></div></div>`);
+  put(S.shooting, `<div id="${I("shots")}"></div>`);
+  put(S.lineups, `<div class="story" id="${I("lustory")}"></div>
     <div class="grid" style="grid-template-columns:1.35fr 1fr;margin-top:12px"><div class="panel"><div class="label ptitle"><span>Most-used lineups</span><span>net rating · bar width = possessions</span></div><div id="${I("lineups")}"></div></div>
-    <div class="panel"><div class="label ptitle"><span>On / off</span><span>team net rating with him on vs off</span></div><div id="${I("onoff")}"></div></div></div></section>`;
-  const $ = (s) => el.querySelector("#" + I(s));
+    <div class="panel"><div class="label ptitle"><span>On / off</span><span>team net rating with him on vs off</span></div><div id="${I("onoff")}"></div></div></div>`);
+  put(S.defense, `<div class="story" id="${I("defstory")}"></div>
+    <div class="tdkpis tddef" id="${I("defkpis")}"></div>
+    <div class="label" style="margin:18px 0 8px">What they allow · opponents' shots against them</div><div id="${I("defshots")}"></div>
+    <div class="panel" style="margin-top:16px"><div class="label ptitle"><span>Their defenders · DEF score v2</span><span>50 = D-I average · 80+ = top 1%</span></div><div id="${I("defplayers")}"></div></div>`);
+  const $ = (s) => document.getElementById(I(s)) || { set innerHTML(v) {}, set textContent(v) {}, querySelectorAll: () => [], clientWidth: 0, replaceChildren() {} };
 
   const inWin = () => {
     const all = games;
@@ -83,13 +88,16 @@ export function renderTeamData(el, D, DIST) {
     const W = inWin(), set = new Set(W.map((g) => g.i));
     const wins = W.filter((g) => g.w).length;
     $("wl").textContent = W.length ? `${W.length} game${W.length > 1 ? "s" : ""} · ${wins}-${W.length - wins} · ${D.season}` : "no games in this window";
-    if (!W.length) { ["kpis", "strip", "wlbody", "pacechart", "tpp", "shots", "lineups", "onoff"].forEach((k) => ($(k).innerHTML = `<div class="cap">No ${st.win === "conf" ? "conference " : ""}games yet.</div>`)); return; }
+    if (!W.length) { ["kpis", "strip", "wlbody", "pacechart", "tpp", "shots", "lineups", "onoff", "defkpis", "defshots"].forEach((k) => ($(k).innerHTML = `<div class="cap">No ${st.win === "conf" ? "conference " : ""}games yet.</div>`)); return; }
     const A = agg(W), F = agg(games);
+    summary.record = `${wins}-${W.length - wins}`;
     snapshot(W, A, set);
     winsLosses(W, F);
     pace(W, A, set);
     shots(set);
     lineups(set);
+    defense(W, A, set);
+    opts.onSummary?.({ ...summary });
   }
 
   // ------------------------------------------------------------ snapshot
@@ -114,6 +122,7 @@ export function renderTeamData(el, D, DIST) {
     games.forEach((g) => { const mo = new Date(g.d + "T12:00").toLocaleString("en-US", { month: "short" }); if (mo !== prev) { svg.append("text").attr("x", x(g.i)).attr("y", h - 6).attr("class", "tdax").text(mo); prev = mo; } });
     box.replaceChildren(svg.node());
     $("snaplbl").textContent = `${D.team} · ${D.season} · D-I games only`;
+    summary.trends = `${wins}-${W.length - wins} · net ${A.net >= 0 ? "+" : ""}${f1(A.net)}`;
   }
 
   // ------------------------------------------------------------ wins vs losses
@@ -152,6 +161,7 @@ export function renderTeamData(el, D, DIST) {
     const top = rows.filter((r) => r.S.dir !== 0).slice(0, 3).map((r) => ({ ...r, sp: split(r.k) })).filter((r) => r.sp);
     const phrase = (r) => { const sp = r.sp, opp = r.S.side === "def"; const verb = opp ? (sp.low ? "hold opponents under" : "push opponents over") : (sp.low ? "keep it under" : "get to");
       return `<b>${sp.good[0]}-${sp.good[1]}</b> when they ${verb} <b>${f1(sp.cut)}</b> ${r.S.l.replace("Opp. ", "")}${r.k === "d_tov" ? "" : ""} · ${sp.bad[0]}-${sp.bad[1]} otherwise`; };
+    if (top[0]) summary.trends = `${top[0].sp.good[0]}-${top[0].sp.good[1]} when ${top[0].S.l} ${top[0].sp.low ? "<" : ">"} ${f1(top[0].sp.cut)}`;
     story.innerHTML = top.length ? `<b>${top[0].S.l} decides their games.</b> In wins it averages ${f1(top[0].wa)}; in losses ${f1(top[0].la)}.${top[1] ? ` Next: ${top[1].S.l} (${f1(top[1].wa)} vs ${f1(top[1].la)})${top[2] ? ` and ${top[2].S.l} (${f1(top[2].wa)} vs ${f1(top[2].la)})` : ""}.` : ""}` : "";
     const cards = top.map((r) => `<div class="tdcall"><span class="label">${r.S.side === "def" ? "Defense" : "Offense"} · ${r.S.l}</span><div class="tdcallv">${phrase(r)}</div><div class="tdmini" data-k="${r.k}" data-cut="${r.sp.cut}"></div></div>`).join("");
     const dumb = rows.map((r) => {
@@ -186,6 +196,7 @@ export function renderTeamData(el, D, DIST) {
     const pr = rank("pace", A.pace, 1), tr = rank("tpp", A.tpp, -1), dr = rank("dtpp", A.dtpp, 1);
     const avg = d3.mean(dist.pace || [68]);
     const speed = pr == null ? "" : pr <= NT * 0.25 ? "play fast" : pr >= NT * 0.75 ? "play slow" : "play at an average pace";
+    summary.pace = `${f1(A.pace)} poss · ${ord(pr || 0)}`;
     $("pacestory").innerHTML = `<b>They ${speed}</b>: ${f1(A.pace)} possessions per 40 (${ord(pr)} fastest of ${NT}). On offense they take <b>${f1(A.tpp)} seconds</b> per possession (${ord(tr)} quickest); opponents take <b>${f1(A.dtpp)}</b> against them (${ord(dr)} longest), ${A.dtpp > d3.mean(dist.dtpp || [17]) + 0.4 ? "so their defense makes teams work deep into the clock" : A.dtpp < d3.mean(dist.dtpp || [17]) - 0.4 ? "so opponents get shots up quickly against them" : "about average"}.`;
     // pace by game
     const box = $("pacechart"), w = box.clientWidth || 700, h = 200, m = { t: 12, b: 22, l: 30, r: 10 };
@@ -206,11 +217,30 @@ export function renderTeamData(el, D, DIST) {
   }
 
   // ------------------------------------------------------------ shooting
-  function shots(set) {
-    const raw = (st.shotSide === "off" ? D.shots.off : D.shots.def).filter((s) => set.has(s[0]));
-    const box = $("shots");
+  function chart(boxId, raw, notes) {
+    const box = $(boxId); if (!box.tagName) return;
     if (raw.length < 30) { box.innerHTML = `<div class="cap">Not enough charted shots in this window (${raw.length}).</div>`; return; }
-    renderShotChart(box, { shots: raw, games: [], pron: "team", noAssist: true, source: "play-by-play shot locations", notes: st.shotSide === "def" ? "Shots their opponents took against them. Colors still read from the shooter's side: warm = opponents shot well there." : "" });
+    renderShotChart(box, { shots: raw, games: [], pron: "team", noAssist: true, source: "play-by-play shot locations", notes });
+  }
+  function shots(set) {
+    const raw = D.shots.off.filter((s) => set.has(s[0]));
+    const t3 = raw.filter((s) => s[3] === 3).length, efg = raw.length ? (100 * raw.reduce((a, s) => a + s[4] * (s[3] === 3 ? 1.5 : 1), 0)) / raw.length : null;
+    summary.shooting = raw.length ? `${Math.round((100 * t3) / raw.length)}% threes · ${f1(efg)} eFG` : "";
+    chart("shots", raw, "");
+  }
+  // ------------------------------------------------------------ defense
+  function defense(W, A, set) {
+    const F = [["d_efg", "Opp. eFG%", A.d_efg, -1, "defg"], ["d_tov", "Forced TO %", A.d_tov, 1, "dtov"], ["d_orb", "Opp. off. reb %", A.d_orb, -1, "dorb"], ["d_ftr", "Opp. FT rate", A.d_ftr, -1, "dftr"], ["d_tp", "Opp. 3P%", A.d_tp, -1, "dtp"], ["d_rim", "Opp. rim FG%", (100 * sum(W, "d_rimm")) / sum(W, "d_rima"), -1, "drim"], ["d_tpr", "Opp. 3PA rate", (100 * sum(W, "d_tpa")) / sum(W, "d_fga"), 0, "dtpr"], ["drtg", "Def. rating", A.drtg, -1, "drtg"]];
+    $("defkpis").innerHTML = F.map(([k, l, v, dir]) => { const r = rank(k, v, dir || -1), p = dir ? pctl(k, v, dir) : null;
+      return `<div class="kpi"><span class="label">${l}</span><b style="color:${tone(p)}">${f1(v)}</b><div class="sub">${r ? `${ord(r)} of ${NT}${dir === 0 ? " (fewest = 1st)" : ""}` : ""}</div></div>`; }).join("");
+    const r = (k, v, d) => rank(k, v, d);
+    const strengths = F.filter((f) => f[3] && f[0] !== "drtg").map((f) => ({ l: f[1], v: f[2], r: r(f[0], f[2], f[3]) })).filter((f) => f.r).sort((a, b) => a.r - b.r);
+    const best = strengths[0], worst = strengths[strengths.length - 1];
+    $("defstory").innerHTML = best ? `<b>Their defense is ${ord(rank("drtg", A.drtg, -1))} in D-I</b> (${f1(A.drtg)} points allowed per 100). Strength: <b>${best.l}</b> (${f1(best.v)}, ${ord(best.r)}). Weak spot: <b>${worst.l}</b> (${f1(worst.v)}, ${ord(worst.r)}).` : "";
+    summary.defense = `${f1(A.drtg)} DRtg · ${ord(rank("drtg", A.drtg, -1) || 0)}`;
+    chart("defshots", D.shots.def.filter((s) => set.has(s[0])), "Shots their opponents took against them. Warm = opponents shot well there (bad for this defense).");
+    const P = (opts.players || []).filter((p) => p.df != null).sort((a, b) => b.df - a.df);
+    $("defplayers").innerHTML = P.length ? `<table><thead><tr><th class="l">Player</th><th class="l">Pos</th><th>MPG</th><th>DEF</th><th>D-I rk</th><th>DRAPM</th><th>STL%</th><th>BLK%</th><th>DREB%</th></tr></thead><tbody>${P.map((p) => `<tr><td class="l">${p.name}</td><td class="l m">${p.pos || ""}</td><td class="m">${f1(p.mpg)}</td><td><span class="chip" style="background:${p.df >= 50 ? (p.df >= 80 ? GOOD : "#a8583a") : p.df <= 20 ? BAD : "#4b5a78"}">${f1(p.df)}</span></td><td class="m">${p.rk_df || "—"}</td><td>${p.drapm == null ? "—" : (p.drapm > 0 ? "+" : "") + p.drapm.toFixed(2)}</td><td>${f1(p.stlp)}</td><td>${f1(p.blkp)}</td><td>${f1(p.drbp)}</td></tr>`).join("")}</tbody></table><div class="cap">2025-26 season, full year (not windowed). DEF score needs 40%+ of team minutes.</div>` : `<div class="cap">No DEF scores for this roster.</div>`;
   }
 
   // ------------------------------------------------------------ lineups
@@ -244,11 +274,11 @@ export function renderTeamData(el, D, DIST) {
       return `<div class="tdoo"><span class="tdoon">${p.nm}</span><span class="m">${Math.round(p.share * 100)}%</span><div class="tdlub"><s></s><i style="${(p.diff || 0) >= 0 ? `left:50%;width:${w}%` : `left:${50 - w}%;width:${w}%`};background:${col}"></i></div><span class="m" style="color:${p.diff == null ? "var(--muted)" : p.diff >= 0 ? GOOD_T : BAD_T}">${p.diff == null ? "—" : (p.diff >= 0 ? "+" : "") + f1(p.diff)}</span></div>`; }).join("")
       + `<div class="cap">% = share of team possessions he played. Bar = team net rating with him on minus with him off. "—" = he almost never sat.</div>`;
     const starters = top[0];
+    summary.lineups = starters ? `top unit ${starters.net >= 0 ? "+" : ""}${f1(starters.net)}` : "";
     const swing = P.filter((p) => p.diff != null).sort((a, b) => b.diff - a.diff);
     $("lustory").innerHTML = starters ? `<b>Their most-used group (${nameOf(starters.li)}) is ${starters.net >= 0 ? "+" : ""}${f1(starters.net)} per 100</b> over ${Math.round(starters.poss)} possessions${best[0] && best[0].li !== starters.li ? `; their best unit with 40+ possessions is ${nameOf(best[0].li)} at ${best[0].net >= 0 ? "+" : ""}${f1(best[0].net)}` : ""}.${swing.length ? ` Biggest on/off swing: <b>${swing[0].nm}</b> (${swing[0].diff >= 0 ? "+" : ""}${f1(swing[0].diff)})${swing.length > 1 ? `; weakest: ${swing[swing.length - 1].nm} (${f1(swing[swing.length - 1].diff)})` : ""}.` : ""}` : "";
   }
 
   $("win").querySelectorAll("button").forEach((b) => (b.onclick = () => { $("win").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); st.win = b.dataset.w; draw(); }));
-  $("shotside").querySelectorAll("button").forEach((b) => (b.onclick = () => { $("shotside").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); st.shotSide = b.dataset.s; draw(); }));
   draw();
 }
