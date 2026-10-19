@@ -360,11 +360,11 @@ function pmStory(X){
   else if(all!=null&&D.fgm>=20&&all>=.6)c2=" He creates most of his own shots.";
   else if(all!=null&&D.fgm>=20&&all<=.35)c2=" Most of his makes come off passes.";
   let t=`<b>A ${load}${noun}${sec}.${c2}</b>`;
-  if(D.usg!=null)t+=` He used ${f1(D.usg)}% of possessions and turned it over on ${f1(D.tovp)}%${bp!=null?`, ${bp>=50?`better than ${bp}%`:`worse than ${100-bp}%`} of D-I players with similar usage`:""}.`;
+  if(D.usg!=null)t+=` He used ${f1(D.usg)}% of possessions and turned it over on ${f1(D.tovp)}%${bp!=null?(bp<=2?`, one of the highest rates among D-I players with similar usage`:bp>=98?`, one of the lowest rates among D-I players with similar usage`:`, ${bp>=50?`better than ${bp}%`:`worse than ${100-bp}%`} of D-I players with similar usage`):""}.`;
   const bits=[];
   if(rim.t>=8)bits.push(`${Math.round((rim.t-rim.a)/rim.t*100)}% of his made layups`);
   if(oth.t>=8)bits.push(`${Math.round((oth.t-oth.a)/oth.t*100)}% of his made mid-range shots`);
-  if(bits.length)t+=` ${bits.join(" and ")} ${bits.length>1?"were":"was"} unassisted${tpm.t>=8?`, while ${Math.round(tpm.a/tpm.t*100)}% of his made threes were assisted`:""}.`;
+  if(bits.length)t+=` ${bits.join(" and ")} were unassisted${tpm.t>=8?`, while ${Math.round(tpm.a/tpm.t*100)}% of his made threes were assisted`:""}.`;
   if(c&&c.teamPtsOn)t+=` He scored or assisted on ${Math.round((D.pts+c.astPts)/c.teamPtsOn*100)}% of ${esc(TS)}'s points while on the floor.`;
   const liveP=X?.tos>=10?X.live/X.tos:null;
   if(liveP!=null&&liveP>=.58)t+=` <b>Watch item:</b> ${Math.round(liveP*100)}% of his turnovers were steals, which lead to opponent fast breaks.`;
@@ -391,8 +391,8 @@ function dfStory(gap){
       t+=rawGood===rapGood?(Math.abs(gap)>2*Math.abs(D.drapm)?`, much milder than ${esc(TS)}'s raw ${sg(gap)} on/off gap. Part of that gap came from who he played with, not him.`:`, in line with ${esc(TS)}'s raw ${sg(gap)} on/off gap.`)
         :`, while ${esc(TS)}'s raw on/off gap points the other way (${sg(gap)}). On/off doesn't adjust for teammates or opponents.`;}
     else t+=".";}
-  const avg=[["stl","Steals"],["adrtg","Adj DRtg"],["drb","Rebounding"],["blk","Blocks"]].filter(([k])=>Z[k]!=null&&Math.abs(Z[k])<.3).map(([,l])=>l).slice(0,2);
-  if(avg.length)t+=` ${list(avg)} ${avg.length>1?"are":"is"} about average.`;
+  const avg=[["stl","His steals"],["adrtg","His Adj DRtg"],["drb","His defensive rebounding"],["blk","His blocks"]].filter(([k])=>Z[k]!=null&&Math.abs(Z[k])<.3).map(([,l])=>l).slice(0,2);
+  if(avg.length)t+=` ${list(avg).replace(/ and His /," and his ")} ${avg.length>1||/steals|blocks/.test(avg[0])?"are":"is"} about average.`;
   t+=` These numbers don't measure on-ball defense; that needs film or Synergy.`;
   document.getElementById("dfStory").innerHTML=t;
 }
