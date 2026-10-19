@@ -5,6 +5,7 @@
 // replaces it) produces the same file shapes, so the pages don't change.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, existsSync, cpSync } from "node:fs";
 import { join } from "node:path";
+import { gunzipSync } from "node:zlib";
 import { derive, seasonPercentiles } from "../src/stats.js";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -113,6 +114,35 @@ for (const p of roster.players) {
   const lastLite = last ? { season: last.season, school: last.school, gp: last.gp, mpg: last.mpg, ppg: last.ppg, three_pct: last.three_pct, three_pa: last.three_pa, ...last.d, pct: last.pct.metrics } : null;
   rosterRows.push({ ...player, last: lastLite });
   index.push({ id: p.id, first_name: p.first_name, last_name: p.last_name, school: roster.team, position: p.position, last: last ? { season: last.season, school: last.school, ppg: last.ppg } : null });
+}
+// ---------------------------------------------------------------- every D-I player (Search list)
+// Same page as the roster players (/player/<canonical id>), from our pipeline's D-I seasons.
+if (existsSync(src("search/players.json")) && existsSync(src("pd-cbb.json.gz"))) {
+  const SP = JSON.parse(readFileSync(src("search/players.json"), "utf8")), PD = JSON.parse(gunzipSync(readFileSync(src("pd-cbb.json.gz"))));
+  const pc = Object.fromEntries(SP.pcols.map((c, i) => [c, i])), sc = Object.fromEntries(SP.scols.map((c, i) => [c, i]));
+  const bySeason = new Map(); for (const r of SP.seasons) { if (!bySeason.has(r[0])) bySeason.set(r[0], []); bySeason.get(r[0]).push(r); }
+  mkdirSync(join(out, "pd"), { recursive: true });
+  let nP = 0;
+  SP.players.forEach((r, i) => {
+    const cid = r[pc.id], g = (k) => r[pc[k]];
+    const raw = (bySeason.get(i) || []).slice().reverse(); // oldest first
+    const seasons = raw.map((x) => { const v = (k) => x[sc[k]];
+      const s = { season: v("season"), school: v("school"), gp: v("gp"), gs: null, mpg: v("mpg"), ppg: v("ppg"), rpg: v("rpg"), apg: v("apg"), spg: v("spg"), bpg: v("bpg"), topg: v("topg"),
+        fg_pct: v("fg_pct"), three_pct: v("three_pct"), ft_pct: v("ft_pct"), efg_pct: v("efg_pct"), fgm: v("fgm"), fga: v("fga"), three_pm: v("three_pm"), three_pa: v("three_pa"), ftm: v("ftm"), fta: v("fta"),
+        points: v("points"), rebounds: v("rebounds"), assists: v("assists"), steals: v("steals"), blocks: v("blocks"), turnovers: v("turnovers") };
+      return { ...s, d: derive(s), pct: seasonPercentiles(s, pool) }; });
+    const p = { id: cid, first_name: g("first"), last_name: g("last"), school: g("team"), conference: g("conf"), position: g("pos"), height: g("ht"), weight: g("wt"), class_year: g("cls"), hometown: g("home"), high_school: g("hs"), jersey_number: g("jersey"), seasons: raw.map((x) => ({ school: x[sc.school] })) };
+    const pd = PD[cid];
+    write(`players/${cid}.json`, {
+      player: { ...p, seasons: undefined, espnId: g("espn") || null, espnTeamId: g("tid") || null, onRoster: false, source: "pipeline" },
+      seasons, shots: [], scores: playerScores(p),
+      modules: pd ? [{ src: `/modules/pd.html?id=${encodeURIComponent(cid)}`, title: "Playmaking & Defense" }] : [],
+      pbp: pd && pd.teamEspn ? { espn: pd.espn || null, team: pd.teamEspn, season: pd.year, label: pd.season, school: pd.team, teamShort: pd.teamShort, confShort: pd.confShort } : null,
+    });
+    if (pd) write(`pd/${cid}.json`, { id: cid, cid, ...pd });
+    nP++;
+  });
+  console.log(`all D-I: ${nP} player pages`);
 }
 mkdirSync(join(out, "scores"), { recursive: true });
 for (const [k, s] of Object.entries(scores)) write(`scores/${k}.json`, s);

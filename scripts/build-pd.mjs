@@ -10,7 +10,7 @@
 // live-ball turnovers, points per assist) are read from ESPN in the browser when the page opens.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { gunzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { parseCSV } from "./lib-csv.mjs";
 
 const dir = process.argv[2];
@@ -21,7 +21,10 @@ const rd = (v, d = 1) => (v == null || !isFinite(v) ? null : Math.round(v * 10 *
 const norm = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b\.?/g, "").replace(/[^a-z]/g, "");
 const label = (y) => `${y - 1}-${String(y).slice(2)}`;
 const yy = (y) => "'" + String(y).slice(2);
-const median = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); if (!v.length) return null; const m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+const MEDC = new WeakMap(), COLC = new WeakMap();
+const col = (k, pool) => { let c = COLC.get(pool); if (!c) COLC.set(pool, (c = {})); return (c[k] ||= pool.map((t) => t[k])); };
+const median0 = (a) => { const v = a.filter((x) => x != null).sort((p, q) => p - q); if (!v.length) return null; const m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+const median = (a) => { if (!MEDC.has(a)) MEDC.set(a, median0(a)); return MEDC.get(a); };
 const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 // Percentile (100 = best): share of the pool below, ties count half. lower = lower is better.
 function pctl(pool, v, lower = false) {
@@ -40,6 +43,7 @@ const byEspn = new Map(search.players.map((r) => [String(r[search.pcols.indexOf(
 const TIDBYNAME = new Map(search.players.filter((r) => r[search.pcols.indexOf("tid")]).map((r) => [r[search.pcols.indexOf("team")], String(r[search.pcols.indexOf("tid")])]));
 const TEAMD = new Map(); for (const t of parseCSV(readFileSync(join(dir, "team_strength_adjusted.csv"), "utf8"))) TEAMD.set(`${t.season}|${t.team}`, n(t.adjusted_def_rating));
 
+const TMAP = new Map(); // our team name → Torvik team name (filled per season below)
 // ---------------------------------------------------------------- Torvik, by season
 const TV = new Map();
 function torvik(y) {
@@ -50,13 +54,17 @@ function torvik(y) {
     name: t.c0, team: t.c1, conf: t.c2, gp: n(t.c3), minp: n(t.c4), usg: n(t.c6), drb: n(t.c10), ast: n(t.c11), tov: n(t.c12),
     blk: n(t.c22), stl: n(t.c23), pf: n(t.c30), atr: n(t.c35), drtg: n(t.c46), adrtg: n(t.c47), dbpm: n(t.c52), mp: n(t.c54), apg: n(t.c60), spg: n(t.c61), role: t.c64 || "?",
   }));
+  const byName = new Map(); for (const t of all) { const k = norm(t.name); byName.set(k, byName.has(k) ? null : t); }
+  { const votes = new Map(); for (const r of rows) { if (+r.season !== y) continue; const t = byName.get(norm(r.player_name)); if (!t || t.team === r.team) continue; const k = r.team; const m = votes.get(k) || new Map(); m.set(t.team, (m.get(t.team) || 0) + 1); votes.set(k, m); }
+    for (const [k, m] of votes) { const [best, c] = [...m].sort((a, b) => b[1] - a[1])[0]; if (c >= 3 && !TMAP.has(k)) TMAP.set(k, best); } }
+  const REV = new Map([...TMAP].map(([a, b]) => [b, a]));
   for (const t of all) t.passidx = t.ast != null && t.usg ? t.ast / t.usg : null;
   const pool = all.filter((t) => t.minp >= 40 && t.gp >= 15);
   // DEF score v2 (same recipe as scripts/build-rankings.mjs) with each component's z for the bars.
   const teamD = [...TEAMD].filter(([k]) => k.startsWith(y + "|")).map(([, v]) => v).filter((v) => v != null), lg = teamD.length ? mean(teamD) : 0;
   const DEFW = { dbpm: 0.25, drapm: 0.20, adjd: -0.15, stl: 0.13, blk: 0.10, drb: 0.10, pf: -0.07 };
   const dpool = all.filter((t) => t.minp >= 40);
-  for (const t of dpool) { const ad = TEAMD.get(`${y}|${t.team}`) ?? lg; t._d = { dbpm: t.dbpm == null ? null : t.dbpm - (0.5 * (lg - ad)) / 5, adjd: t.adrtg == null ? null : t.adrtg + 0.5 * (lg - ad), stl: t.stl, blk: t.blk, drb: t.drb, pf: t.pf, drapm: DRAPM.get(`${y}|${norm(t.name)}|${t.team}`) ?? null }; }
+  for (const t of dpool) { const ad = TEAMD.get(`${y}|${t.team}`) ?? TEAMD.get(`${y}|${REV.get(t.team)}`) ?? lg; t._d = { dbpm: t.dbpm == null ? null : t.dbpm - (0.5 * (lg - ad)) / 5, adjd: t.adrtg == null ? null : t.adrtg + 0.5 * (lg - ad), stl: t.stl, blk: t.blk, drb: t.drb, pf: t.pf, drapm: drapmOf(y, t.name, t.team) }; }
   const byRole = new Map(); dpool.forEach((t) => { if (!byRole.has(t.role)) byRole.set(t.role, []); byRole.get(t.role).push(t); });
   for (const g of byRole.values()) for (const k of Object.keys(DEFW)) {
     const v = g.map((t) => t._d[k]).filter((x) => x != null), mu = v.length ? mean(v) : 0, sd = Math.sqrt(v.length ? mean(v.map((x) => (x - mu) ** 2)) : 0) || 1;
@@ -66,14 +74,20 @@ function torvik(y) {
   const order = [...dpool].sort((a, b) => a._raw - b._raw);
   order.forEach((t, i) => (t.defScore = (100 * (i + 0.5)) / order.length));
   [...dpool].sort((a, b) => b._raw - a._raw).forEach((t, i) => (t.defRank = i + 1));
-  const out = { all, pool, dpool, find: (name, team) => all.find((t) => norm(t.name) === norm(name) && t.team === team) || all.filter((t) => norm(t.name) === norm(name)).find((t) => !team) };
+  const byKey = new Map(); for (const t of all) { const k = norm(t.name) + "|" + t.team; if (!byKey.has(k)) byKey.set(k, t); }
+  const SUB = new Map(), sub = (f, v, fn) => { const k = f + "|" + v; if (!SUB.has(k)) SUB.set(k, pool.filter(fn || ((t) => t[f] === v))); return SUB.get(k); };
+  // Our team names differ from Torvik's for some schools (UConn / Connecticut): learn the mapping
+  // from players whose name is unique in both, then match on name + mapped team.
+  const out = { all, pool, dpool, sub, find: (name, team) => byKey.get(norm(name) + "|" + team) || byKey.get(norm(name) + "|" + TMAP.get(team)) || byName.get(norm(name)) || null };
   TV.set(y, out); return out;
 }
 const DRAPM = new Map(), ORAPM = new Map();
-for (const r of rows) { const k = `${r.season}|${norm(r.player_name)}|${r.team}`; if (n(r.national_drapm) != null) DRAPM.set(k, n(r.national_drapm)); }
+const DRN = new Map();
+for (const r of rows) { const k = `${r.season}|${norm(r.player_name)}|${r.team}`; if (n(r.national_drapm) != null) { DRAPM.set(k, n(r.national_drapm)); const kn = `${r.season}|${norm(r.player_name)}`; DRN.set(kn, DRN.has(kn) ? null : n(r.national_drapm)); } }
+const drapmOf = (y, name, team) => DRAPM.get(`${y}|${norm(name)}|${team}`) ?? DRN.get(`${y}|${norm(name)}`) ?? null;
 
 // ---------------------------------------------------------------- lineup stints (on/off), latest season only
-let STINTS = null;
+let STINTS = null, STBY = null;
 const stintFile = join(dir, "bsuiq_tmp", "lineups.csv.gz");
 if (existsSync(stintFile)) STINTS = parseCSV(gunzipSync(readFileSync(stintFile)).toString("utf8"));
 function onOff(team, last, first) {
@@ -81,7 +95,8 @@ function onOff(team, last, first) {
   const me = `${last}, ${first}`.toLowerCase();
   const agg = () => ({ poss: 0, pts: 0, opp_poss: 0, opp_pts: 0, opp_fga: 0, opp_fgm: 0, opp_tpa: 0, opp_tpm: 0, opp_fta: 0, opp_orb: 0, drb: 0, opp_to: 0, opp_rima: 0, opp_rimm: 0, games: new Set() });
   const on = agg(), off = agg();
-  const mine = STINTS.filter((s) => s.team === team);
+  if (!STBY) { STBY = new Map(); for (const s of STINTS) { if (!STBY.has(s.team)) STBY.set(s.team, []); STBY.get(s.team).push(s); } }
+  const mine = STBY.get(team) || [];
   const isOn = (s) => [s.player_1, s.player_2, s.player_3, s.player_4, s.player_5].some((p) => String(p).toLowerCase() === me);
   const played = new Set(mine.filter(isOn).map((s) => s.contest_id)); // only games he played in
   if (!played.size) return null;
@@ -106,19 +121,22 @@ const TEAMSHORT = (s) => ({ "North Dakota St.": "NDSU", "South Dakota St.": "SDS
 const CONFSHORT = (c) => ({ MWC: "MW", AAC: "American", "C-USA": "CUSA", WAC: "WAC" })[c] || String(c || "").replace(/ (League|Conference)$/, "");
 mkdirSync(join(root, "pd"), { recursive: true });
 const made = [];
-for (const p of roster.players) {
+// Roster players: canonical id via Search's ESPN match, else by name + school.
+function rosterMine(p) {
   const espn = p.id.startsWith("espn-") ? p.id.slice(5) : null;
-  // Our pipeline rows for this player: by canonical id (via Search's ESPN match), else by name + school.
   let cid = espn ? byEspn.get(espn) : null;
-  let mine = cid ? rows.filter((r) => r.canonical_player_id === cid) : [];
+  let mine = cid ? ROWS_BY_CID.get(cid) || [] : [];
   if (!mine.length) { const k = norm(p.first_name + p.last_name); const hit = rows.filter((r) => norm(r.player_name) === k); const ids = [...new Set(hit.map((r) => r.canonical_player_id))]; if (ids.length === 1) { cid = ids[0]; mine = hit; } }
+  return { id: p.id, cid, espn, first: p.first_name, last: p.last_name, mine };
+}
+const ROWS_BY_CID = new Map(); for (const r of rows) { if (!ROWS_BY_CID.has(r.canonical_player_id)) ROWS_BY_CID.set(r.canonical_player_id, []); ROWS_BY_CID.get(r.canonical_player_id).push(r); }
+function pdFor({ id, cid, espn, first, last: lastName, mine }) {
   mine = mine.filter((r) => n(r.minutes) > 0).sort((a, b) => +a.season - +b.season);
-  if (!mine.length) { console.log(`  ${p.first_name} ${p.last_name}: no D-I seasons`); continue; }
+  if (!mine.length) return null;
   const cur = mine[mine.length - 1], Y = +cur.season, T = torvik(Y);
   const tme = T?.find(cur.player_name, cur.team);
   const v = Object.fromEntries(Object.entries(cur).map(([k, x]) => [k, n(x) ?? x]));
-  const role = tme?.role || "?", conf = tme?.conf || "", rolePool = T ? T.pool.filter((t) => t.role === role) : [], confPool = T ? T.pool.filter((t) => t.conf === conf) : [];
-  const col = (k, pool) => pool.map((t) => t[k]);
+  const role = tme?.role || "?", conf = tme?.conf || "", rolePool = T ? T.sub("role", role) : [], confPool = T ? T.sub("conf", conf) : [];
   const pmRow = (k, name, his, fmtV, lower = false, opts = {}) => {
     const dp = T ? col(k, T.pool) : [], rp = col(k, rolePool), cp = col(k, confPool);
     return [k, name, his == null ? "—" : fmtV(his), opts.dmed ?? (median(dp) == null ? "—" : opts.fm ? opts.fm(median(dp)) : median(dp).toFixed(opts.d ?? 1)), opts.nullPct ? null : pctl(dp, his, lower),
@@ -127,7 +145,7 @@ for (const p of roster.players) {
   const pc1 = (x) => x.toFixed(1) + "%", f1 = (x) => x.toFixed(1), f2 = (x) => x.toFixed(2);
   // TOV% vs players with similar usage (±3 points).
   const band = tme?.usg != null ? [Math.round(tme.usg - 3), Math.round(tme.usg + 3)] : null;
-  const bandPool = band ? T.pool.filter((t) => t.usg >= band[0] && t.usg <= band[1]) : [];
+  const bandPool = band ? T.sub("band", band.join("-"), (t) => t.usg >= band[0] && t.usg <= band[1]) : [];
   const PM = tme ? [
     pmRow("usg", "Usage", tme.usg, pc1), pmRow("ast", "AST%", tme.ast, pc1), pmRow("astg", "AST / g", tme.apg, f1, false, {}).map((x, i) => (i === 0 ? "astg" : x)),
     pmRow("atr", "AST / TO", tme.atr, f2, false, { d: 2 }), pmRow("tov", "TOV%", tme.tov, pc1, true),
@@ -137,7 +155,7 @@ for (const p of roster.players) {
   // apg is stored as Torvik "apg"; fix the astg row's pools to use apg
   if (tme) PM[2] = (() => { const r = pmRow("apg", "AST / g", tme.apg, f1); r[0] = "astg"; return r; })();
   const myDrapm = n(cur.national_drapm), myOrapm = n(cur.national_orapm);
-  const drapmPool = T ? T.pool.map((t) => DRAPM.get(`${Y}|${norm(t.name)}|${t.team}`)).filter((x) => x != null) : [];
+  const drapmPool = T ? (T._drapm ||= T.pool.map((t) => drapmOf(Y, t.name, t.team)).filter((x) => x != null)) : [];
   const zero = (x) => (x === 0 ? null : x);
   const DM = tme ? [
     ["drapm", "Defensive RAPM", fmtSigned(myDrapm), "0.0", pctl(drapmPool, myDrapm), "—", null, null],
@@ -163,8 +181,9 @@ for (const p of roster.players) {
   const aT = v.assisted_3pm || 0, aR = v.assisted_rim_made || 0, aO = Math.max(0, (v.assisted_fgm || 0) - aT - aR);
   const SB = [["3PT makes", tpm, aT], ["At-rim makes", rimM, aR], ["Other 2 makes", oth, aO]].filter((r) => r[1] > 0);
   // DEF score v2.
-  const def = tme?.defScore != null ? { score: rd(tme.defScore), rank: tme.defRank, n: T.dpool.length, rolePct: pctl(T.dpool.filter((t) => t.role === role).map((t) => t.defScore), tme.defScore), roleN: T.dpool.filter((t) => t.role === role).length,
-    confRank: [...T.dpool.filter((t) => t.conf === conf)].sort((a, b) => b._raw - a._raw).findIndex((t) => t === tme) + 1, confN: T.dpool.filter((t) => t.conf === conf).length,
+  const dRole = tme?.defScore != null ? (T._dr ||= {})[role] ||= T.dpool.filter((t) => t.role === role) : [], dConf = tme?.defScore != null ? (T._dc ||= {})[conf] ||= T.dpool.filter((t) => t.conf === conf).sort((a, b) => b._raw - a._raw) : [];
+  const def = tme?.defScore != null ? { score: rd(tme.defScore), rank: tme.defRank, n: T.dpool.length, rolePct: pctl(col("defScore", dRole), tme.defScore), roleN: dRole.length,
+    confRank: dConf.indexOf(tme) + 1, confN: dConf.length,
     z: [["dbpm", "DBPM*", 0.25, tme._z.dbpm], ["adrtg", "Adj DRtg*", 0.15, -tme._z.adjd], ["drapm", "Defensive RAPM", 0.20, tme._z.drapm], ["stl", "STL%", 0.13, tme._z.stl], ["blk", "BLK%", 0.10, tme._z.blk], ["drb", "DRB%", 0.10, tme._z.drb], ["pf", "Fouls/40", 0.07, -tme._z.pf]].map(([k, l, w, z]) => [k, l, w, rd(z, 2)]) } : null;
   // On/off (lineup stints cover the latest season only).
   const [last, ...fr] = [cur.player_name.split(" ").slice(1).join(" "), cur.player_name.split(" ")[0]];
@@ -172,7 +191,7 @@ for (const p of roster.players) {
   const onoffRows = oo ? [["opp100", "Opp pts / 100", "low"], ["oefg", "Opp eFG%", "low"], ["otov", "Opp TO%", "high"], ["oorb", "Opp ORB%", "low"], ["oftr", "Opp FT rate", "low"], ["orimr", "Opp rim rate", "low"], ["orimp", "Opp rim FG%", "low"], ["o2p", "Opp 2P%", "low"], ["o3r", "Opp 3PA rate", "low"], ["o3p", "Opp 3P%", "low", 1]]
     .map(([k, l, b, dim]) => [k, l, rd(oo.on[k]), rd(oo.off[k]), b, dim || 0]).filter((r) => r[2] != null && r[3] != null) : [];
   const out = {
-    id: p.id, cid, espn, name: `${p.first_name} ${p.last_name}`, first: p.first_name, last: p.last_name,
+    id, cid, espn, name: `${first} ${lastName}`, first, last: lastName,
     season: label(Y), year: Y, team: cur.team, teamShort: TEAMSHORT(cur.team), teamEspn: TID.get(cur.team_ncaa_team_id) || TIDBYNAME.get(cur.team) || null, conf, confName: cur.conference, confShort: CONFSHORT(cur.conference), role,
     arcTeams: [...new Set(years.map((y) => mine.find((m) => +m.season === y)?.team).filter(Boolean).map(TEAMSHORT))], torvikYears: years.map((y, i) => (careerT[i] ? 1 : 0)),
     gamesDI: v.games_played, minutes: v.minutes, pts: v.points, fga: v.fga, fta: v.fta, ast: v.assists, tov: v.turnovers, fgm, unast: v.unassisted_fgm || 0,
@@ -184,9 +203,28 @@ for (const p of roster.players) {
     PM, DM, H: [...grid].map(([k, c]) => `${k},${c}`).join(";"), path, arcYears: years.map(yy), arcP, arcD, SB, def,
     onoff: oo ? { games: oo.games, onPoss: Math.round(oo.on.poss), offPoss: Math.round(oo.off.poss), teamPtsOn: oo.on.teamPts, rows: onoffRows } : null,
   };
-  writeFileSync(join(root, "pd", `${p.id}.json`), JSON.stringify(out));
-  made.push(`${out.name} ${out.season} ${out.team} · Torvik ${tme ? "yes" : "NO"} · on/off ${oo ? "yes" : "no"} · DEF ${def?.score ?? "—"}`);
+  return out;
 }
+for (const p of roster.players) {
+  const out = pdFor(rosterMine(p));
+  if (!out) { console.log(`  ${p.first_name} ${p.last_name}: no D-I seasons`); continue; }
+  writeFileSync(join(root, "pd", `${p.id}.json`), JSON.stringify(out));
+  made.push(`${out.name} ${out.season} ${out.team} · Torvik ${out.torvik ? "yes" : "NO"} · on/off ${out.onoff ? "yes" : "no"} · DEF ${out.def?.score ?? "—"}`);
+}
+// Every 2025-26 D-I player (the Search list), keyed by canonical id. The usage/TOV grid is the
+// same for everyone in a season, so it goes in one shared file per season instead of each player's.
+const ALL = {}, GRIDS = {};
+const pc = search.pcols, I = (k) => pc.indexOf(k);
+let t0 = Date.now();
+for (const r of search.players) {
+  const out = pdFor({ id: r[0], cid: r[0], espn: String(r[I("espn")] || "") || null, first: r[I("first")], last: r[I("last")], mine: ROWS_BY_CID.get(r[0]) || [] });
+  if (!out) continue;
+  GRIDS[out.year] ||= out.H; delete out.H; delete out.id; delete out.cid;
+  ALL[r[0]] = out;
+}
+writeFileSync(join(root, "pd-cbb.json.gz"), gzipSync(JSON.stringify(ALL)));
+for (const [y, h] of Object.entries(GRIDS)) writeFileSync(join(root, "pd", `_H-${y}.json`), JSON.stringify({ year: +y, H: h }));
+console.log(`all D-I: ${Object.keys(ALL).length} of ${search.players.length} players in ${Math.round((Date.now() - t0) / 1000)}s; ${Object.values(ALL).filter((d) => d.torvik).length} on Torvik, ${Object.values(ALL).filter((d) => d.def).length} with a DEF score`);
 console.log(made.join("\n"));
 // D-I ESPN team ids (the module counts creation and on/off in D-I games only, like the rest of the site).
 writeFileSync(join(root, "pd", "_d1.json"), JSON.stringify([...new Set(TID.values())].map(String).sort()));

@@ -39,8 +39,19 @@ let D;
 try { D = await getJSON("/data/players/" + encodeURIComponent(id) + ".json"); }
 catch (e) { page.innerHTML = `<div class="loading">${/not found|404/i.test(e.message) ? "This player isn't in the Bronco IQ data yet." : `Couldn't load this player (${esc(e.message)}).`}</div>`; throw e; }
 
+// Every other D-I player (Search): same page from our pipeline's numbers. ESPN id for the live
+// play-by-play and game log: staff fix > build match > Recruiting Hub match (Search's order).
+const PIPE = D.player.source === "pipeline";
+if (PIPE) {
+  const fix = await getJSON("/api/search/links").catch(() => null);
+  let e = fix?.espn?.[id] || D.player.espnId;
+  if (!e) { try { const { loadPool } = await import("/assets/pool.js"); e = (await loadPool()).byId.get(id)?.espn || null; } catch {} }
+  D.player.espnId = e || null;
+  if (D.pbp) D.pbp.espn = e || null;
+  if (e && D.modules[0]) D.modules[0].src += `&espn=${encodeURIComponent(e)}`;
+}
 const P = D.player, S = D.seasons, last = S[S.length - 1] || null;
-const PBP = D.pbp && !(D.shots || []).some((x) => x.season === D.pbp.label) ? pdPBP(D.pbp) : null;
+const PBP = D.pbp && D.pbp.espn && !(D.shots || []).some((x) => x.season === D.pbp.label) ? pdPBP(D.pbp) : null;
 document.title = `${playerName(P)} · Bronco IQ`;
 const qualified = (s) => s && s.d.gp >= 8 && (s.d.mpg ?? 0) >= 8;
 const pctOf = (s, k) => (qualified(s) ? s.pct.metrics[k]?.pct ?? null : null);
@@ -55,13 +66,13 @@ const pathText = pathBits.map((p) => `${shortSchool(p.school)} ${p.from === p.to
 page.innerHTML = `
 <div class="label">${labelBits.map(esc).join(" · ")}</div>
 <h1>${esc(playerName(P))}</h1>
-<div class="cap" style="margin-top:4px">${P.onRoster ? `Boise St. 2026-27${P.jersey_number ? ` · #${esc(P.jersey_number)}` : ""}${pathText ? ` · ${esc(pathText)} → Boise St.` : ""} · ` : ""}Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
+<div class="cap" style="margin-top:4px">${P.onRoster ? `Boise St. 2026-27${P.jersey_number ? ` · #${esc(P.jersey_number)}` : ""}${pathText ? ` · ${esc(pathText)} → Boise St.` : ""} · ` : ""}${PIPE ? `<a href="/player/${encodeURIComponent(P.id)}/hub" style="color:var(--text);text-decoration:underline">Recruiting info, headshot & staff notes →</a> · ` : ""}Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
 <div id="s-scores"></div>
 <div id="s-shoot"></div>
 <div id="s-pd"></div>
 <div id="s-seasons"></div>
 <div id="s-games"></div>
-<footer>Sources: ESPN season box scores and play-by-play shot locations, ESPN game logs (live). <span data-def="pool">Percentiles</span> compare against D-I rotation players for the same season. Sample data for the formatting phase.</footer>`;
+<footer>Sources: ${PIPE ? "our play-by-play pipeline (D-I games), Barttorvik, ESPN play-by-play and game logs (live)" : "ESPN season box scores and play-by-play shot locations, ESPN game logs (live)"}. <span data-def="pool">Percentiles</span> compare against D-I rotation players for the same season. </footer>`;
 
 // Profile table in the mockup's format: Stat | His | D-I med | D-I pct
 function profileTable(s, rows) {
@@ -165,7 +176,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
       return `<tr class="total"><td class="l">Career</td><td class="l m">${schools} school${schools > 1 ? "s" : ""}</td><td class="sep m">${tot.gp}</td><td class="m">${tot.gs}</td><td>${f1(tot.min / g)}</td><td>${f1(tot.min ? (tot.points / tot.min) * 40 : null)}</td>
       <td class="sep">${f1(tot.points / g)}</td><td>${f1(tot.rebounds / g)}</td><td>${f1(tot.assists / g)}</td><td>${f1(tot.steals / g)}</td><td>${f1(tot.blocks / g)}</td><td>${f1(tot.turnovers / g)}</td>
       <td class="sep">${f1(tot.fga ? (tot.fgm / tot.fga) * 100 : null)}</td><td>${f1(tot.three_pa ? (tot.three_pm / tot.three_pa) * 100 : null)} <span class="m" style="font-size:10.5px">${tot.three_pm}/${tot.three_pa}</span></td><td>${f1(tot.fta ? (tot.ftm / tot.fta) * 100 : null)}</td><td class="m">${f1(tot.fga ? (tot.three_pa / tot.fga) * 100 : null)}</td><td>${f1(ts)}</td><td>${f1(tot.fga ? ((tot.fgm + 0.5 * tot.three_pm) / tot.fga) * 100 : null)}</td></tr>`; })() : ""}
-    </tbody></table><div class="cap">Season totals include every game ESPN logged (non-D-I opponents too). Chips need 8+ games and 8+ minutes per game; 3P% chips need 40+ attempts.</div></div></section>`;
+    </tbody></table><div class="cap">${PIPE ? "D-I games only (our play-by-play pipeline), so totals can be a little below ESPN's." : "Season totals include every game ESPN logged (non-D-I opponents too)."} Chips need 8+ games and 8+ minutes per game; 3P% chips need 40+ attempts.</div></div></section>`;
 })();
 
 // ======================================================= GAME LOG
@@ -173,7 +184,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
   if (!P.espnId) return;
   const el = document.getElementById("s-games");
   const seasons = [...new Set(S.map((s) => s.season))];
-  if (!seasons.includes("2026-27") && P.onRoster) seasons.push("2026-27");
+  if (!seasons.includes("2026-27") && (P.onRoster || PIPE)) seasons.push("2026-27");
   let cur = last && seasons.includes(last.season) ? last.season : seasons[seasons.length - 1];
   el.innerHTML = `<section><div class="shead"><h2>Game log</h2><span class="label" id="glsub">ESPN box scores</span><div class="seg" style="margin-left:auto" id="glseas">${seasons.map((s) => `<button data-s="${s}">${s.slice(2)}</button>`).join("")}</div></div>
     <div class="panel glchart" style="margin-top:14px" id="glc"><div class="loading">Loading…</div></div><div class="panel scroll" style="margin-top:12px" id="glt"></div></section>`;

@@ -78,7 +78,9 @@ const pctS=(a,b)=>b?Math.round(100*a/b):null;
 const id=new URLSearchParams(location.search).get("id")||"";
 const root=document.getElementById("root");
 let D;
-try{const r=await fetch("/data/pd/"+encodeURIComponent(id)+".json");if(!r.ok)throw new Error(r.status);D=await r.json();}
+try{const r=await fetch("/data/pd/"+encodeURIComponent(id)+".json");if(!r.ok)throw new Error(r.status);D=await r.json();
+ if(!D.H)D.H=(await fetch(`/data/pd/_H-${D.year}.json`).then(r=>r.json()).catch(()=>({H:""}))).H;
+ const qe=new URLSearchParams(location.search).get("espn");if(qe)D.espn=qe;}
 catch(e){root.innerHTML=`<div class="wait">No playmaking & defense data for this player yet.</div>`;throw e;}
 
 // ---------------------------------------------------------------- labels
@@ -408,6 +410,7 @@ if(D.espn&&D.teamEspn){
   try{
     const d1=new Set(await fetch("/data/pd/_d1.json").then(r=>r.json()));
     X=await pdPBP({espn:D.espn,team:D.teamEspn,season:D.year,d1});
+    if(X&&!X.games.length)X=null;
   }catch(e){console.warn("pbp",e);}
 }
 const G=X?.games||[];
