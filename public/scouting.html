@@ -74,9 +74,10 @@ svg [data-def]{text-decoration:none}
 .shr i{flex:1;font-style:normal;text-align:center;font-family:var(--mono);font-size:8.5px;letter-spacing:.03em;color:#8a8e95;background:#34363b;border-radius:2px;padding:1px 0}
 .shr i.me{outline:1px solid #f2f3f4;outline-offset:1px}
 .pc .nm>span{display:flex;align-items:center;gap:6px;position:relative}
+.rpos{position:relative;display:inline-flex;align-items:center;gap:4px}
 .mv{background:#34363b;border:0;border-radius:4px;color:#cfd3d9;font:9.5px var(--mono);padding:2px 5px;cursor:pointer}
 .mv:hover{background:#4a4d53;color:#fff}
-.mvm{position:absolute;top:calc(100% + 4px);right:0;z-index:30;background:#1e1f22;border:1px solid #3a3d42;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:4px;display:grid;gap:2px;min-width:140px}
+.mvm{position:fixed;z-index:60;background:#1e1f22;border:1px solid #3a3d42;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:4px;display:grid;gap:2px;min-width:140px}
 .mvm button{background:none;border:0;text-align:left;color:#cfd3d9;font:12px var(--mono);padding:6px 10px;border-radius:5px;cursor:pointer}
 .mvm button:hover{background:#26282c;color:#fff}.mvm button.on{background:#3a3d42;color:#fff}.mvm button.auto{color:#8a8e95;border-top:1px solid #2e3034;border-radius:0 0 5px 5px}
 .mbar{height:5px;border-radius:3px;background:#34363b;margin-top:8px;overflow:hidden}
@@ -323,19 +324,23 @@ function depthHTML(t){
    return `<div class="pc${p[8]?' st':''}" data-n="${p[1]}"><div class="nm">${p[1]}<span>#${p[0]}<button class="mv" title="Change position">${I.slot} ▾</button></span></div><div class="meta">${tg}<span>${p[3]} · ${p[4]}${fr}</span>${tags}</div><div class="mbar"><i style="width:${mp/36*100}%;background:${p[8]?'#f2f3f4':'#8a8e95'}"></i></div><div class="row"><span>${mp.toFixed(0)} mpg${pp!=null?` · <b>${pp}</b> ppg`:''}</span><span class="xs">${p[11][0]} <b>${p[11][1]}</b></span></div></div>`}).join("")}</div>`}).join("")}</div><div class="cap">${t.depthCap} Positions come from who played together and player size (height, weight, rebounding and shot profile). Use the <b style="color:#cfd3d9">▾</b> button on a card to set a position by hand (saved for all staff; <span class="tag staff">STAFF</span> marks hand-set spots).</div>`;
 }
 function wireDepth(t){
- const box=document.getElementById("depthbox");if(!box)return;
+ const box=document.getElementById("page");if(!box)return;
  box.querySelectorAll(".mv").forEach(b=>b.onclick=e=>{e.stopPropagation();document.querySelectorAll(".mvm").forEach(m=>m.remove());
-  const card=b.closest(".pc"),name=card.dataset.n,p=t.P.find(x=>x[1]==name),I=posInfo(t,p);
+  const card=b.closest("[data-n]"),name=card.dataset.n,p=t.P.find(x=>x[1]==name),I=posInfo(t,p);
   const m=document.createElement("div");m.className="mvm";
   m.innerHTML=SLOTS.map(x=>`<button data-s="${x}" class="${x==I.slot?'on':''}">${x}</button>`).join("")+`<button data-s="" class="auto">Auto (data: ${I.auto})</button>`;
-  b.parentElement.appendChild(m);m.onclick=ev=>ev.stopPropagation();
+  document.body.appendChild(m);m.onclick=ev=>ev.stopPropagation();
+  const r=b.getBoundingClientRect(),mw=150,mh=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(innerWidth-mw-8,r.right-mw))+"px";
+  m.style.top=(r.bottom+4+mh>innerHeight?r.top-4-mh:r.bottom+4)+"px";
   m.querySelectorAll("button").forEach(x=>x.onclick=async()=>{m.remove();
    try{const r=await fetch("/api/positions",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({key:`${t.key}|${name}`,slot:x.dataset.s||null})});
     if(r.ok)OVR=(await r.json()).overrides||OVR;}catch{}
-   box.innerHTML=depthHTML(t);wireDepth(t);});
+   const y=scrollY;render(t);scrollTo(0,y);});
  });
 }
 document.addEventListener("click",()=>document.querySelectorAll(".mvm").forEach(m=>m.remove()));
+addEventListener("scroll",()=>document.querySelectorAll(".mvm").forEach(m=>m.remove()),{passive:true});
 
 // ---------- render ----------
 function render(t){
@@ -357,7 +362,7 @@ function render(t){
   const mc=mid?(v.length>1?`<td class="sep">${v[0].toFixed(1)}</td><td style="font-weight:700">${f1(v[1])}</td><td>${f1(v[2])}</td><td>${f1(v[3])}</td><td>${v[4]==null?"—":v[4].toFixed(1)}</td><td>${chip("bpm",v[5],sg(v[5]))}</td><td class="m">${v[6]}</td>`:`<td class="sep">${v[0].toFixed(1)}</td><td class="m l" colspan="6">${p[5]=="F"?"freshman / intl: no projection":"small sample: no projection"}</td>`)
    :`<td class="sep m">${v[0]}</td><td class="m">${v[1]}</td><td>${v[2].toFixed(1)}</td><td style="font-weight:700">${v[3].toFixed(1)}</td><td>${v[4].toFixed(1)}</td><td>${v[5].toFixed(1)}</td><td class="m">${v[6]==null?"—":v[6].toFixed(1)}</td>`;
   const q=A&&A[1]>=20;const ac=A?`${mid?`<td class="l sep" style="color:#b9bdc4">${p[6]}</td><td class="m">${A[0]}</td>`:`<td class="sep m">${A[0]}</td>`}<td class="m">${A[1].toFixed(0)}</td><td>${q?chip("ortg",A[2],A[2].toFixed(1)):A[2].toFixed(1)}</td><td>${A[3].toFixed(1)}</td><td>${q?chip("ts",A[4],A[4].toFixed(1)):A[4].toFixed(1)}</td><td>${A[6]>=40?chip("p3",A[7],A[7].toFixed(1))+` <span class="m" style="font-size:10.5px">${A[6]}</span>`:`<span class="m">${A[5]}/${A[6]}</span>`}</td><td>${A[8].toFixed(1)}</td><td>${A[9].toFixed(1)}</td><td>${A[10].toFixed(1)}</td><td>${q?chip("bpm",A[11],sg(A[11])):sg(A[11])}</td>`:`<td class="l sep m" colspan="${mid?11:10}">no D-I history</td>`;
-  return `<tr><td class="l m">${p[0]}</td><td class="l" style="color:#fff;font-weight:600">${p[1]}${tg}</td><td class="l m">${p[2]}</td><td class="m">${p[3]}</td><td class="l m">${p[4]}</td>${mc}${ac}</tr>`}).join("")}
+  return `<tr><td class="l m">${p[0]}</td><td class="l" style="color:#fff;font-weight:600">${p[1]}${tg}</td><td class="l m"><span class="rpos" data-n="${p[1]}">${(()=>{const I=posInfo(t,p);return `<button class="mv" title="Change position">${I.slot} ▾</button>${I.ovr?' <span class="tag staff">STAFF</span>':""}`})()}</span></td><td class="m">${p[3]}</td><td class="l m">${p[4]}</td>${mc}${ac}</tr>`}).join("")}
  </tbody></table><div class="cap">Chips = percentile among 2,284 D-I rotation players in 2025-26 (shown at 20%+ minutes). 3P% chips need 40+ attempts.${mid?" Confidence: H = 2+ seasons, M = one season or level jump, L = small sample.":""}</div></div></section>
  <footer>${t.foot} Logos: ESPN.</footer>`;
  document.getElementById("page").innerHTML=h;
