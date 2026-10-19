@@ -138,13 +138,14 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .ssec+.ssec{margin-top:18px;border-top:1px solid #34363b}
 .sh{font-size:24px;font-weight:750;letter-spacing:-.02em;margin-bottom:4px}
 .ssec>section:first-of-type,.ssec>.hero:first-of-type{margin-top:12px}
-.rktile{background:linear-gradient(135deg,#24262a,#1e1f22);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:12px}
-.rkg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
-.rkc{background:#2a2c31;border-radius:10px;padding:14px 16px}
-.rkh{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#cfd3d9;font-weight:600}.rkh img{width:16px;height:16px;border-radius:3px}
-.rkc>b{display:block;font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:8px}
-.rks{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:4px}
-.rkb{font-family:var(--mono);font-size:10.5px;color:#b9bdc4;margin-top:8px;padding-top:8px;border-top:1px solid #3a3d42}
+.rktile{grid-column:span 2}
+.rkrow{grid-template-columns:repeat(4,1fr);margin-top:12px}
+.rkg{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;margin-top:8px}
+.rkc{min-width:0}
+.rkh{display:flex;align-items:center;gap:5px;font-size:11px;color:#b9bdc4;white-space:nowrap}.rkh img{width:13px;height:13px;border-radius:2px}
+.rkc>b{display:block;font-size:24px;font-weight:750;margin-top:3px}
+.rks{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:600px){.rkrow{grid-template-columns:1fr 1fr}}
 .note{background:#24262a;border:1px dashed #4a4d53;border-radius:8px;padding:12px;font-size:13px;color:#cfd3d9}
 @media (max-width:1050px){
  .scout{grid-template-columns:minmax(0,1fr);gap:0;padding:0 16px 24px}
@@ -236,11 +237,11 @@ function ranksFor(o,t){
 }
 function rankTile(o,t){
  if(!XR[o[1]]&&!(t&&t.kp))return"";
- const R=ranksFor(o,t),B={kp:livePos("kenpom","Boise St."),tr:livePos("torvik","Boise St.")||XR._bsu?.tr,em:livePos("evanmiya","Boise State")||XR._bsu?.em};
- const cell=(key,label,icon,r,bsu)=>r?`<div class="rkc"><div class="rkh"><img alt="" src="${icon}" onerror="this.remove()"><span>${label}</span></div><b>${r.rk?"#"+r.rk:key==="ap"?"NR":"—"}</b><div class="rks">${r.note||""}</div>${bsu&&!t?.final&&o[1]!=="Boise St. '26"?`<div class="rkb">Boise St. #${bsu}</div>`:""}</div>`:"";
- return `<div class="rktile"><div class="label rkl">Team rankings${o[1]==="Boise St. '26"?" · end of 2025-26":" · 2026-27"}</div><div class="rkg">
-  ${cell("kp","KenPom","https://kenpom.com/assets/favicon.ico",R.kp,B.kp)}${cell("tr","T-Rank","https://barttorvik.com/favicon.ico",R.tr,B.tr)}${R.em?cell("em","EvanMiya","https://evanmiya.com/favicon.ico",R.em,B.em):""}${R.ap?cell("ap","AP Top 25","https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-basketball.png",R.ap,null):""}
- </div><div class="cap" style="margin-top:8px">KenPom (kenpom.com), Barttorvik T-Rank (barttorvik.com) and EvanMiya (evanmiya.com), refreshed nightly.${R.ap?" AP poll via ESPN, refreshed nightly.":" The AP poll appears here once the 2026-27 poll is out."}</div></div>`;
+ const R=ranksFor(o,t),sample=o[1]==="Boise St. '26",B={kp:livePos("kenpom","Boise St."),tr:livePos("torvik","Boise St.")||XR._bsu?.tr,em:livePos("evanmiya","Boise State")||XR._bsu?.em};
+ const cell=(key,label,icon,r,bsu)=>r?`<div class="rkc" title="${label}: ${r.note||""}"><div class="rkh"><img alt="" src="${icon}" onerror="this.remove()">${label}</div><b>${r.rk?"#"+r.rk:key==="ap"?"NR":"—"}</b><div class="rks">${!sample&&bsu?`BSU #${bsu}`:(r.note||"")}</div></div>`:"";
+ return `<div class="kpi rktile"><span class="label">Team rankings${sample?" · final":""}</span><div class="rkg">
+  ${cell("kp","KenPom","https://kenpom.com/assets/favicon.ico",R.kp,B.kp)}${cell("tr","T-Rank","https://barttorvik.com/favicon.ico",R.tr,B.tr)}${R.em?cell("em","EvanMiya","https://evanmiya.com/favicon.ico",R.em,B.em):""}${R.ap?cell("ap","AP","https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-basketball.png",R.ap,null):""}
+ </div></div>`;
 }
 const XCHIPS=name=>{const x=XR[name];if(!x)return"";return x.final?TR(x.tr,"<span style='color:#8a8e95'> · final</span>"):TR(x.tr)+EM(x.em);};
 const KP=(rk,sfx="")=>`<span class="kp"><img alt="" src="https://kenpom.com/assets/favicon.ico" onerror="this.remove()">KenPom <b>#${rk}</b>${sfx}</span>`;
@@ -454,7 +455,7 @@ function shell(o,parts,foot){
   <div class="rchips">${confChip(o[1])}</div>
   <div class="rwin" id="rail-toggle"></div>
   <nav class="rnav">${SECS.map(([k,l])=>`<button data-k="${k}"><b>${l}</b><span id="rh-${k}"></span></button>`).join("")}</nav>
- </aside><div class="smain">${SECS.map(([k,l])=>`<section class="ssec" id="sec-${k}"><h2 class="sh">${l}</h2>${k==="trends"?rankTile(o,parts._t):""}${parts[k]||`<div class="cap">Nothing here yet for this opponent.</div>`}</section>`).join("")}${foot||""}</div></div>`;
+ </aside><div class="smain">${SECS.map(([k,l])=>`<section class="ssec" id="sec-${k}"><h2 class="sh">${l}</h2>${k==="trends"&&!parts._t&&rankTile(o)?`<div class="kpis rkrow">${rankTile(o)}</div>`:""}${parts[k]||`<div class="cap">Nothing here yet for this opponent.</div>`}</section>`).join("")}${foot||""}</div></div>`;
 }
 let spy=null;
 function wireShell(){
@@ -504,7 +505,7 @@ function render(t,o){
  const P=t.P,mid=t.mode=="proj";
  const H0=`${t.banner?`<div class="banner">${t.banner}</div>`:""}
  <div class="hero"><div class="game"><div><span class="label">Head coach</span><div style="font-size:15px;font-weight:650;margin-top:4px">${t.coach}</div></div><div>${t.game}</div></div>
- <div class="kpis">${t.kpis.filter(k=>k[0]!=="kenpom").map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
+ <div class="kpis">${rankTile(o||OPP.find(x=>x[0]===t.key)||[t.key,t.name,"",t.id,t.ab],t)}${t.kpis.filter(k=>k[0]!=="kenpom"&&!/^(Record|Last season)$/i.test(k[1])).map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
 `;
  const HD=` <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
  <div class="grid g-depth"><div class="panel" id="depthbox">${depthHTML(t)}</div>
