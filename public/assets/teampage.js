@@ -126,7 +126,7 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     box.replaceChildren(svg.node());
     const nd = W.filter((g) => g.nd).length;
     $("snaplbl").textContent = `${D.team} · ${D.season} · ${nd ? `${W.length - nd} D-I + ${nd} non-D-I game${nd > 1 ? "s" : ""} · ranks vs D-I teams` : "D-I games"}${D.boxOnly ? " · box scores" : ""}`;
-    if (!NT) $("snaplbl").textContent = `${D.team} · ${D.season} · ${W.length} games · box scores${D.src ? " (" + D.src + ")" : ""}`;
+    if (!NT) $("snaplbl").textContent = `${D.team} · ${D.season} · ${W.length} games · ${D.pbpSource ? "" : "box scores"}${D.src ? (D.pbpSource ? D.src : " (" + D.src + ")") : ""}`;
     summary.trends = `${wins}-${W.length - wins} · net ${A.net >= 0 ? "+" : ""}${f1(A.net)}`;
   }
 
@@ -219,7 +219,7 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     const bar = (label, v, k, dir, note) => { const a = dist[k] || [], lo = a[0], hi = a[a.length - 1], X = (z) => ((z - lo) / (hi - lo)) * 100, r = rank(k, v, dir);
       const dots = a.map((z) => `<i style="left:${X(z)}%"></i>`).join("");
       return `<div class="tdtpp"><div class="tdtpph"><span>${label}</span><b>${f1(v)} s</b></div><div class="tdbee">${dots}<em style="left:${X(v)}%"></em></div><div class="tdtppx"><span>${f1(lo)} s</span><span class="m">${r ? ord(r) + " " + note : ""}</span><span>${f1(hi)} s</span></div></div>`; };
-    $("tpp").innerHTML = A.tpp == null ? `<div class="cap">Seconds per possession need play-by-play data${D.boxOnly ? ", which these games don't have" : ""}.</div>` : bar("Their offense", A.tpp, "tpp", -1, "quickest") + bar("Opponents vs their defense", A.dtpp, "dtpp", 1, "longest") + `<div class="cap">Each grey tick is one D-I team; the white mark is them in this window.</div>`;
+    $("tpp").innerHTML = A.tpp == null ? `<div class="cap">${D.noLoc ? "Seconds per possession aren't computed for these games: the box-score sites leave many play clocks blank." : `Seconds per possession need play-by-play data${D.boxOnly ? ", which these games don't have" : ""}.`}</div>` : bar("Their offense", A.tpp, "tpp", -1, "quickest") + bar("Opponents vs their defense", A.dtpp, "dtpp", 1, "longest") + `<div class="cap">Each grey tick is one D-I team; the white mark is them in this window.</div>`;
   }
 
   // ------------------------------------------------------------ shooting
@@ -229,7 +229,25 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     if (raw.length < 30) { box.innerHTML = `<div class="cap">Not enough charted shots in this window (${raw.length}).</div>`; return; }
     renderShotChart(box, { shots: raw, games: [], pron: "team", noAssist: true, source: "play-by-play shot locations", notes });
   }
+  // Play-by-play without shot locations (staff-collected box-score sites): shot types only.
+  function zoneTable(boxId, rows, who) {
+    const box = $(boxId); if (!box.tagName) return;
+    if (rows.length < 30) { box.innerHTML = `<div class="cap">Not enough shots in this window (${rows.length}).</div>`; return; }
+    const Z = [["At the rim", "layups, dunks, tip-ins", 0, 2], ["Other 2s", "jumpers and 2s the scorer didn't label as rim", 1, 2], ["Threes", "", 2, 3]];
+    const n = rows.length, pts = rows.reduce((a, r) => a + r[2] * (r[1] === 2 ? 3 : 2), 0) / n;
+    box.innerHTML = `<div class="panel"><table><thead><tr><th class="l">Shot type</th><th>FGA</th><th>Share</th><th>FG%</th><th>Pts / shot</th></tr></thead><tbody>${Z.map(([l, sub, z, pv]) => {
+      const R = rows.filter((r) => r[1] === z), m = R.reduce((a, r) => a + r[2], 0), sh = R.length / n, fg = R.length ? m / R.length : null;
+      return `<tr><td class="l"><b style="color:#fff">${l}</b>${sub ? ` <span class="m" style="font-size:11px">${sub}</span>` : ""}</td><td class="m">${R.length}</td><td><div style="display:inline-block;width:60px;height:7px;background:#2a2c30;border-radius:2px;vertical-align:middle;margin-right:6px"><i style="display:block;height:7px;width:${sh * 100}%;background:#c9ccd2;border-radius:2px"></i></div>${Math.round(sh * 100)}%</td><td style="font-weight:700">${fg == null ? "—" : f1(fg * 100)}</td><td>${fg == null ? "—" : (fg * pv).toFixed(2)}</td></tr>`; }).join("")}
+      <tr><td class="l m">All field goals</td><td class="m">${n}</td><td></td><td style="font-weight:700">${f1((100 * rows.reduce((a, r) => a + r[2], 0)) / n)}</td><td>${pts.toFixed(2)}</td></tr></tbody></table>
+      <div class="cap">${who} Shot types come from the play-by-play text; these box-score sites don't record shot locations, so there's no shot chart.</div></div>`;
+  }
   function shots(set) {
+    if (D.noLoc) {
+      const Z = D.zones.off.filter((r) => set.has(r[0])), t3 = Z.filter((r) => r[1] === 2).length, efg = Z.length ? (100 * Z.reduce((a, r) => a + r[2] * (r[1] === 2 ? 1.5 : 1), 0)) / Z.length : null;
+      summary.shooting = Z.length ? `${Math.round((100 * t3) / Z.length)}% threes · ${f1(efg)} eFG` : "";
+      zoneTable("shots", Z, "Their own shots.");
+      return;
+    }
     const raw = D.shots.off.filter((s) => set.has(s[0]));
     const t3 = raw.filter((s) => s[3] === 3).length, efg = raw.length ? (100 * raw.reduce((a, s) => a + s[4] * (s[3] === 3 ? 1.5 : 1), 0)) / raw.length : null;
     summary.shooting = raw.length ? `${Math.round((100 * t3) / raw.length)}% threes · ${f1(efg)} eFG` : "";
@@ -245,7 +263,8 @@ export function renderTeamData(S, D, DIST, opts = {}) {
     const best = strengths[0], worst = strengths[strengths.length - 1];
     $("defstory").innerHTML = best ? `<b>Their defense is ${ord(rank("drtg", A.drtg, -1))} in D-I</b> (${f1(A.drtg)} points allowed per 100). Strength: <b>${best.l}</b> (${f1(best.v)}, ${ord(best.r)}). Weak spot: <b>${worst.l}</b> (${f1(worst.v)}, ${ord(worst.r)}).` : "";
     summary.defense = `${f1(A.drtg)} DRtg${rank("drtg", A.drtg, -1) ? " · " + ord(rank("drtg", A.drtg, -1)) : ""}`;
-    chart("defshots", D.shots.def.filter((s) => set.has(s[0])), "Shots their opponents took against them. Warm = opponents shot well there (bad for this defense).");
+    if (D.noLoc) zoneTable("defshots", D.zones.def.filter((r) => set.has(r[0])), "Shots their opponents took against them.");
+    else chart("defshots", D.shots.def.filter((s) => set.has(s[0])), "Shots their opponents took against them. Warm = opponents shot well there (bad for this defense).");
     const P = (opts.players || []).filter((p) => p.df != null).sort((a, b) => b.df - a.df);
     $("defplayers").innerHTML = P.length ? `<table><thead><tr><th class="l">Player</th><th class="l">Pos</th><th>MPG</th><th>DEF</th><th>D-I rk</th><th>DRAPM</th><th>STL%</th><th>BLK%</th><th>DREB%</th></tr></thead><tbody>${P.map((p) => `<tr><td class="l">${p.name}</td><td class="l m">${p.pos || ""}</td><td class="m">${f1(p.mpg)}</td><td><span class="chip" style="background:${p.df >= 50 ? (p.df >= 80 ? GOOD : "#a8583a") : p.df <= 20 ? BAD : "#4b5a78"}">${f1(p.df)}</span></td><td class="m">${p.rk_df || "—"}</td><td>${p.drapm == null ? "—" : (p.drapm > 0 ? "+" : "") + p.drapm.toFixed(2)}</td><td>${f1(p.stlp)}</td><td>${f1(p.blkp)}</td><td>${f1(p.drbp)}</td></tr>`).join("")}</tbody></table><div class="cap">2025-26 season, full year (not windowed). DEF score needs 40%+ of team minutes.</div>` : `<div class="cap">No DEF scores for this roster.</div>`;
   }

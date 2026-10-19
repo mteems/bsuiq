@@ -458,7 +458,7 @@ document.addEventListener("click",()=>document.querySelectorAll(".mvm").forEach(
 addEventListener("scroll",()=>document.querySelectorAll(".mvm").forEach(m=>m.remove()),{passive:true});
 
 // ---------- team game data (assets/teampage.js) ----------
-let TIDX={},TDIST=null;
+let TIDX={},TDIST=null,PBPSRC=new Set();
 const DATA_NAME={"Boise St. '26":"Boise St.","Lamar":"Lamar University","TAMU-CC":"A&M-Corpus Christi"};
 const dataTeam=n=>DATA_NAME[n]||n;
 // ---------- page shell: left rail + six sections ----------
@@ -600,6 +600,17 @@ async function loadTeamData(team,o,yr="2025-26"){
   const D={team:o[1],season:"2026-27",games:G.games.sort((a,b)=>a.d.localeCompare(b.d)),lineups:{names:[],defs:[],rows:[]},shots:{off:[],def:[]},boxOnly:true};
   renderTeamData(S6(),D,TDIST,{players:P,onSummary:sumCb});return;
  }
+ if(team&&TIDX[team]&&PBPSRC.has(team)){
+  // non-D-I opponent with play-by-play the staff collected (scripts/build-pbp-teams.mjs)
+  try{
+   const [D,R]=await Promise.all([fetch(`/data/teams/${TIDX[team]}.json`).then(r=>r.json()),o?roster27(o).catch(()=>null):null]);
+   if(stale())return;
+   const last=R?.last,pl=last?.players?.length?last.players:D.players,src=last?.players?.length?last.src:"play-by-play; minutes from replayed substitutions";
+   const ro=slot("td-roster");if(ro&&pl?.length){ro.innerHTML=`<div class="cap" style="margin:0 0 10px">2025-26 players (${src}).</div><div class="panel" style="overflow-x:auto"><table class="dtab"><thead><tr><th class="l">Player</th><th>GP</th><th>MPG</th><th>PPG</th><th>RPG</th><th>APG</th><th><span data-def="ts">TS%</span></th><th>3P%</th><th>3PA</th><th>SPG</th><th>BPG</th></tr></thead><tbody>${pl.map(p=>extraLine(p,team,"")).map((L,i)=>`<tr><td class="l" style="color:#fff;font-weight:600">${L.name}</td><td class="m">${L.gp}</td><td>${fx(L.mpg)}</td><td style="font-weight:700">${fx(L.ppg)}</td><td>${fx(L.rpg)}</td><td>${fx(L.apg)}</td><td>${fx(L.ts)}</td><td>${fx(L.p3)}</td><td class="att">${pl[i].tpa}</td><td>${fx(L.spg)}</td><td>${fx(L.bpg)}</td></tr>`).join("")}</tbody></table></div>`;ro.querySelectorAll("table").forEach(sortableTable);}
+   renderTeamData(S6(),D,null,{players:[],onSummary:sumCb});
+  }catch(e){const el=slot("td-trends");if(el)el.innerHTML=`<div class="cap">Game data unavailable (${e.message}).</div>`;}
+  return;
+ }
  if(!team||!TIDX[team]){
   // non-D-I opponent: box scores from their own site (stored) or ESPN, no play-by-play
   const R=o?await roster27(o).catch(()=>null):null,last=R?.last;let games=[],src="";
@@ -704,7 +715,7 @@ for(const k in T)T[k].key=k;
 {const [pj,oj]=await Promise.all([fetch("/data/positions.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/api/positions").then(r=>r.ok?r.json():null).catch(()=>null)]);
  if(pj)POS=pj;if(oj)OVR=oj.overrides||{};
  const [ti,td]=await Promise.all([fetch("/data/teams/_index.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/data/teams/_dist.json").then(r=>r.ok?r.json():null).catch(()=>null)]);
- if(ti)TIDX=Object.fromEntries(ti.teams.map(x=>[x.team,x.slug]));TDIST=td;
+ if(ti){TIDX=Object.fromEntries(ti.teams.map(x=>[x.team,x.slug]));PBPSRC=new Set(ti.teams.filter(x=>x.pbpSource).map(x=>x.team));}TDIST=td;
  try{const rj=await fetch("/data/reports.json").then(r=>r.ok?r.json():null);if(rj){REPORTS=rj.teams;addReports();}}catch{}
  await loadLiveRanks();}
 {const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);document.querySelector(`.tab[data-i="${i>=0?i:1}"]`).click();}
