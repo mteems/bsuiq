@@ -1,0 +1,3 @@
+team,date,game_id,event_count,periods,title,score_summary,score_rows_json,source_url,raw_file
+Butler,2026-10-11,butler_2026-10-11,538,2,Indiana at Butler (exhibition),,"[[""Indiana"", """", """", ""96""], [""Butler"", """", """", ""68""]]",c242eb80-20261011075026-2875742.pdf,c242eb80-20261011075026-2875742.pdf
+Butler,2026-10-18,butler_2026-10-18,508,2,Indiana St. at Butler (exhibition),,"[[""Indiana St."", """", """", ""74""], [""Butler"", """", """", ""81""]]",e93f097e-INSatButler_BoxScore.pdf,e93f097e-INSatButler_BoxScore.pdf

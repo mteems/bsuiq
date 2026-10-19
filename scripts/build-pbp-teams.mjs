@@ -15,10 +15,13 @@ const r1 = (v, d = 1) => (v == null || !isFinite(v) ? null : Math.round(v * 10 *
 const out = new URL("../data-src/teams/", import.meta.url).pathname;
 
 // Data team name → page name (the Scouting tab's name) and our-row pattern in the score table.
-const TEAMS = {
+let TEAMS = {
   "Bismarck State": { page: "Bismarck St.", slug: "bismarck-st", me: /bismarck|^bsc\b|mystics/i, level: "NJCAA" },
   "West Coast Baptist": { page: "West Coast Baptist", slug: "west-coast-baptist", me: /west coast|^wcb/i, level: "NCCAA" },
 };
+// A folder can carry its own teams.json (e.g. exhibitions converted from box-score PDFs by scripts/pdf-pbp.py):
+//   { "Butler": { "page": "Butler", "slug": "butler-2027", "me": "butler", "level": "Big East", "season": "2026-27", "exhibition": true } }
+if (existsSync(join(dir, "teams.json"))) TEAMS = Object.fromEntries(Object.entries(JSON.parse(readFileSync(join(dir, "teams.json"), "utf8"))).map(([k, v]) => [k, { ...v, me: new RegExp(v.me, "i") }]));
 const D1_OPP = /weber st|utah valley|southern utah/i; // D-I opponents in these schedules
 
 const ev = read("all_play_by_play.csv");
@@ -119,22 +122,23 @@ for (const [team, cfg] of Object.entries(TEAMS)) {
     // minutes per player from the replayed stints of this game
     const U = box.us, T = box.them, poss = U.fga - U.orb + U.to + 0.44 * U.fta, dposs = T.fga - T.orb + T.to + 0.44 * T.fta;
     const opp = oppName(g, cfg);
-    const row = { d: g.date, opp, oid: 0, loc: side === "home" ? "H" : "A", conf: false, pts: U.pts, op: T.pts, poss: r1(poss), dposs: r1(dposs), mins: 40 + 5 * Math.max(0, per - 2), tpp: null, dtpp: null, nd: false, d1opp: D1_OPP.test(opp), src: g.source_url };
+    const row = { d: g.date, opp, oid: 0, loc: side === "home" ? "H" : "A", conf: false, pts: U.pts, op: T.pts, poss: r1(poss), dposs: r1(dposs), mins: 40 + 5 * Math.max(0, per - 2), tpp: null, dtpp: null, nd: false, ex: !!cfg.exhibition, d1opp: D1_OPP.test(opp), src: g.source_url };
     for (const k of ["fga", "fgm", "tpa", "tpm", "fta", "ftm", "orb", "drb", "to", "ast", "blk", "rima", "rimm"]) { row[k] = U[k]; row["d_" + k] = T[k]; }
     G.push(row);
   }
   // player minutes from lineup rows
   for (const r of lrows) for (const p of defs[r[1]]) { const pl = P.get(names[p]); if (pl) pl.secs += r[6] * 60; }
+  const best = (k) => [...spell.get(k)].sort((a, b) => (b[0].split(",")[1] || "").length - (a[0].split(",")[1] || "").length || b[1] - a[1])[0][0];
   const players = [...P.values()].filter((p) => p.gp.size).map((p) => {
-    const gp = p.gp.size, nm = pretty([...spell.get(p.k)].sort((a, b) => b[1] - a[1])[0][0]);
+    const gp = p.gp.size, nm = pretty(best(p.k));
     return { name: nm, gp, mpg: r1(p.secs / 60 / gp), fgm: p.fgm, fga: p.fga, tpm: p.tpm, tpa: p.tpa, ftm: p.ftm, fta: p.fta, pts: p.pts, ppg: r1(p.pts / gp), rpg: r1((p.orb + p.drb) / gp), orb: p.orb, drb: p.drb, ast: p.ast, apg: r1(p.ast / gp), to: p.to, stl: p.stl, blk: p.blk, pf: p.pf, fgpct: p.fga ? r1((100 * p.fgm) / p.fga) : null };
   }).sort((a, b) => b.pts - a.pts);
-  const nameList = names.map((k) => pretty([...spell.get(k)].sort((a, b) => b[1] - a[1])[0][0]));
-  const file = { team: cfg.page, season: "2025-26", conf: cfg.level, espnId: 0, pbpSource: true,
+  const nameList = names.map((k) => pretty(best(k)));
+  const file = { team: cfg.page, season: cfg.season || "2025-26", exhibition: !!cfg.exhibition, conf: cfg.level, espnId: 0, pbpSource: true,
     src: `play-by-play from box-score sites, ${G.length} games${skipped.length ? `; left out ${skipped.join("; ")}` : ""}`,
     games: G, lineups: { names: nameList, defs, rows: lrows.map((r) => [r[0], r[1], r1(r[2]), r[3], r1(r[4]), r[5], r1(r[6], 2)]) }, shots: { off: [], def: [] }, noLoc: true, zones, players };
   writeFileSync(join(out, `${cfg.slug}.json`), JSON.stringify(file));
-  index.teams = index.teams.filter((t) => t.team !== cfg.page).concat({ team: cfg.page, slug: cfg.slug, games: G.length, shots: zones.off.length, pbpSource: true });
+  index.teams = index.teams.filter((t) => t.slug !== cfg.slug).concat({ team: cfg.page, season: cfg.season || "2025-26", slug: cfg.slug, games: G.length, shots: zones.off.length, pbpSource: true });
   // checks
   const lp = lrows.reduce((a, r) => a + r[2], 0), tp = G.reduce((a, g) => a + g.poss, 0), lm = lrows.reduce((a, r) => a + r[6], 0), tm = G.reduce((a, g) => a + g.mins, 0);
   console.log(`${cfg.page}: ${G.length} games (${G.filter((g) => g.pts > g.op).length}-${G.filter((g) => g.pts < g.op).length}), skipped ${skipped.length}; lineup possessions ${Math.round(lp)} of ${Math.round(tp)}, minutes ${Math.round(lm)} of ${tm}; ${players.length} players; ${defs.length} lineups`);
