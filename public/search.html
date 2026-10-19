@@ -122,12 +122,9 @@
 .pcell{display:flex;align-items:center;gap:12px;min-width:0}
 .sel{width:18px;height:18px;flex:none;border:1px solid #61656c;border-radius:4px;background:none;display:grid;place-items:center;cursor:pointer;color:transparent;font-size:12px;padding:0}
 .sel.on{background:#f2f3f4;border-color:#f2f3f4;color:#16171a}
-.hs{position:relative;width:76px;height:58px;flex:none;display:block}
-.hs::after{content:"";position:absolute;left:14%;right:14%;bottom:-3px;height:7px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);z-index:0}
-.hs img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45)) drop-shadow(0 1px 1px rgba(0,0,0,.35));transition:transform .15s}
-.rmain:hover .hs img{transform:translateY(-2px)}
-.hs b{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:44px;height:44px;border-radius:50%;border:1px solid var(--edge);background:var(--card);display:grid;place-items:center;font:600 12px var(--mono);color:var(--dim);z-index:1}
-.hs.ok b{display:none}
+.hs{position:relative;width:52px;height:64px;flex:none;border-radius:6px;overflow:hidden;background:#2e3034;display:block}
+.hs img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover;object-position:top}
+.hs b{position:absolute;left:0;right:0;bottom:8px;text-align:center;font:600 12px var(--mono);color:var(--dim)}
 .pn{font-size:15px;font-weight:750;line-height:1.2;color:#fff}
 .pn:hover{text-decoration:underline;text-underline-offset:3px}
 .ps{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--dim);line-height:1.2}
@@ -193,7 +190,7 @@ tr.ndr td{color:var(--faint)}
 .cmp>div{padding:10px;border-bottom:1px solid var(--line2);text-align:center;font:500 13px var(--mono);color:var(--soft)}
 .cmp>div.lab{text-align:left;font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:#1b1c1f}
 .cmp>div.top{border-bottom:1px solid var(--edge)}
-.cmp .hs{margin:auto;width:110px;height:84px}
+.cmp .hs{margin:auto;width:64px;height:78px}
 .cmp .nm{font:700 13.5px var(--ui);color:#fff;margin-top:8px}
 .cmp .best{color:var(--good);font-weight:600}
 @media (max-width:1180px){.frow{grid-template-columns:repeat(3,minmax(0,1fr))}.frow2{grid-template-columns:1fr 1fr 14px 1fr}.frow2>div:first-child{grid-column:1/-1}.frow2>.btns{grid-column:1/-1}}
@@ -279,6 +276,7 @@ function sameSchool(a, b) {
   return o > 0 && o / Math.max(1, Math.min(A.size, B.size)) >= 0.99;
 }
 const darkLogo = (u) => String(u || "").replace("/teamlogos/ncaa/500/", "/teamlogos/ncaa/500-dark/");
+const TEAMS_TID = (ps) => [...new Map(ps.filter((p) => p.tid).map((p) => [p.school, p.tid]))];
 function link(hub) {
   // Team branding from the hub, keyed by the hub's school names.
   const brand = new Map(hub.teams.map(([n, c, l, al]) => [n, { name: n, conf: c, logo: darkLogo(l), aliases: al || [] }]));
@@ -313,8 +311,17 @@ function link(hub) {
     const c = pool.filter((r) => !taken.has(r[0]) && nameKey(r[2]) === nameKey(p.last_name) && nameKey(r[1])[0] === nameKey(p.first_name)[0]);
     if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; taken.add(p.espn); }
   }
+  // Our own ESPN ids (team roster + name) win; the hub match fills the rest. Every ESPN id gets a
+  // headshot attempt; a missing photo falls back to initials.
+  window.biqConflicts = [];
+  for (const p of P) {
+    if (p.espnB && p.espn && p.espnB !== p.espn) window.biqConflicts.push([p.first_name + " " + p.last_name, p.espnB, p.espn]);
+    if (p.espnB) p.espn = p.espnB;
+    p.photo = !!p.espn;
+  }
   for (const p of P) { const b = teamInfo.get(p.school); p.logo = b?.logo || ""; if (b?.conf) p.conference = b.conf; }
-  window.biqSearch = { matched: P.filter((p) => p.espn).length, photos: P.filter((p) => p.photo).length, total: P.length, noLogo: [...teamInfo].filter(([, b]) => !b?.logo).map(([t]) => t) };
+  for (const t of TEAMS_TID(P)) if (!teamInfo.get(t[0])?.logo) teamInfo.set(t[0], { ...(teamInfo.get(t[0]) || { name: t[0], conf: "" }), logo: `https://a.espncdn.com/i/teamlogos/ncaa/500-dark/${t[1]}.png` });
+  window.biqSearch = { matched: P.filter((p) => p.espn).length, photos: P.filter((p) => p.photo).length, missing: P.filter((p) => !p.espn).map((p) => [p.id, p.first_name + " " + p.last_name, p.school, p.tid]), total: P.length, noLogo: [...teamInfo].filter(([, b]) => !b?.logo).map(([t]) => t) };
 }
 async function load(refresh = false) {
   const [data, hub, rosters] = await Promise.all([
@@ -325,7 +332,7 @@ async function load(refresh = false) {
   meta = { built: data.built, note: data.note, hubError: hub.error, season: data.season };
   D1 = rosters.d1 ? new Set(rosters.d1.map(String)) : null;
   const pc = data.pcols, sc = data.scols;
-  P = data.players.map((r) => { const o = Object.fromEntries(pc.map((k, i) => [k, r[i]])); return { id: o.id, first_name: o.first, last_name: o.last, school: o.team, conference: o.conf, position: o.pos, height: o.ht, class_year: o.cls, jersey_number: o.jersey, hometown: o.home, high_school: o.hs, seasons: [] }; });
+  P = data.players.map((r) => { const o = Object.fromEntries(pc.map((k, i) => [k, r[i]])); return { id: o.id, first_name: o.first, last_name: o.last, school: o.team, conference: o.conf, position: o.pos, height: o.ht, class_year: o.cls, jersey_number: o.jersey, hometown: o.home, high_school: o.hs, espnB: o.espn || "", tid: o.tid || "", seasons: [] }; });
   for (const r of data.seasons) {
     const s = Object.fromEntries(sc.map((k, i) => [k, r[i]]));
     s.three_pa_pg = s.gp > 0 ? Math.round((s.three_pa / s.gp) * 10) / 10 : 0;
@@ -620,7 +627,7 @@ const visCols = () => order.filter((k) => H.baseSearchColumns.has(k) || visibleS
 const gridStyle = (cols) => `grid-template-columns:${cols.map((k) => H.searchColumnWidths[k]).join(" ")} 80px`;
 const labelOf = (k) => H.cols.find((c) => c.key === k)?.label ?? k;
 const defKey = { position: "s_pos", height: "s_ht", class: "s_class", season: "s_season" };
-const headshot = (p) => p.espn && p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${p.espn}.png&w=220&h=160&scale=crop&transparent=true" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
+const headshot = (p) => p.espn && p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${p.espn}.png&w=150&h=110&scale=crop" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
 const fmt = (v, k) => (v == null || v === "" ? "—" : PCT.has(k) ? `${v}%` : String(v));
 function headerHTML() {
   const cols = visCols(), active = [{ key: S.sortKey, direction: S.dir }, ...S.sec];
