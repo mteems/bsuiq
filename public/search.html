@@ -281,8 +281,12 @@ function link(hub) {
   const byName = new Map();
   for (const r of hub.players) { const k = nameKey(r[1] + r[2]); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(r); }
   const votes = new Map(), lastKey = new Map();
+  const ourCount = new Map(); for (const p of P) { const k = nameKey(p.first_name + p.last_name); ourCount.set(k, (ourCount.get(k) || 0) + 1); }
   for (const p of P) {
-    const c = (byName.get(nameKey(p.first_name + p.last_name)) || []).filter((r) => sameSchool(p.school, r[3]));
+    const k = nameKey(p.first_name + p.last_name), all = byName.get(k) || [];
+    let c = all.filter((r) => sameSchool(p.school, r[3]));
+    // Moved since last season (hub shows his new school): accept when the name is unique on both sides.
+    if (!c.length && all.length === 1 && ourCount.get(k) === 1) { p.espn = all[0][0]; p.photo = !!all[0][5]; continue; }
     if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; const v = votes.get(p.school) || new Map(); v.set(c[0][3], (v.get(c[0][3]) || 0) + 1); votes.set(p.school, v); }
   }
   // 2) Our team name → the hub's school (most common match), then logos + 2026-27 conference.
@@ -304,6 +308,7 @@ function link(hub) {
     if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; taken.add(p.espn); }
   }
   for (const p of P) { const b = teamInfo.get(p.school); p.logo = b?.logo || ""; if (b?.conf) p.conference = b.conf; }
+  window.biqSearch = { matched: P.filter((p) => p.espn).length, photos: P.filter((p) => p.photo).length, total: P.length, noLogo: [...teamInfo].filter(([, b]) => !b?.logo).map(([t]) => t) };
 }
 async function load(refresh = false) {
   const [data, hub, rosters] = await Promise.all([
