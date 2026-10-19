@@ -1,0 +1,341 @@
+# ESPN 2026-27 rosters (live API via Bronco IQ worker), pulled Oct 18, 2026. espnId|name|class|hometown[|jersey|pos|ht|wt]
+264|Ryan Beasley|SR|San Ramon, CA
+264|Wini Braga|FR|Altamira, Brazil
+264|Tayshawn Comer|SR|Indianapolis, IN
+264|Tristan Devers|FR|Melbourne, Australia
+264|Nikola Dzepina|SO|Belgrade, Serbia
+264|Lat Ford|FR|Renton, WA
+264|Parker Friedrichsen|SR|Bixby, OK
+264|Jasir Rencher|SO|Oakland, CA
+264|BJ Roy|SO|Seattle, WA
+264|Lathan Sommerville|JR|Peoria, IL
+264|Mady Traore|SR|Drancy, France
+264|Steele Venters|SR|Ellensburg, WA
+264|LeJuan Watts|SR|Fresno, CA
+264|Wesley Yates III|SR|Beaumont, TX
+264|Harun Zrno|SO|Sarajevo, Bosnia & Herzegovina
+2086|Samu Adler|FR|Espoo, Finland
+2086|Treyson Anderson|JR|Lincoln, NE
+2086|Herly Brutus|FR|Eustis, FL
+2086|Samis Calderon|SO|Vitoria, Brazil
+2086|Bryson Cardinal|FR|Westfield, IN
+2086|Asim Djulovic|FR|Novi Pazar, Serbia
+2086|Jordan Ellerbee|SO|Philadelphia, PA
+2086|Jalen Jackson|SR|Fort Wayne, IN
+2086|Drayton Jones|SR|Houston, TX
+2086|Eduardo Klafke|JR|Franca, Brazil
+2086|Marko Maric|FR|Zagreb, Croatia
+2086|Ethan McComb|SR|Greenwood, IN
+2086|Christian Moore|SR|Los Angeles, CA
+2086|Kevin Ndzie|JR|Yaounde, Cameroon
+2086|Baron Walker|FR|Noblesville, IN
+2473|Nate Ahner|JR|Copenhagen, Denmark
+2473|Ryder Bradley|SO|Leander, TX
+2473|Belal El Shakery|SR|Alexandria, Egypt
+2473|Chris Fields Jr.|SR|Petersburg, VA
+2473|Deuce Hamilton|FR|North Hollywood, CA
+2473|Josh Hill|JR|Laurel, MD
+2473|William Kassi|SR|Pontoise, France
+2473|Warren Marshall IV|JR|Auburn Hills, MI
+2473|Hamoudy Mashhour|SO|Dearborn, MI
+2473|Nassim Mashhour|JR|Dearborn, MI
+2473|Ivan Stojanovski|FR|Washington Township, MI
+2473|Brady Swartz|SO|Grand Rapids, MI
+2473|RJ Taylor|SR|Grand Blanc, MI
+2473|Isaiah Theodile|FR|Kalamazoo, MI
+2473|Camden Thompson|SO|Whitehall, MI
+158|Kadyn Betts|SR|Pueblo, CO
+158|Henry Burt|SR|Omaha, NE
+158|Will Cooper|JR|Omaha, NE
+158|Leo Curtis|SO|Reykjavik, Iceland
+158|Taj DeGourville|JR|Las Vegas, NV
+158|Connor Essegian|SR|Fort Wayne, IN
+158|Braden Frager|JR|Lincoln, NE
+158|Cale Jacobsen|SR|Ashland, NE
+158|Boden Kapke|SR|Victoria, MN
+158|Jacob Lanier|FR|Little Rock, AR
+158|Trevan Leonhardt|SR|Kaysville, UT
+158|Sam Orme|SR|Carmel, IN
+158|Colin Rice|FR|Waukee, IA
+158|Pryce Sandfort|SR|Waukee, IA
+158|Damon Wilkinson|SR|De Smet, SD
+2534|Justin Begg|JR|Houston, TX
+2534|Jacobe Coleman|SO|Fort Smith, AR
+2534|Matt Dann|SO|Oakville, Canada
+2534|Riccardo Greppi|JR|Lecco, Italy
+2534|Mahliq Guiseppi-Kitson|FR|Scarborough, Canada
+2534|Rylan Kelly|FR|Spring, TX
+2534|Alec Loustau|FR|Oakland, CA
+2534|Aidan McDowell|JR|Crete, NE
+2534|Nathan Nguyen|SO|Houston, TX
+2534|Yoda Oke|JR|Fullerton, CA
+2534|Keller Partain|SO|Lubbock, TX
+2534|Zion Pipkin|JR|Houston, TX
+2534|Xavier Roberson|FR|Saginaw, MI
+2534|Cheikh Sadibou Ndiaye|JR|Louga, Senegal
+2534|Enel St. Bernard|SR|Harford Village, Grenada
+304|Nathan Amoran|FR|Ostersund, Sweden
+304|McKae Amundsen|FR|Fresno, CA
+304|Landen Birley|SO|Yakima, WA
+304|Kenyon DeMuynck|SO|Oakland, CA
+304|Jeremiah Dorsey|SR|Queens, NY
+304|Joven Dulay|FR|Folsom, CA
+304|Eli Garner|FR|Los Angeles, CA
+304|Aden Goffe|SR|New Haven, CT
+304|Eyal Harel|SO|Hod HaSharon, Israel
+304|Malachi Johnson|SO|Sacramento, CA
+304|Malik Johnson|JR|Sacramento, CA
+304|Bryce Lowenbach|FR|Prineville, OR
+304|MaCarhy Morris|SR|Long Beach, CA
+304|Ike Palmer|JR|South Jordan, UT
+304|Quin Patterson|SR|Snoqualmie, WA
+304|Ty Virgil|FR|Sacramento, CA
+2181|Andrew Alia|SR|Kenosha, WI
+2181|Bryson Bahl|FR|Papillion, NE
+2181|Justin Burns|JR|Albany, GA
+2181|Jon Carroll|SR|Tallahassee, FL
+2181|Miles Flemons|FR|Tulsa, OK
+2181|Griffen Goodbary|SO|Sioux Falls, SD
+2181|Dothan Ijadimbola|FR|Minneapolis, MN
+2181|Dre Kindell|SR|Cincinnati, OH
+2181|Owen Larson|JR|Estherville, IA
+2181|Mason Matulis|FR|Tulsa, OK
+2181|Gabe Oldham|SR|Spanish Fork, UT
+2181|Gio Quiles|FR|Des Moines, IA
+2181|LJ Rush|FR|Wendell, NC
+2181|Eli Shetlar|JR|Wichita, KS
+249|Aeneas Alexander|FR|McKinney, TX
+249|Amar Amkou|JR|Theis, Senegal
+249|Braylon Barnes|SO|Brandon, MS
+249|Cash Chavis|JR|Minneapolis, MN
+249|TJ Crumble|FR|Cleveland, OH
+249|Cole Franklin|SR|DeSoto, TX
+249|Mitchell Holmes|JR|Fort Worth, TX
+249|EJ Horton|SO|Chicago, IL
+249|Ousmane Ndour|SO|Mbacke, Senegal
+249|Reece Robinson|JR|Cleveland, OH
+249|Je'Shawn Stevenson|JR|Chicago, IL
+249|Marcus Zelee|FR|Austin, TX
+2449|Melvin Bell Jr.|SO|Chicago, IL|1|G|6-4|195
+2449|Amir Danforth|FR|Rockford, IL|13|G|6-0|175
+2449|Rob Diaz III|SR|Long Beach, CA|0|G|6-1|190
+2449|Jaziah Harper|SO|Oak Park, IL|14|G|6-7|200
+2449|Max Iversen|FR|Loretto, MN|4|G|6-3|175
+2449|Oliver Junker|FR|Littleton, CO|22|F|6-8|220
+2449|Riley Massey|SO|Shiloh, IL|2|G|6-3|185
+2449|Andrew Nagy|JR|Anaheim, CA|44|F|6-9|230
+2449|Santiago Paz Vazquez|SR|Santiago de Compostela, Spain|30|G|6-7|200
+2449|Karl Poom|JR|Tartu, Estonia|23|F|6-8|230
+2449|Jack Robison|JR|Lakeville, MN|11|G|6-6|200
+2449|Chance Schoenfeld|FR|Astoria, SD|12|F|6-8|200
+2449|Carson Smith|JR|Bountiful, UT|7|G|6-6|205
+2449|Colin Stack|FR|St. Charles, IL|35|F|7-0|225
+2449|Andy Stefonowicz|JR|Minnetonka, MN|5|G|6-2|170
+2449|Kaden Tate|JR|Pearland, TX|3|F|6-6|220
+2724|Dillon Battie|JR|Dallas, TX
+2724|William Berg|SR|Stockholm, Sweden
+2724|Pierre Couisnard|FR|Houston, TX
+2724|Jordan Frison|SR|Memphis, TN
+2724|Michael Gray Jr.|SR|Fredericksburg, VA
+2724|Bryce Heard|JR|Chicago, IL
+2724|Noah Hill|SO|Frisco, TX
+2724|Joy Ighovodja|JR|Abeokuta, Nigeria
+2724|Desmeon Jones|SO|Dallas, TX
+2724|Jahari Long|SR|Houston, TX
+2724|Cyr Malonga|SR|Pointe-Noire, Congo
+2724|Tyrus Rathan-Mayes|FR|Toronto, Canada
+2724|Henry Thengvall|SR|Wichita, KS
+2724|Jaret Valencia|SR|Quibdó, Colombia
+2724|TJ Williams|SO|Wichita, KS
+357|Jamal Ambrose|JR|Apple Valley, MN
+357|Kayden Crosby|JR|Pflugerville, TX
+357|Cenker Evran|SR|Adana, Türkiye
+357|Mason Gibson|SR|Allen, TX
+357|Jaden Haire|JR|Hansford Co., TX
+357|Cedric Horton|FR|Richmond, IN
+357|D'Avian Houston|SR|Houston, TX
+357|Daniel Michelini-Jackson|JR|Inglewood, CA
+357|Michael Oaks|JR|Houston, TX
+357|Trenton Pane|FR|Allen, TX
+357|Kam Parker|SR|Tulsa, OK
+357|Kobi Pearson|FR|Lancaster, TX
+357|Nick Shogbonyo|SR|Arlington, TX
+357|Leo Torbor|SR|Brooklyn Park, MN
+357|Bryson Wheatfall|FR|Humble, TX
+357|Sheldon Williams|SR|Atmore, AL
+357|Franck Yetna|SR|Paris, France
+3084|Modestas Babraitis|SR|Fort Myers, FL
+3084|Jordy Barnes|JR|Holladay, UT
+3084|Isaac Davis|JR|Idaho Falls, ID
+3084|Tanner Davis|SO|Smithfield, UT
+3084|Deng Deng|FR|Salt Lake City, UT
+3084|AJ Dixon|JR|Merrillville, IN
+3084|Isaac Hawkins|SR|Fort Mill, SC
+3084|Braden Housley|JR|Sandy, UT
+3084|Tyler Medaris|SO|Middleton, ID
+3084|Omar Mowafak|FR|Cairo, Egypt
+3084|Sebastian Muchitsch|JR|Crawley, England
+3084|Jovan Nekic|FR|Belgrade, Serbia
+3084|Dominick Nelson|SR|Miami, FL
+3084|Jaxson Roberts|FR|Draper, UT
+3084|Sherman Weatherspoon IV|SR|Bowie, MD
+3084|Tyler Weaver|SO|Aliso Viejo, CA
+2541|Noah Badibanga|SO|Toulouse, France
+2541|David Castillo|JR|Bartlesville, OK
+2541|Francis Chukwudebelu|SO|Dallas, TX
+2541|KJ Cochran|SO|West Chester, PA
+2541|Thierry Darlan|SR|Bangui, Central African Republic
+2541|Jake Ensminger|SR|Ulm, Germany
+2541|Alex Ensor|FR|Denver, CO
+2541|Sash Gavalyugov|JR|Botevgrad, Bulgaria
+2541|Sidi Gueye|SO|Guediawaye, Senegal
+2541|Eli Jolin|FR|Rouyn-noranda, Canada
+2541|Brayde Kuykendall|FR|San Ramon, CA
+2541|Brad Longcor III|SO|Quincy, IL
+2541|Chris Tadjo|JR|Montreal, Canada
+2541|Fedor Zugic|SR|Podgorica, Montenegro
+167|Federico Grani|SR|Treviso, Italy
+167|Dax Hall|FR|Carlsbad, CA
+167|Jake Hall|SO|Carlsbad, CA
+167|Chris Howell|SR|San Diego, CA
+167|Fynn Lastring|FR|Bochum, Germany
+167|Hudson Mayes|SO|Los Angeles, CA
+167|Nate Muriithi|FR|Oklahoma City, OK
+167|Rytis Petraitis|SR|Arlington, TX
+167|Benjamin Schuch|FR|Vienna, Austria
+167|Imran Suljanovic|FR|Vienna, Austria
+167|Uriah Tenette|SO|North Highlands, CA
+167|Tunde Vahlberg Fasasi|SR|Stockholm, Sweden
+2320|Abeeng Agot|JR|Edmonton, Canada
+2320|Quante Berry|SR|Cleveland, TN
+2320|Mike Collins|SO|Pearland, TX
+2320|Dominic Eason|JR|Lyons, GA
+2320|Lamont Hartfileld|SO|Dallas, TX
+2320|Caden Hinker|SR|Mitchell, SD
+2320|Jeremiah Jones|SR|South Holland, IL
+2320|Marko Ljubicic|JR|Zagreb, Croatia
+2320|Santana Lynch|JR|Dallas, TX
+2320|Martin Minarovjech|FR|Bratislava, Slovakia
+2320|Niccolo Moretti|SR|Bologna, Italy
+2320|Filip Radakovic|JR|Belgrade, Serbia
+2320|Matt Reed|SR|Carrollton, TX
+2320|M.J. Wardlow|JR|Bowling Green, KY
+328|Jax Allen|FR|Orem, UT
+328|AJ Bates|JR|Houston, TX
+328|Brayden Boe|SO|Beaverton, OR
+328|Jordan Boyd|FR|St. Louis, MO
+328|Solomon Callaghan|JR|Wadsworth, OH
+328|Mason Falslev|SR|Benson, UT
+328|Sean Felts|JR|St. George, UT
+328|Dallin Hall|SR|Plain City, UT
+328|Will Hornseth|JR|De Pere, WI
+328|Collin Mulholland|JR|Kitchener, Canada
+328|Ace Reiser|SO|South Jordan, UT
+328|Bron Roberts|SO|Lindon, UT
+328|Karson Templin|SR|Fairview, TX
+328|Kingston Tosi|SO|Anchorage, AK
+328|Connor Turnbull|SR|Saint Paul, MO
+204|Yabi Aklog|FR|Seattle, WA
+204|Sean Blakely Drummond|SO|Palo Alto, CA
+204|Dennis Evans|JR|Riverside, CA
+204|Daniel Freitag|JR|Bloomington, MN
+204|DeShawn Gory|SO|Victorville, CA
+204|Chris Johnson|SR|Houston, TX
+204|Jemai Lake|FR|Tualatin, OR
+204|Josiah Lake II|SR|Tualatin, OR
+204|Peteris Pinnis|SO|Salaspils, Latvia
+204|Jackson Rasmussen|SO|Meridian, ID
+204|Legend Smiley|SO|Seattle, WA
+204|Xavion Staton|SO|Las Vegas, NV
+204|Kahu Treacher|JR|Hastings, New Zealand
+265|Sebastian Akins|JR|Concord, NC
+265|Dio Blakely|FR|Los Angeles, CA
+265|Ladji Dembele|JR|Newark, NJ
+265|Jaylen Harrell|FR|Boston, MA
+265|Ronnie Harrison|SR|Forney, TX
+265|Lazerek Houston|SO|Lincoln, NE
+265|Casey Jones|SR|Sammamish, WA
+265|RJ Jones|JR|Denton, TX
+265|Tyler Kropp|SO|Powell, OH
+265|Brayden Kyman|FR|Aliso Viejo, CA
+265|Jamari Phillips|JR|Oakland, CA
+265|Dominik Robinson|FR|Graham, WA
+265|Fraser Roxburgh|JR|Melbourne, Australia
+265|Pedro Sancho Moraga|FR|Valencia, Spain
+265|Mohamed Sankhe||Montreuil, France
+265|Roman Stathis|FR|Sydney, Australia
+2250|Izan Almansa|JR|Murcia, Spain
+2250|Javon Bennett|SR|Orlando, FL
+2250|Nathan De Sousa|SR|Jussy, France
+2250|Massamba Diop|SO|Rufisque, Senegal
+2250|Juwan Ekanga|FR|Aix-les-Bains, France
+2250|Davis Fogle|SO|Anacortes, WA
+2250|Luca Foster|FR|Philadelphia, PA
+2250|Sam Funches|FR|Gluckstadt, MS
+2250|Isiah Harwell|SO|Pocatello, ID
+2250|Braden Huff|SR|Glen Ellyn, IL
+2250|Parker Jefferson|SO|Waxahachie, TX
+2250|Xaivian Lee|SR|Toronto, Canada
+2250|Alonzo Metz|SO|Portland, OR
+2250|Carter Nilson|FR|Spokane, WA
+2250|Chauncey Wiggins|SR|Atlanta, GA
+278|Brian Amuneke|JR|Los Angeles, CA
+278|Ross Candelino|SR|Jacksonville, FL
+278|Roger Fabrega Urpina|FR|Barcelona, Spain
+278|Baye Fall|SR|Guediawaye, Senegal
+278|Anthony Granger|FR|Wichita, KS
+278|Bradey Henige|JR|Glendale, AZ
+278|Yeshua Kesse-Beda|FR|Los Angeles, CA
+278|Dragos Lungu|JR|Cluj-Napoca, Romania
+278|Rylan Parsley|FR|Glendale, AZ
+278|KJ Perry|SO|Detroit, MI
+278|Quentin Rhymes|FR|Las Vegas, NV
+278|Colin Schroeder|FR|Bremen, Germany
+278|Marko Vuckovic|FR|Novi Sad, Serbia
+278|Nathan Zulemie|SO|Nanterre, France
+21|Nick Anderson|SR|Houston, TX
+21|Bear Cherry|SR|San Diego, CA
+21|Cooper Cornelius|JR|Roseville, CA
+21|Latrell Davis|JR|Leeds, England
+21|Chance Gladden|SO|Raleigh, NC
+21|Raymar Gonzales|SO|San Diego, CA
+21|Elzie Harrington|SO|Long Beach, CA
+21|Thokbor Majak|SO|Bor, South Sudan
+21|Jel Malek|JR|Newport Beach, CA
+21|Samson Mashebinu|FR|Lagos, Nigeria
+21|Tae Simmons|SO|Simi Valley, CA
+21|Luka Skoric|FR|Zagreb, Croatia
+21|Isaiah Sy|SR|Marseille, France
+21|David Torresani|FR|Milan, Italy
+21|Luca Vincini|FR|Turin, Italy
+21|Zach White|FR|Sherman Oaks, CA
+326|David Abisogun|FR|Lagos, Nigeria
+326|Paul Djobet|SR|Lille, France
+326|Mark Drone|SR|Jackson, MS
+326|Robert Fields|SO|Baltimore, MD
+326|Kole Grandison|FR|Toronto, Canada
+326|Kaden Gumbs|SR|San Marcos, TX
+326|DJ Hall|SO|Plano, TX
+326|Quel'Ron House|JR|Louisville, KY
+326|Ronald Jessamy|SR|Philadelphia, PA
+326|Randy Livingston Jr.|FR|Miami, FL
+326|Dimp Pernell|JR|Moorhead, MS
+326|Ky Pernell|JR|Moorhead, MS
+326|King Sanders|FR|Fayetteville, NC
+326|Caleb Steger|SO|Dallas, TX
+326|KJ Younger|SO|Charlotte, NC
+36|Carey Booth|SR|Englewood, CO
+36|Jase Butler|JR|San Anselmo, CA
+36|Jaxon Clark|FR|Keokuk, IA
+36|Charlie Dortch|SR|Fort Collins, CO
+36|Pops Dunson|FR|Douglasville, GA
+36|Eric Fiedler|FR|Aurora, CO
+36|Jaden Ghoreishi|FR|Mead, WA
+36|Kyle Jorgensen|JR|Minneapolis, MN
+36|Rashaan Mbemba|SR|Vienna, Austria
+36|Jojo McIver|SO|Killeen, TX
+36|Justin Menard|JR|Higganum, CT
+36|Amondo Miller Jr.|SR|Littleton, CO
+36|Josh Pascarelli|SR|Cambria Heights, NY
+36|River Sawyer|FR|Windsor, CO
+36|Docker Tedeschi|SO|Benton, IL

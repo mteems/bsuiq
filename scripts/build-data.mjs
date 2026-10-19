@@ -102,6 +102,11 @@ if (existsSync(src("rankings"))) cpSync(src("rankings"), join(out, "rankings"), 
 // Position shares by player-season (scripts/build-positions.mjs), for depth charts.
 // Team scouting data (scripts/build-teams.mjs).
 if (existsSync(src("teams"))) cpSync(src("teams"), join(out, "teams"), { recursive: true });
+// Written scouting reports (scripts/build-reports.mjs), one combined file.
+if (existsSync(src("reports/index.json"))) {
+  const ix = JSON.parse(readFileSync(src("reports/index.json"), "utf8"));
+  write("reports.json", { built: ix.built, teams: Object.fromEntries(ix.teams.map((k) => [k, JSON.parse(readFileSync(src(`reports/${k}.json`), "utf8"))])) });
+}
 if (existsSync(src("rosters-2027.json"))) cpSync(src("rosters-2027.json"), join(out, "rosters-2027.json"));
 if (existsSync(src("positions.json"))) cpSync(src("positions.json"), join(out, "positions.json"));
 write("roster.json", { team: roster.team, season: roster.season, espnTeamId: roster.espnTeamId, players: rosterRows });

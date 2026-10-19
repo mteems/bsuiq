@@ -301,7 +301,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelect
 // player: [jersey,name,pos,ht,cls,tag(T/F/""),from,slot,starter,mid{...},adv[gp,min,ortg,usg,ts,tpm,tpa,p3,ast,tov,blk,bpm],advLabel,key]
 const T={};
 T.uw={extraSlot:"personnel",xr:"Washington",dataTeam:"Washington",id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:"HC Danny Sprinkle (yr 3) · 29-35 at UW",kp:"68",mode:"proj",
- game:`<div class="label">Next up · Exhibition</div><span class="pill" style="background:var(--good);margin-top:6px">SAT OCT 17 · 7:00 PM MT</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">Idaho Central Arena, Boise · Washington's first game of the season</div><div class="cap" style="margin-top:6px">Exhibition: no 2026-27 game data exists yet. Everything below is a projection from each player's prior seasons. Refresh after the box score.</div>`,
+ game:`<div class="label">Played · Exhibition · Home</div><span class="pill" style="background:var(--good);margin-top:6px">SAT OCT 17 · BOISE W 109-91</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">Idaho Central Arena, Boise · Washington's first game of the season</div><div class="cap" style="margin-top:6px">Exhibition result from Boise State athletics. Exhibitions don't count in the stats, so everything below is still a projection from each player's prior seasons.</div>`,
  kpis:[["kenpom","Preseason ranks","#68 · #73","","KenPom · T-Rank. <b style='color:#fff'>Boise: #59 · #85</b>. The two models disagree on who's better."],
   ["adjo","Proj. offense","114.0",GOOD,"KenPom AdjO · #57<br>T-Rank 112.6 (#69)"],["adjd","Proj. defense","101.4",GOOD,"KenPom AdjD · #83<br>T-Rank 100.8 (#80)"],
   ["retmin","Returning minutes","21%",BAD,"5 returners · lost top 2 scorers (Steinbach, NBA #14 pick; Diallo → Kentucky)"],
@@ -625,7 +625,7 @@ async function loadTeamData(team,o,yr="2025-26"){
 function render(t,o){
  const P=t.P,mid=t.mode=="proj";
  const H0=`${t.banner?`<div class="banner">${t.banner}</div>`:""}
- <div class="hero"><div class="game"><div><span class="label">Head coach</span><div style="font-size:15px;font-weight:650;margin-top:4px">${t.coach}</div></div><div>${t.game}</div></div>
+ <div class="hero"><div class="game"><div><span class="label">Head coach</span><div style="font-size:15px;font-weight:650;margin-top:4px">${t.coach}</div>${t.coachBio?`<div class="cap" style="margin-top:4px">${t.coachBio}</div>`:""}</div><div>${t.game}</div></div>
  <div class="kpis">${rankTile(o||OPP.find(x=>x[0]===t.key)||[t.key,t.name,"",t.id,t.ab],t)}${t.kpis.filter(k=>k[0]!=="kenpom"&&!/^(Record|Last season)$/i.test(k[1])).map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
 `;
  const HD=` <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
@@ -641,7 +641,7 @@ function render(t,o){
  <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="7">${t.midHdr[0]}</th><th class="grp sep" colspan="${mid?12:11}">${t.advHdr}</th></tr>
  <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th class="l">Cl</th>${t.midHdr[1].map((c,i)=>`<th${i==0?' class="sep"':''}>${c}</th>`).join("")}${mid?'<th class="l sep">Team</th><th>GP</th>':'<th class="sep">GP</th>'}<th><span data-def="minp">Min%</span></th><th><span data-def="ortg">ORtg</span></th><th><span data-def="usg">USG</span></th><th><span data-def="ts">TS%</span></th><th><span data-def="p3">3P%</span></th><th>3PA</th><th><span data-def="ast">AST%</span></th><th><span data-def="tov">TOV%</span></th><th><span data-def="blk">BLK%</span></th><th><span data-def="bpm">BPM</span></th></tr></thead><tbody>
  ${[...P].sort((a,b)=>(mid?b[9][0]-a[9][0]:b[9][2]-a[9][2])).map(p=>{const v=p[9],A=p[10];const tg=p[5]=="T"?' <span class="tag new">NEW</span>':p[5]=="F"?' <span class="tag fr">FR</span>':'';
-  const mc=mid?(v.length>1?`<td class="sep">${v[0].toFixed(1)}</td><td style="font-weight:700">${f1(v[1])}</td><td>${f1(v[2])}</td><td>${f1(v[3])}</td><td>${v[4]==null?"—":v[4].toFixed(1)}</td><td>${chip("bpm",v[5],sg(v[5]))}</td><td class="m">${v[6]}</td>`:`<td class="sep">${v[0].toFixed(1)}</td><td class="m l" colspan="6">${p[5]=="F"?"freshman / intl: no projection":"small sample: no projection"}</td>`)
+  const mc=mid?(v.length>1?`<td class="sep">${v[0].toFixed(1)}</td><td style="font-weight:700">${f1(v[1])}</td><td>${f1(v[2])}</td><td>${f1(v[3])}</td><td>${v[4]==null?"—":v[4].toFixed(1)}</td><td>${chip("bpm",v[5],sg(v[5]))}</td><td class="m">${v[6]}</td>`:`<td class="sep">${v[0].toFixed(1)}</td><td class="m l" colspan="6">${p[5]=="F"?(/^(Jr|Sr|Gr)/i.test(p[4])?"no D-I stats (JUCO / D-II / intl): no projection":"freshman / intl: no projection"):"small sample: no projection"}</td>`)
    :`<td class="sep m">${v[0]}</td><td class="m">${v[1]}</td><td>${v[2].toFixed(1)}</td><td style="font-weight:700">${v[3].toFixed(1)}</td><td>${v[4].toFixed(1)}</td><td>${v[5].toFixed(1)}</td><td class="m">${v[6]==null?"—":v[6].toFixed(1)}</td>`;
   const q=A&&A[1]>=20;const ac=A?`${mid?`<td class="l sep" style="color:#b9bdc4">${p[6]}</td><td class="m">${A[0]}</td>`:`<td class="sep m">${A[0]}</td>`}<td class="m">${A[1].toFixed(0)}</td><td>${q?chip("ortg",A[2],A[2].toFixed(1)):A[2].toFixed(1)}</td><td>${A[3].toFixed(1)}</td><td>${q?chip("ts",A[4],A[4].toFixed(1)):A[4].toFixed(1)}</td><td data-v="${A[6]?(100*A[5]/A[6]).toFixed(1):""}">${A[6]>=40?chip("p3",A[7],A[7].toFixed(1)):A[6]?`<span class="m">${(100*A[5]/A[6]).toFixed(1)}</span>`:`<span class="m">—</span>`}</td><td class="att">${A[6]}</td><td>${A[8].toFixed(1)}</td><td>${A[9].toFixed(1)}</td><td>${A[10].toFixed(1)}</td><td>${q?chip("bpm",A[11],sg(A[11])):sg(A[11])}</td>`:`<td class="l sep m" colspan="${mid?12:11}">no D-I history</td>`;
   return `<tr><td class="l m">${p[0]}</td><td class="l pl" style="color:#fff;font-weight:600">${p[1]}${tg}</td><td class="l m"><span class="rpos" data-n="${p[1]}">${(()=>{const I=posInfo(t,p);return `<button class="mv${I.ovr?" staff":""}" title="${I.ovr?"Set by staff · data says "+I.auto+" · c":"C"}hange position">${I.slot} ▾</button>`})()}</span></td><td class="m">${p[3]}</td><td class="l m">${p[4]}</td>${mc}${ac}</tr>`}).join("")}
@@ -676,11 +676,35 @@ function render(t,o){
   yrs.forEach((yy,i)=>svg.append("text").attr("x",x(yy)).attr("y",H-9).attr("text-anchor","middle").attr("font-size",10).attr("fill",i>li&&!proj?"#4a4d53":"#9aa0a8").text(i>li&&!proj?"—":yy));});
  if(t.after)t.after();
 }
+// ---------- written reports for every opponent (scripts/build-reports.mjs) ----------
+const RC={GOOD,BAD,NEU};
+const DNAME={"Sam Houston St.":"Sam Houston","Texas A&M Corpus Chris":"A&M-Corpus Christi","Lamar":"Lamar University"};
+function reportGame(r){const g=r.game;if(!g)return"";
+ return `<div class="label">${g.result?"Played":"Next meeting"} · ${g.label}</div><span class="pill" style="background:var(--good);margin-top:6px">${g.pill}</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">${g.venue}</div>${g.more.length?`<div class="cap" style="margin-top:6px">${g.more.join("<br>")}</div>`:""}<div class="cap" style="margin-top:6px">No 2026-27 games yet: everything below is a projection from each player's prior seasons. It updates as games are played.</div>`;}
+function reportExtra(r){
+ const G=r.left.rows,N=r.newc;
+ const conf=(c)=>({B12:"big_12",SEC:"sec",B10:"big_ten",BE:"big_east",ACC:"acc",MWC:"mountain_west",WCC:"29",A10:"3",Amer:"american"})[c];
+ return `<section><div class="grid g-two"><div class="panel"><div class="label ptitle"><span>Who left · 2025-26 ${r.name}</span><span>${r.left.pct}% of minutes</span></div>${G.length?`<table><thead><tr><th class="l">Player</th><th class="l">Role</th><th>Min%</th><th>PPG</th><th>RPG</th><th>BPM</th><th class="l">Next</th></tr></thead><tbody>${G.map(g=>`<tr><td class="l" style="color:#fff">${g[0]}</td><td class="l m">${g[1]}</td><td class="m">${(+g[2]).toFixed(0)}</td><td style="font-weight:700">${f1(g[3])}</td><td>${f1(g[4])}</td><td>${g[5]==null?"—":chip("bpm",g[5],sg(g[5]))}</td><td class="l m"><span class="tl">${g[7]?LG(g[7],16):""}${g[6]}</span></td></tr>`).join("")}</tbody></table>`:`<div class="cap">Everyone who played real minutes is back.</div>`}</div>
+ <div class="panel"><div class="label ptitle"><span>Who's new · where they came from</span><span>conference jump</span></div>${N.length?`<table><thead><tr><th class="l">Player</th><th class="l">From</th><th>PPG</th><th>ORtg</th><th>3P%</th><th class="l">Adj.</th></tr></thead><tbody>${N.map(n=>`<tr><td class="l" style="color:#fff">${n[0]}</td><td class="l m"><span class="tl">${n[1]} <span style="color:#61656c">${n[2]}${n[8]!=="'26"?" "+n[8]:""}</span></span></td><td style="font-weight:700">${f1(n[3])}</td><td>${n[4]==null?"—":chip("ortg",n[4],(+n[4]).toFixed(1))}</td><td>${n[5]==null?"—":n[6]>=40?chip("p3",n[5],(+n[5]).toFixed(1)):`<span class="m">${(+n[5]).toFixed(1)}</span>`} <span class="m" style="font-size:10.5px">${n[6]}</span></td><td class="l m">${n[7]}</td></tr>`).join("")}</tbody></table>`:`<div class="cap">No D-I transfers in.</div>`}
+ <div class="cap">Adj. = BPM change applied to his projection for the step between conferences (up a level = minus). ${r.fresh.length?`Freshmen / intl / no D-I stats: ${r.fresh.map(f=>`${f[0]} (${f[1]}${f[2]?", "+f[2]:""})`).join(", ")}.`:""}</div></div></div></section>`;}
+let REPORTS={};
+function addReports(){
+ for(const [k,r] of Object.entries(REPORTS)){
+  if(k==="uw")continue; // Washington keeps its hand-built report
+  const i=OPP.findIndex(o=>o[1]===r.name);if(i<0)continue;
+  OPP[i][0]=k;
+  T[k]={...r,key:k,extraSlot:"personnel",xr:r.name,dataTeam:dataTeam(r.name),name:r.name,game:reportGame(r),
+   kpis:r.kpis.map(x=>[x[0],x[1],x[2],RC[x[3]]||x[3],x[4]]),keys:r.keys.map(x=>[RC[x[0]]||x[0],x[1],x[2],x[3]]),
+   extra:()=>reportExtra(r),
+   foot:`Sources: KenPom and Barttorvik 2027 preseason ratings (Oct 18, 2026), Barttorvik player stats 2023-24 to 2025-26, ESPN 2026-27 rosters, coaching records from school releases and Wikipedia, Boise State athletics schedule. <b style="color:#b9bdc4">Projection method:</b> weighted average of the last 3 seasons (3/2/1 × minutes), pulled toward a bench-level prior for small samples, adjusted for conference level and class, with minutes assigned by projected impact and last season's role, and team scoring normalized to the T-Rank projection. Built ${new Date(r.built).toLocaleDateString("en-US",{month:"short",day:"numeric"})}.`};
+ }
+}
 for(const k in T)T[k].key=k;
 {const [pj,oj]=await Promise.all([fetch("/data/positions.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/api/positions").then(r=>r.ok?r.json():null).catch(()=>null)]);
  if(pj)POS=pj;if(oj)OVR=oj.overrides||{};
  const [ti,td]=await Promise.all([fetch("/data/teams/_index.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/data/teams/_dist.json").then(r=>r.ok?r.json():null).catch(()=>null)]);
  if(ti)TIDX=Object.fromEntries(ti.teams.map(x=>[x.team,x.slug]));TDIST=td;
+ try{const rj=await fetch("/data/reports.json").then(r=>r.ok?r.json():null);if(rj){REPORTS=rj.teams;addReports();}}catch{}
  await loadLiveRanks();}
 {const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);document.querySelector(`.tab[data-i="${i>=0?i:1}"]`).click();}
 </script>
