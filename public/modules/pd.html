@@ -214,11 +214,11 @@ tbl("pmT",D.PM);tbl("dmT",D.DM);
 function cards(X){
   const c=X?.created, live=X?.live, tos=X?.tos;
   const scor=D.minutes?D.pts/D.minutes*40:null, offA=c&&D.minutes?c.astPts/D.minutes*40:null;
-  const share=c&&c.teamPtsOn?(D.pts+c.astPts)/c.teamPtsOn:null;
+  const share=c&&c.teamPtsOn?c.sharePts/c.teamPtsOn:null;
   const ppa=c?.ppa, liveP=tos?live/tos:null;
   const C=[
     ["ptscr","Pts created / 40",c?f1(scor+offA):"…",c?`<em>${f1(scor)}</em> scoring + <em>${f1(offA)}</em> off his assists`:"reading ESPN play-by-play",null],
-    ["ptshare","Share of team pts",share!=null?Math.round(share*100)+"%":"…",share!=null?`of ${esc(TS)} points while he's on: scored or assisted (${f0(D.pts+c.astPts)} of ${f0(c.teamPtsOn)})`:"",null],
+    ["ptshare","Share of team pts",share!=null?Math.round(share*100)+"%":c?"—":"…",share!=null?`of ${esc(TS)} points while he's on: scored or assisted (${f0(c.sharePts)} of ${f0(c.teamPtsOn)})`:c?"ESPN's feed has no substitutions for this season":"",null],
     ["ppa","Pts per assist",ppa!=null?f2(ppa):"…",c&&c.astN?`<em>${pctS(c.ast3,c.astN)}%</em> of his assists set up threes (${c.ast3} of ${c.astN})`:"",ppa==null?null:ppa>=2.55?GOOD:ppa<=2.3?BAD:null],
     ["atr","AST / TO",D.tov?f2(D.ast/D.tov):"—",`D-I median ${f2(D.medAtr)} · ${esc(D.role)} ${f2(D.roleAtr)}`,atrR?.[4]==null?null:atrR[4]>=65?GOOD:atrR[4]<=35?BAD:null],
     ["live","Live-ball TOs",liveP!=null?Math.round(liveP*100)+"%":"…",liveP!=null?`<em>${live} of ${tos}</em> turnovers were steals (about half is typical).${liveP>=.58?" These lead straight to opponent breaks.":liveP<=.42?" Mostly dead-ball turnovers, the cheaper kind.":""}`:"",liveP==null?null:liveP>=.58?BAD:liveP<=.42?GOOD:null],
@@ -321,7 +321,7 @@ if(D.def)(function(){
 // ---------------------------------------------------------------- on/off
 function onoff(O,src){
   document.getElementById("ooW").style.display="none";
-  if(!O){document.getElementById("ooW").style.display="";document.getElementById("ooW").innerHTML=`<div class="wait">Not enough play-by-play to split his minutes on and off the floor.</div>`;return;}
+  if(!O){document.getElementById("ooW").style.display="";document.getElementById("ooW").innerHTML=`<div class="wait">${X&&!X.created?.shareGames?"ESPN's play-by-play has no substitutions for this season, so his minutes can't be split on and off the floor.":"Not enough play-by-play to split his minutes on and off the floor."}</div>`;return;}
   document.getElementById("ooG").style.display="";
   document.getElementById("ooT").innerHTML=`${esc(TS)} defense · him <span data-def="onoff">on vs off</span> the floor · ${O.games} D-I games`;
   const r0=O.rows.find(r=>r[0]==="opp100"),d=r0?r0[2]-r0[3]:null,se=1.15*100*Math.sqrt(1/O.onPoss+1/O.offPoss);
@@ -365,7 +365,7 @@ function pmStory(X){
   if(rim.t>=8)bits.push(`${Math.round((rim.t-rim.a)/rim.t*100)}% of his made layups`);
   if(oth.t>=8)bits.push(`${Math.round((oth.t-oth.a)/oth.t*100)}% of his made mid-range shots`);
   if(bits.length)t+=` ${bits.join(" and ")} were unassisted${tpm.t>=8?`, while ${Math.round(tpm.a/tpm.t*100)}% of his made threes were assisted`:""}.`;
-  if(c&&c.teamPtsOn)t+=` He scored or assisted on ${Math.round((D.pts+c.astPts)/c.teamPtsOn*100)}% of ${esc(TS)}'s points while on the floor.`;
+  if(c&&c.teamPtsOn)t+=` He scored or assisted on ${Math.round(c.sharePts/c.teamPtsOn*100)}% of ${esc(TS)}'s points while on the floor.`;
   const liveP=X?.tos>=10?X.live/X.tos:null;
   if(liveP!=null&&liveP>=.58)t+=` <b>Watch item:</b> ${Math.round(liveP*100)}% of his turnovers were steals, which lead to opponent fast breaks.`;
   else if(bp!=null&&bp<=30)t+=` <b>Watch item:</b> turnovers. His rate is high for a player with his usage.`;

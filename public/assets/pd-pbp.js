@@ -30,7 +30,7 @@ async function read({ espn, team, season, d1 }) {
   evs.sort((a, b) => a.date.localeCompare(b.date));
   const sums = await pool(evs, 6, (e) => j(`${API}/summary?event=${e.id}`));
   const games = [], assists = [], gl = [], shots = [];
-  let live = 0, tos = 0, astPts = 0, ast3 = 0, astN = 0, teamPtsOn = 0, myPts = 0, myMin = 0, astPtsDI = 0;
+  let live = 0, tos = 0, astPts = 0, ast3 = 0, astN = 0, teamPtsOn = 0, myPts = 0, myMin = 0, sharePts = 0;
   const S = () => ({ poss: 0, pts: 0, fga: 0, fgm: 0, tpa: 0, tpm: 0, fta: 0, orb: 0, drb: 0, to: 0, rima: 0, rimm: 0 });
   const on = S(), off = S();
   let ooGames = 0;
@@ -67,6 +67,9 @@ async function read({ espn, team, season, d1 }) {
     });
     if (!isDI) return;
     myPts += val("points"); myMin += val("minutes");
+    // Older ESPN feeds (before 2024-25) carry no substitutions; on/off needs them.
+    if (!plays.some((p) => p.type?.text === "Substitution")) return;
+    sharePts += val("points") + plays.filter((p) => p.scoringPlay && p.shootingPlay && !FT.test(p.type?.text || "") && String(p.participants?.[1]?.athlete?.id) === espn).reduce((a, p) => a + (p.scoreValue || 2), 0);
     // on/off replay: starters, then every substitution.
     const lineup = new Set((st.athletes || []).filter((a) => a.starter).map((a) => String(a.athlete.id)));
     ooGames++;
@@ -99,7 +102,7 @@ async function read({ espn, team, season, d1 }) {
     .map(([k, l, b, dim]) => [k, l, r(ON[k]), r(OFF[k]), b, dim || 0]).filter((x) => x[2] != null && x[3] != null);
   return {
     games, assists, gl, shots, live, tos,
-    created: { astN, astPts, ast3, ppa: astN ? astPts / astN : null, teamPtsOn, myPts, myMin },
+    created: { astN, astPts, ast3, ppa: astN ? astPts / astN : null, teamPtsOn: ooGames ? teamPtsOn : null, sharePts, shareGames: ooGames, myPts, myMin },
     onoff: ooGames && on.poss > 50 && off.poss > 50 ? { games: ooGames, onPoss: Math.round(on.poss), offPoss: Math.round(off.poss), rows } : null,
   };
 }
