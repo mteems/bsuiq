@@ -44,6 +44,8 @@
 .land{fill:#25272b;stroke:#33363b;stroke-width:.6;vector-effect:non-scaling-stroke}
 .land.has{fill:#36373c}
 .land.hot{fill:#45464b}
+.state{fill:transparent;stroke:#3a3d42;stroke-width:.5;vector-effect:non-scaling-stroke}
+.state.has{fill:#36373c}.state.hot{fill:#45464b}
 .grat{fill:none;stroke:#1f2124;stroke-width:.6;vector-effect:non-scaling-stroke}
 .sphere{fill:#18191c}
 .bub circle.bg{fill:#16171a;stroke:#16171a;stroke-width:2}
@@ -194,7 +196,16 @@ let Wd = box.clientWidth, Ht = box.clientHeight;
 const proj = d3.geoNaturalEarth1(), path = d3.geoPath(proj), land = W110.features;
 function fitWorld() { Wd = box.clientWidth; Ht = box.clientHeight; proj.fitExtent([[8, 8], [Wd - 8, Ht - 8]], { type: "FeatureCollection", features: land.filter((f) => f.properties.ly > -58) }); }
 fitWorld();
-const gMap = svg.append("g"), gSphere = gMap.append("path").attr("class", "sphere"), gGrat = gMap.append("path").attr("class", "grat"), gLand = gMap.append("g");
+const gMap = svg.append("g"), gSphere = gMap.append("path").attr("class", "sphere"), gGrat = gMap.append("path").attr("class", "grat"), gLand = gMap.append("g"), gStates = gMap.append("g");
+// US states + Canadian provinces drawn over the countries.
+let STATES = [];
+fetch("/assets/geo/states.json").then((r) => r.json()).then((j) => { STATES = j.features; drawStates(); }).catch(() => {});
+function drawStates() {
+  gStates.selectAll("path").data(STATES, (f) => f.properties.c + f.properties.n).join("path").attr("class", "state").attr("d", path)
+    .on("mousemove", (e, f) => { const n = vis().filter((p) => d3.geoContains(f, p.ll)).length; tipOn(e, `<b>${f.properties.n}</b>${n ? ` · ${n} player${n > 1 ? "s" : ""}` : ""}`); }).on("mouseleave", tipOff);
+  shadeStates();
+}
+function shadeStates() { const on = st.hover ?? st.sel; gStates.selectAll("path").classed("has", (f) => vis().some((p) => d3.geoContains(f, p.ll))).classed("hot", (f) => on != null && d3.geoContains(f, P[on].ll)); }
 const gLab = svg.append("g"), gPts = svg.append("g");
 const countryAt = (ll) => { for (const f of land) if (d3.geoContains(f, ll)) return f.properties.a; return null; };
 function drawLand(features) {
@@ -205,14 +216,14 @@ function drawLand(features) {
   shadeLand();
 }
 function shadeLand() { const has = new Set(vis().flatMap((p) => [p.a3, countryAt(p.ll)])), on = st.hover ?? st.sel, hot = on != null ? countryAt(P[on].ll) : null;
-  gLand.selectAll("path").classed("has", (f) => has.has(f.properties.a)).classed("hot", (f) => f.properties.a === hot); }
+  gLand.selectAll("path").classed("has", (f) => has.has(f.properties.a) && !["USA", "CAN"].includes(f.properties.a)).classed("hot", (f) => f.properties.a === hot && !["USA", "CAN"].includes(f.properties.a)); if (typeof shadeStates === "function") shadeStates(); }
 drawLand(land);
 let T = d3.zoomIdentity;
 const zoom = d3.zoom().scaleExtent([1, 24]).translateExtent([[-Wd * 0.1, -Ht * 0.1], [Wd * 1.1, Ht * 1.1]])
   .on("zoom", (e) => { T = e.transform; gMap.attr("transform", T); st.k = T.k; if (T.k > 1.8 && !W50) load50(); placePoints(); })
   .on("end", (e) => { if (e.sourceEvent) { st.region = regionFor(); drawConts(); drawList(); } });
 svg.call(zoom).on("dblclick.zoom", null);
-function load50() { W50 = "loading"; fetch("/assets/geo/world-50m.json").then((r) => r.json()).then((j) => { W50 = j; drawLand(j.features); }).catch(() => (W50 = null)); }
+function load50() { W50 = "loading"; fetch("/assets/geo/world-50m.json").then((r) => r.json()).then((j) => { W50 = j; drawLand(j.features); drawStates(); }).catch(() => (W50 = null)); }
 function tFor(bbox) {
   const [[x0, y0], [x1, y1]] = [proj([bbox[0], bbox[3]]), proj([bbox[2], bbox[1]])];
   const k = Math.min(24, (Wd < 640 ? 0.8 : 0.92) / Math.max((x1 - x0) / Wd, (y1 - y0) / Ht));
@@ -319,7 +330,7 @@ function select(i, fly) {
 }
 function draw() { drawConts(); drawList(); placePoints(); shadeLand(); }
 draw();
-addEventListener("resize", () => { const t = T; fitWorld(); drawLand(W50 && W50 !== "loading" ? W50.features : land); svg.call(zoom.transform, t); });
+addEventListener("resize", () => { const t = T; fitWorld(); drawLand(W50 && W50 !== "loading" ? W50.features : land); drawStates(); svg.call(zoom.transform, t); });
 const h = location.hash.slice(1); if (h) { const r = REGIONS.find((q) => q[0].toLowerCase().replace(/ /g, "-") === h); if (r) setTimeout(() => goRegion(r[0]), 200); }
 </script>
 </body>
