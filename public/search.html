@@ -230,6 +230,7 @@ tr.ndr td{color:var(--faint)}
 <script type="module">
 import { topBar, esc, getJSON, addDefs } from "/assets/core.js";
 import * as H from "/assets/search-logic.js";
+import { loadPool, espnGames } from "/assets/pool.js";
 topBar("search");
 
 addDefs({
@@ -257,97 +258,18 @@ let order = H.loadColumnOrder(COLS, H.defaultSearchColumnOrder.filter((k) => k !
 let visibleStats = ls.get(STATS, H.defaultStatColumns).filter((k) => STAT_KEYS.includes(k));
 let saved = ls.get(SAVED, []), recent = ls.get(RECENT, []);
 const selected = new Set(), expanded = new Set();
-let LINKS = { espn: {}, photo: {} }, P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
+let P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
 let visible = [], shown = 0;
 const remember = () => ss.set(VIEW, S);
 
-// ---------------------------------------------------------------- data
-const nameKey = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/["“”][^"“”]*["“”]/g, " ").replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, " ").replace(/[^a-z]/g, "");
-const schoolKey = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/\b(university|college|the|of)\b/g, " ").replace(/\bst\b/g, "state").replace(/\bsaint\b/g, "state").replace(/\s+/g, " ").trim();
-const tokens = (s) => new Set(schoolKey(s).split(" ").filter((t) => t && t !== "state"));
-// NCAA short names the hub spells differently.
-const TEAM_ALIAS = { "Central Conn. St.": "Central Connecticut", "St. John's (NY)": "St. John's", Hawaii: "Hawai'i", "IU Indy": "IU Indianapolis", "Col. of Charleston": "Charleston", "Saint Mary's (CA)": "Saint Mary's", NIU: "Northern Illinois", FDU: "Fairleigh Dickinson", ULM: "UL Monroe", "West Ga.": "West Georgia" };
-function sameSchool(a, b) {
-  a = TEAM_ALIAS[a] || a;
-  const x = schoolKey(a), y = schoolKey(b);
-  if (!x || !y) return false;
-  if (x === y || x.startsWith(y + " ") || y.startsWith(x + " ")) return true;
-  const A = tokens(a), B = tokens(b); let o = 0; for (const t of A) if (B.has(t)) o++;
-  return o > 0 && o / Math.max(1, Math.min(A.size, B.size)) >= 0.99;
-}
-const darkLogo = (u) => String(u || "").replace("/teamlogos/ncaa/500/", "/teamlogos/ncaa/500-dark/");
-const TEAMS_TID = (ps) => [...new Map(ps.filter((p) => p.tid).map((p) => [p.school, p.tid]))];
-function link(hub) {
-  // Team branding from the hub, keyed by the hub's school names.
-  const brand = new Map(hub.teams.map(([n, c, l, al]) => [n, { name: n, conf: c, logo: darkLogo(l), aliases: al || [] }]));
-  for (const [n, l] of hub.confs) confLogo.set(n, l);
-  // 1) ESPN ids by name + school.
-  const byName = new Map();
-  for (const r of hub.players) { const k = nameKey(r[1] + r[2]); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(r); }
-  const votes = new Map(), lastKey = new Map();
-  const ourCount = new Map(); for (const p of P) { const k = nameKey(p.first_name + p.last_name); ourCount.set(k, (ourCount.get(k) || 0) + 1); }
-  for (const p of P) {
-    const k = nameKey(p.first_name + p.last_name), all = byName.get(k) || [];
-    let c = all.filter((r) => sameSchool(p.school, r[3]));
-    // Moved since last season (hub shows his new school): accept when the name is unique on both sides.
-    if (!c.length && all.length === 1 && ourCount.get(k) === 1) { p.espn = all[0][0]; p.photo = !!all[0][5]; continue; }
-    if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; const v = votes.get(p.school) || new Map(); v.set(c[0][3], (v.get(c[0][3]) || 0) + 1); votes.set(p.school, v); }
-  }
-  // 2) Our team name → the hub's school (most common match), then logos + 2026-27 conference.
-  const hubSchool = new Map();
-  for (const [t, v] of votes) hubSchool.set(t, [...v].sort((a, b) => b[1] - a[1])[0][0]);
-  for (const t of new Set(P.map((p) => p.school))) {
-    let b = brand.get(hubSchool.get(t));
-    if (!b) for (const x of brand.values()) if (sameSchool(t, x.name) || x.aliases.some((a) => sameSchool(t, a))) { b = x; break; }
-    teamInfo.set(t, b || null);
-  }
-  // 3) Second pass: same last name + first initial at the matched hub school (nicknames, spelling).
-  const bySchool = new Map();
-  for (const r of hub.players) { if (!bySchool.has(r[3])) bySchool.set(r[3], []); bySchool.get(r[3]).push(r); }
-  const taken = new Set(P.filter((p) => p.espn).map((p) => p.espn));
-  for (const p of P) {
-    if (p.espn) continue;
-    const pool = bySchool.get(hubSchool.get(p.school) || teamInfo.get(p.school)?.name) || [];
-    const c = pool.filter((r) => !taken.has(r[0]) && nameKey(r[2]) === nameKey(p.last_name) && nameKey(r[1])[0] === nameKey(p.first_name)[0]);
-    if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; taken.add(p.espn); }
-  }
-  // Our own ESPN ids (team roster + name) win; the hub match fills the rest. Every ESPN id gets a
-  // headshot attempt; a missing photo falls back to initials.
-  window.biqConflicts = []; window.biqP = P;
-  for (const p of P) {
-    if (p.espnB && p.espn && p.espnB !== p.espn) window.biqConflicts.push([p.first_name + " " + p.last_name, p.espnB, p.espn]);
-    if (p.espnB) p.espn = p.espnB;
-    if (LINKS.espn?.[p.id]) p.espn = LINKS.espn[p.id];
-    p.photoUrl = LINKS.photo?.[p.id] || (p.espn ? `https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${p.espn}.png&w=150&h=110&scale=crop` : "");
-    p.photo = !!p.photoUrl;
-  }
-  for (const p of P) { const b = teamInfo.get(p.school); p.logo = b?.logo || ""; if (b?.conf) p.conference = b.conf; }
-  for (const t of TEAMS_TID(P)) if (!teamInfo.get(t[0])?.logo) teamInfo.set(t[0], { ...(teamInfo.get(t[0]) || { name: t[0], conf: "" }), logo: `https://a.espncdn.com/i/teamlogos/ncaa/500-dark/${t[1]}.png` });
-  window.biqSearch = { matched: P.filter((p) => p.espn).length, photos: P.filter((p) => p.photo).length, missing: P.filter((p) => !p.espn).map((p) => [p.id, p.first_name + " " + p.last_name, p.school, p.tid]), total: P.length, noLogo: [...teamInfo].filter(([, b]) => !b?.logo).map(([t]) => t) };
-}
+// ---------------------------------------------------------------- data (shared pool: /assets/pool.js)
 async function load(refresh = false) {
-  const [data, hub, rosters, links] = await Promise.all([
-    getJSON("/data/search/players.json"),
-    getJSON("/api/hub/link" + (refresh ? "?refresh=1" : "")).catch((e) => ({ teams: [], confs: [], players: [], error: String(e.message || e) })),
-    getJSON("/data/rosters-2027.json").catch(() => ({})),
-    getJSON("/api/search/links").catch(() => ({ espn: {}, photo: {} })),
-  ]);
-  LINKS = links;
-  meta = { built: data.built, note: data.note, hubError: hub.error, season: data.season };
-  D1 = rosters.d1 ? new Set(rosters.d1.map(String)) : null;
-  const pc = data.pcols, sc = data.scols;
-  P = data.players.map((r) => { const o = Object.fromEntries(pc.map((k, i) => [k, r[i]])); return { id: o.id, first_name: o.first, last_name: o.last, school: o.team, conference: o.conf, position: o.pos, height: o.ht, class_year: o.cls, jersey_number: o.jersey, hometown: o.home, high_school: o.hs, espnB: o.espn || "", tid: o.tid || "", seasons: [] }; });
-  for (const r of data.seasons) {
-    const s = Object.fromEntries(sc.map((k, i) => [k, r[i]]));
-    s.three_pa_pg = s.gp > 0 ? Math.round((s.three_pa / s.gp) * 10) / 10 : 0;
-    P[s.p].seasons.push(s);
-  }
-  byId = new Map(P.map((p) => [p.id, p]));
-  link(hub);
-  TEAMS = [...new Set(P.map((p) => p.school))].sort();
-  CONFS = [...new Set([...H.conferenceOptions, ...P.map((p) => p.conference).filter(Boolean)])];
-  document.getElementById("badge").innerHTML = `<b>${P.length.toLocaleString()}</b> players · ${esc(data.season)}`;
-  document.getElementById("foot").innerHTML = `Numbers: our play-by-play pipeline, D-I games only (non-D-I games are left out on purpose, so games and totals can be a little lower than ESPN's). Usage %: Barttorvik. Headshots, game logs and team logos: ESPN, matched through the Recruiting Hub (read-only)${meta.hubError ? ` <span style="color:#f0b4bd">— hub link unavailable right now (${esc(meta.hubError)}), so headshots and logos are missing</span>` : ""}. Built ${esc(String(meta.built).slice(0, 10))}.`;
+  const pool = await loadPool({ refresh });
+  ({ P, byId, TEAMS, CONFS, confLogo, teamInfo, D1, meta } = pool);
+  window.biqP = P;
+  window.biqSearch = { matched: P.filter((p) => p.espn).length, photos: P.filter((p) => p.photo).length, total: P.length, missing: P.filter((p) => !p.espn).map((p) => [p.id, p.first_name + " " + p.last_name, p.school, p.tid]), noLogo: [...teamInfo].filter(([, b]) => !b?.logo).map(([t]) => t) };
+  document.getElementById("badge").innerHTML = `<b>${P.length.toLocaleString()}</b> players · ${esc(meta.season)}`;
+  document.getElementById("foot").innerHTML = `Numbers: our play-by-play pipeline, D-I games only (non-D-I games are left out on purpose, so games and totals can be a little lower than ESPN's). Usage %: Barttorvik. Headshots, game logs and team logos: ESPN, matched through the Recruiting Hub (read-only) and ESPN team rosters${meta.hubError ? ` <span style="color:#f0b4bd">— hub link unavailable right now (${esc(meta.hubError)})</span>` : ""}. Built ${esc(String(meta.built).slice(0, 10))}.`;
   renderAll();
 }
 
@@ -719,44 +641,12 @@ function expandedHTML(p) {
   const head = ["Season history", "Year", "GP", "MIN", "PTS", "REB", "AST", "STL", "TO", "FG%", "2P%", "3P%", "FT%", "eFG%", "USG%"].map((l) => `<div>${l}</div>`).join("");
   return `<div class="xp"><div class="hist"><div class="hrow hh">${head}</div>${s ? histRow(s, "current") : ""}${old.map((x) => histRow(x, "prev")).join("")}${c ? histRow(c, "career") : ""}</div><div class="gx">${gamesHTML(p)}</div></div>`;
 }
-// ESPN game log parser (same as the worker's parseGameLog), for the in-browser fallback.
-const madeAtt = (v) => { const [m, a] = String(v ?? "").split("-").map((x) => Number.parseFloat(x) || 0); return [m || 0, a || 0]; };
-function parseGameLog(j, season) {
-  const names = j.names || [], events = j.events || {}, rows = new Map();
-  for (const st of j.seasonTypes || []) for (const cat of st.categories || []) {
-    if (cat.type && cat.type !== "event") continue;
-    for (const e of cat.events || []) {
-      const ev = events[e.eventId]; if (!ev) continue;
-      const s = Object.fromEntries(names.map((n, i) => [n, e.stats?.[i]])), f = (k) => Number.parseFloat(s[k]) || 0;
-      const [fgm, fga] = madeAtt(s["fieldGoalsMade-fieldGoalsAttempted"]), [tpm, tpa] = madeAtt(s["threePointFieldGoalsMade-threePointFieldGoalsAttempted"]), [ftm, fta] = madeAtt(s["freeThrowsMade-freeThrowsAttempted"]);
-      const home = String(ev.team?.id ?? "") === String(ev.homeTeamId ?? ""), n = (v) => (v == null || v === "" ? null : +v);
-      rows.set(e.eventId, { id: e.eventId, date: ev.gameDate || "", opp: ev.opponent?.displayName || ev.opponent?.abbreviation || "Opponent", oppId: ev.opponent?.id || null, atVs: ev.atVs || "", result: ev.gameResult || "", tm: n(home ? ev.homeTeamScore : ev.awayTeamScore), op: n(home ? ev.awayTeamScore : ev.homeTeamScore), min: f("minutes"), pts: f("points"), reb: f("totalRebounds"), ast: f("assists"), stl: f("steals"), blk: f("blocks"), to: f("turnovers"), fgm, fga, tpm, tpa, ftm, fta, season });
-    }
-  }
-  return [...rows.values()];
-}
-const endYear = (s) => +String(s).slice(0, 4) + 1;
-async function gamesDirect(espn, seasons) {
-  const out = [], errors = [];
-  await Promise.all(seasons.map(async (s) => {
-    try {
-      const r = await fetch(`https://site.web.api.espn.com/apis/common/v3/sports/basketball/mens-college-basketball/athletes/${espn}/gamelog?region=us&lang=en&contentorigin=espn&season=${endYear(s)}`);
-      if (!r.ok) throw new Error("ESPN " + r.status);
-      out.push(...parseGameLog(await r.json(), s));
-    } catch (e) { errors.push(`${s}: ${e.message || e}`); }
-  }));
-  const seen = new Set();
-  return { games: out.filter((g) => (seen.has(g.id) ? false : seen.add(g.id))).sort((a, b) => b.date.localeCompare(a.date)), errors };
-}
 async function loadGames(p) {
   if (!p.espn || GAMES.has(p.id)) return;
   GAMES.set(p.id, { loading: true });
-  const seasons = [...new Set(p.seasons.map((s) => s.season))].slice(0, 6);
   try {
-    let r = await getJSON(`/api/hub/games/espn-${p.espn}?seasons=${seasons.join(",")}`).catch(() => ({ games: [], errors: ["server"] }));
-    // If ESPN turns the server away, ask ESPN straight from the browser.
-    if (!r.games?.length && r.errors?.length) r = await gamesDirect(p.espn, seasons);
-    GAMES.set(p.id, { games: r.games || [], errors: r.errors || [], error: !r.games?.length && r.errors?.length === seasons.length ? r.errors.join("; ") : "" });
+    const r = await espnGames(p.espn, p.seasons.map((s) => s.season));
+    GAMES.set(p.id, { games: r.games, errors: r.errors, error: r.failed ? r.errors.join("; ") : "" });
   } catch (e) { GAMES.set(p.id, { games: [], error: String(e.message || e) }); }
   if (expanded.has(p.id)) replaceRow(p.id);
 }

@@ -197,7 +197,7 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"]];
+const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/(?:p[0-9a-f]{12}|collision_\d{4}_\d+)\/?$/, "/college"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"]];
 
 
 // ---------- Player Search: links to the Recruiting Hub (read-only) ----------
@@ -276,6 +276,37 @@ async function scrapeRoster(url) {
     out.push({ alt: alt.replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&").trim(), src: abs });
   }
   return json({ status: r.status, final: r.url, images: out.slice(0, 400) });
+}
+
+
+// Shot locations for one player-season from the hub's NCAA shot archive (read-only). The profiles
+// are keyed by the NCAA player id that our own pipeline uses (seasons[].src), so no name matching.
+async function hubShots(env, url, ctx) {
+  if (!env.HUB) return json({ available: false, reason: "hub_not_connected" });
+  const season = url.searchParams.get("season") || "", src = url.searchParams.get("src") || "";
+  if (!/^\d{4}-\d{2}$/.test(season) || !/^\d{3,12}$/.test(src)) return json({ error: "bad_request" }, 400);
+  const cache = typeof caches !== "undefined" ? caches.default : null, key = new Request(`https://bsuiq.internal/hub/shots/${season}/${src}`);
+  if (cache) { const hit = await cache.match(key); if (hit) return new Response(hit.body, { headers: { "content-type": "application/json", "cache-control": "private, no-store" } }); }
+  const rows = await hubAll(env, `SELECT profile_json FROM ncaa_shot_profiles WHERE dataset_id = (SELECT dataset_id FROM ncaa_shot_datasets WHERE season = ?) AND season = ? AND source_player_id = ? LIMIT 1`, season, season, src);
+  let profile = null; try { profile = rows[0] ? JSON.parse(rows[0].profile_json) : null; } catch { profile = null; }
+  const body = JSON.stringify(profile ? { available: true, season, profile, coverage: { sourceGames: Object.keys(profile.games || {}).length, recordedAttempts: profile.attempts } } : { available: false, season, reason: "no_source_profile" });
+  if (cache) ctx.waitUntil(cache.put(key, new Response(body, { headers: { "content-type": "application/json", "cache-control": "public, max-age=86400" } })));
+  return new Response(body, { headers: { "content-type": "application/json", "cache-control": "private, no-store" } });
+}
+// Staff notes on a player page, shared across the staff. KV "notes:<player id>" = [{ id, author, body, at }].
+async function playerNotes(request, env, id) {
+  if (!/^[\w-]{3,40}$/.test(id)) return json({ error: "bad_id" }, 400);
+  if (!env.STAFF) return json({ notes: [] });
+  const key = "notes:" + id, cur = (await env.STAFF.get(key, "json")) || [];
+  if (request.method === "GET") return json({ notes: cur });
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  if (b.remove) { const next = cur.filter((n) => n.id !== String(b.remove)); await env.STAFF.put(key, JSON.stringify(next)); return json({ notes: next }); }
+  const body = String(b.body || "").trim().slice(0, 4000), author = String(b.author || "Staff").trim().slice(0, 60) || "Staff";
+  if (!body) return json({ error: "Write a note first." }, 400);
+  const next = [{ id: crypto.randomUUID(), author, body, at: new Date().toISOString() }, ...cur].slice(0, 200);
+  await env.STAFF.put(key, JSON.stringify(next));
+  return json({ notes: next });
 }
 
 // Staff position overrides for depth charts. Stored as one JSON object in KV:
@@ -402,6 +433,11 @@ export default {
     }
     const hg = path.match(/^\/api\/hub\/games\/espn-(\d+)$/);
     if (hg) return hubGames(hg[1], url, ctx);
+    if (path === "/api/hub/shots") {
+      try { return await hubShots(env, url, ctx); } catch (e) { return json({ available: false, reason: "error", detail: String(e.message || e) }, 502); }
+    }
+    const nt = path.match(/^\/api\/notes\/([\w-]+)$/);
+    if (nt) return playerNotes(request, env, nt[1]);
     if (path === "/api/positions") return positionsApi(request, env);
     if (path === "/api/search/links") return searchLinks(request, env);
     if (path === "/api/scrape/roster") return scrapeRoster(url);

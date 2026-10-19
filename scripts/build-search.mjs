@@ -45,6 +45,7 @@ for (const r of ROST) {
   if (!initial.has(ini)) initial.set(ini, new Set()); initial.get(ini).add(r.athlete_id);
   if (!anywhere.has(k)) anywhere.set(k, new Set()); anywhere.get(k).add(r.athlete_id);
 }
+const WT = new Map(); for (const r of ROST) if (+r.weight_lb) WT.set(r.athlete_id, +r.weight_lb);
 function espnFor(r) {
   const tid = TID.get(r.team_ncaa_team_id), k = norm(r.player_name), parts = r.player_name.trim().split(/\s+/);
   if (tid && onTeam.has(`${tid}|${k}`)) return onTeam.get(`${tid}|${k}`);
@@ -65,7 +66,7 @@ for (const r of current) {
     r.canonical_player_id, sp > 0 ? name.slice(0, sp) : name, sp > 0 ? name.slice(sp + 1) : "", r.team,
     CONF[r.conference] || r.conference, POS[r.position] || r.position || "", f && i != null ? `${f}'${i}"` : "",
     CLASS[r.class] || "", String(r.jersey || "").replace(/\.0+$/, ""), r.hometown || "", r.high_school || "",
-    espnFor(r), TID.get(r.team_ncaa_team_id) || "",
+    espnFor(r), TID.get(r.team_ncaa_team_id) || "", WT.get(espnFor(r)) || null,
   ]);
 }
 const seasons = [];
@@ -81,6 +82,7 @@ for (const r of rows) {
     USG.get(`${y}|${norm(r.player_name)}|${norm(r.team)}`) ?? null,
     +r.fgm || 0, fga, +r.tpm || 0, tpa, +r.ftm || 0, +r.fta || 0,
     +r.points || 0, +r.rebounds || 0, +r.assists || 0, +r.steals || 0, +r.blocks || 0, +r.turnovers || 0, +r.oreb || 0, +r.dreb || 0,
+    String(r.player_id || ""),
   ]);
 }
 // Newest season first for each player (the hub's order: seasons[0] is the latest).
@@ -88,13 +90,44 @@ seasons.sort((a, b) => a[0] - b[0] || b[1].localeCompare(a[1]) || b[5] - a[5]);
 const out = {
   built: new Date().toISOString(), season: label(LAST),
   note: "D-I games only (our play-by-play pipeline). Non-D-I games are left out on purpose, so games and totals can be a little lower than ESPN's.",
-  pcols: ["id", "first", "last", "team", "conf", "pos", "ht", "cls", "jersey", "home", "hs", "espn", "tid"],
+  pcols: ["id", "first", "last", "team", "conf", "pos", "ht", "cls", "jersey", "home", "hs", "espn", "tid", "wt"],
   players,
-  scols: ["p", "season", "school", "conf", "gp", "min", "mpg", "ppg", "rpg", "apg", "spg", "bpg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "ts_pct", "usage_pct", "fgm", "fga", "three_pm", "three_pa", "ftm", "fta", "points", "rebounds", "assists", "steals", "blocks", "turnovers", "oreb", "dreb"],
+  scols: ["p", "season", "school", "conf", "gp", "min", "mpg", "ppg", "rpg", "apg", "spg", "bpg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "ts_pct", "usage_pct", "fgm", "fga", "three_pm", "three_pa", "ftm", "fta", "points", "rebounds", "assists", "steals", "blocks", "turnovers", "oreb", "dreb", "src"],
   seasons,
 };
+// Same-season college pool for the player pages' percentiles and box plots (the hub's rule:
+// 5+ games and 10+ minutes per game), over every D-I player that season, not just this list.
+// Stored as 101 quantiles (0th..100th) per metric so a percentile can be read off any value.
+const REF_KEYS = ["gp", "mpg", "ts_pct", "efg_pct", "fg_pct", "two_pct", "three_pct", "ft_pct", "ppg", "fga_pg", "fta_pg", "two_pa_pg", "three_pa_pg", "rpg", "apg", "topg", "spg", "bpg", "usage_pct"];
+function shooting(r, y) {
+  const gp = +r.games_played || 0, fm = +r.fgm, fa = +r.fga, tm = +r.tpm, ta = +r.tpa, ftm = +r.ftm, fta = +r.fta, pts = +r.points;
+  const valid = fa >= fm && ta >= tm && tm <= fm && ta <= fa && fm >= 0 && tm >= 0;
+  const ratio = (m, a) => (a > 0 && m >= 0 && m <= a ? (m / a) * 100 : null);
+  return {
+    gp, mpg: +r.mpg || 0, ppg: gp ? pts / gp : null, rpg: gp ? +r.rebounds / gp : null, apg: gp ? +r.assists / gp : null, topg: gp ? +r.turnovers / gp : null, spg: gp ? +r.steals / gp : null, bpg: gp ? +r.blocks / gp : null,
+    fg_pct: ratio(fm, fa), two_pct: valid ? ratio(fm - tm, fa - ta) : null, three_pct: ratio(tm, ta), ft_pct: ratio(ftm, fta),
+    efg_pct: valid && fa > 0 ? ((fm + 0.5 * tm) / fa) * 100 : null,
+    ts_pct: valid && fa + 0.44 * fta > 0 ? ((2 * fm + tm + ftm) / (2 * (fa + 0.44 * fta))) * 100 : null,
+    fga_pg: gp ? fa / gp : null, fta_pg: gp ? fta / gp : null, two_pa_pg: valid && gp ? (fa - ta) / gp : null, three_pa_pg: gp ? ta / gp : null,
+    usage_pct: USG.get(`${y}|${norm(r.player_name)}|${norm(r.team)}`) ?? null,
+  };
+}
+const pool = new Map();
+for (const r of rows) {
+  const y = +r.season, s = shooting(r, y);
+  if (s.gp < 5 || s.mpg < 10) continue;
+  if (!pool.has(y)) pool.set(y, Object.fromEntries(REF_KEYS.map((k) => [k, []])));
+  for (const k of REF_KEYS) if (s[k] != null && Number.isFinite(s[k])) pool.get(y)[k].push(s[k]);
+}
+const qtile = (v, q) => { const i = (v.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i); return v[lo] + (v[hi] - v[lo]) * (i - lo); };
+const refs = {};
+for (const [y, m] of [...pool].sort((a, b) => a[0] - b[0])) {
+  refs[label(y)] = {};
+  for (const k of REF_KEYS) { const v = m[k].sort((a, b) => a - b); if (v.length < 2) continue; refs[label(y)][k] = { n: v.length, q: Array.from({ length: 101 }, (_, i) => Math.round(qtile(v, i / 100) * 100) / 100) }; }
+}
 const root = new URL("../data-src/search/", import.meta.url).pathname;
 mkdirSync(root, { recursive: true });
 writeFileSync(join(root, "players.json"), JSON.stringify(out));
+writeFileSync(join(root, "refs.json"), JSON.stringify({ built: out.built, rule: "Same season, every D-I player with 5+ games and 10+ minutes per game (our play-by-play pipeline).", seasons: refs }));
 console.log(`espn ids: ${players.filter((p) => p[11]).length}/${players.length}, team ids: ${players.filter((p) => p[12]).length}`);
 console.log(`search: ${players.length} players, ${seasons.length} season rows, usage on ${seasons.filter((s) => s[19] != null).length}`);
