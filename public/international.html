@@ -89,8 +89,33 @@
 .pcard .hs{width:72px;height:72px;border-radius:50%;object-fit:cover;object-position:top;background:#2a2c30;box-shadow:0 0 0 2.5px var(--good);flex:none}
 .pcard .fl{width:16px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
 .pcard .cteam{font-size:12px;color:var(--dim);margin-top:3px}
-.fiba{overflow-x:auto}.fiba table{font-size:11.5px}.fiba td,.fiba th{padding:5px 4px}.fiba a{color:#fff}.fiba tr.sub td{padding-top:0;font-size:10.5px;border-bottom:1px solid var(--line)}
-.fiba tr:not(.sub) td{border-bottom:0}
+.fwrap{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.ftop{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ftabs{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.ftabs button{background:none;border:0;color:var(--muted);font:11px var(--mono);padding:4px 10px;cursor:pointer}
+.ftabs button.on{background:var(--edge);color:#fff}
+.fev{background:var(--card);border-radius:10px;padding:12px 12px 10px}
+.fhd{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.fnm{font-size:13.5px;font-weight:650;color:#fff}
+.fsub{font:10.5px var(--mono);color:var(--muted);margin-top:3px}
+.fbadge{font:600 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--good);border-radius:4px;padding:3px 7px;white-space:nowrap}
+.fbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.fb{background:#1e1f22;border-radius:8px;padding:9px 6px 7px;text-align:center}
+.fb b{display:block;font-size:24px;font-weight:750;letter-spacing:-.02em;line-height:1}
+.fb span{display:block;font:9.5px var(--mono);letter-spacing:.1em;color:var(--muted);margin-top:5px}
+.fsm{display:grid;grid-template-columns:repeat(6,1fr);margin-top:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.fsm div{text-align:center;padding:7px 0}
+.fsm span{display:block;font:9px var(--mono);letter-spacing:.08em;color:var(--muted)}
+.fsm b{display:block;font:600 12.5px var(--mono);color:var(--soft);margin-top:2px}
+.fshoot{margin-top:10px;display:grid;gap:7px}
+.fsh{display:grid;grid-template-columns:22px minmax(0,1fr) 46px 52px;gap:8px;align-items:center}
+.fsh .fl{font:10px var(--mono);color:var(--muted);letter-spacing:.06em}
+.ftr{height:6px;background:#1e1f22;border-radius:3px;overflow:hidden}
+.ftr i{display:block;height:100%;background:#d6d8db;border-radius:3px}
+.fsh b{font:600 12px var(--mono);text-align:right}
+.fsh em{font:normal 10px var(--mono);color:var(--muted);text-align:right}
+.flink{display:inline-block;margin-top:10px;font:10.5px var(--mono);color:var(--dim)}
+.flink:hover{color:#fff}
 .pcard h3{font-size:18px;font-weight:750;letter-spacing:-.01em}
 .pcard .x{margin-left:auto;background:none;border:0;color:var(--muted);font:14px var(--mono);cursor:pointer}
 .pcard .x:hover{color:#fff}
@@ -98,6 +123,9 @@
 .cgrid div{background:var(--card);border-radius:6px;padding:7px 8px}
 .cgrid b{display:block;font-size:14px;margin-top:2px}
 .cgrid .label{font-size:9px}
+.cinfo{display:grid;grid-template-columns:62px minmax(0,1fr);gap:6px 10px;margin-top:12px;font-size:12px;line-height:1.45}
+.cinfo dt{font:9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.cinfo dd{margin:0;color:var(--soft)}.cinfo dd span{color:var(--muted)}
 .cnote{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
 .cnote b{display:inline;font-size:inherit;font-weight:650;margin:0}
 .tierchip{font:600 10px var(--mono);border-radius:4px;padding:2px 6px;color:#16171a}
@@ -122,7 +150,7 @@
       <div class="where" id="where"></div>
       <div class="mapui"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Whole world" style="font-size:12px">⌂</button></div>
     </div>
-    <aside class="side"><div id="card"></div><div class="shd" id="shd"></div><div class="slist" id="list"></div></aside>
+    <aside class="side"><div id="card" class="slist" hidden></div><div id="listview" style="display:contents"><div class="shd" id="shd"></div><div class="slist" id="list"></div></div></aside>
   </div>
   <div class="cap">Each dot sits in the city where the player plays now. Scroll or pinch to zoom, drag to pan, or pick a region above. To add a player, ask Claude to add him by name.</div>
 </main>
@@ -250,21 +278,42 @@ function drawList() {
 }
 const fx1 = (v) => (v == null ? "—" : (+v).toFixed(1));
 const pct = (a) => (a && a[1] ? `<span class="m">${fx1(a[0])}/${fx1(a[1])}</span> ${a[2] == null ? "—" : (+a[2]).toFixed(1)}%` : "—");
+// FIBA block: one event at a time (year tabs when there are several).
+// Headline numbers big, the rest as a compact strip, shooting as bars.
+function fibaEvent(f) {
+  const big = (v, l) => `<div class="fb"><b>${fx1(v)}</b><span>${l}</span></div>`;
+  const sm = (l, v, sign) => `<div><span>${l}</span><b>${v == null ? "—" : (sign && v > 0 ? "+" : "") + fx1(v)}</b></div>`;
+  const bar = (l, a) => { const has = a && a[1]; const p = has ? +a[2] : 0;
+    return `<div class="fsh"><span class="fl">${l}</span><div class="ftr"><i style="width:${Math.min(100, p)}%"></i></div><b>${has ? p.toFixed(1) + "%" : "—"}</b><em>${has ? `${fx1(a[0])}/${fx1(a[1])}` : "no att."}</em></div>`; };
+  return `<div class="fev">
+    <div class="fhd"><div><div class="fnm">${f.yr} ${esc(f.event.replace("FIBA ", ""))}</div><div class="fsub">${esc(f.team)}${f.finish ? ` · finished ${f.finish}` : ""} · ${f.gp} games · ${fx1(f.min)} min</div></div>${f.rank ? `<span class="fbadge">${esc(f.rank)}</span>` : ""}</div>
+    <div class="fbig">${big(f.pts, "PTS")}${big(f.reb, "REB")}${big(f.ast, "AST")}</div>
+    <div class="fsm">${sm("OREB", f.oreb)}${sm("STL", f.stl)}${sm("BLK", f.blk)}${sm("TO", f.to)}${sm("+/−", f.pm, true)}${sm("EFF", f.eff)}</div>
+    <div class="fshoot">${bar("FG", f.fg)}${bar("3P", f.tp)}${bar("FT", f.ft)}</div>
+    <a class="flink" href="${f.url}" target="_blank" rel="noopener">Game-by-game on FIBA ↗</a></div>`;
+}
 function fibaHTML(p) {
   if (!p.fiba?.length) return "";
-  return `<div class="label" style="margin:14px 0 6px">FIBA stats${p.fibaId ? ` · <a href="https://www.fiba.basketball/en/players/${p.fibaId}" target="_blank" rel="noopener" style="color:var(--dim)">profile ↗</a>` : ""}</div>
-  <div class="fiba"><table><thead><tr><th class="l">Event</th><th>GP</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>TO</th><th>STL</th><th>BLK</th><th>EFF</th></tr></thead><tbody>
-  ${p.fiba.map((f) => `<tr><td class="l"><a href="${f.url}" target="_blank" rel="noopener">${f.yr} ${f.event.replace("FIBA ", "")}</a><div class="m" style="font-size:10px">${f.team}${f.finish ? " · " + f.finish : ""}</div></td><td class="m">${f.gp}</td><td class="m">${fx1(f.min)}</td><td style="font-weight:700">${fx1(f.pts)}</td><td>${fx1(f.reb)}</td><td>${fx1(f.ast)}</td><td>${fx1(f.to)}</td><td>${fx1(f.stl)}</td><td>${fx1(f.blk)}</td><td>${fx1(f.eff)}</td></tr>
-    <tr class="sub"><td class="l m" colspan="10">FG ${pct(f.fg)} · 3P ${pct(f.tp)} · FT ${pct(f.ft)} · OREB ${fx1(f.oreb)} · +/− ${f.pm > 0 ? "+" : ""}${fx1(f.pm)}${f.rank ? ` · <b style="color:var(--soft)">${f.rank}</b>` : ""}</td></tr>`).join("")}
-  </tbody></table></div>`;
+  const ev = [...p.fiba].sort((a, b) => b.yr - a.yr);
+  return `<div class="fwrap"><div class="ftop"><span class="label">FIBA · per game</span>${ev.length > 1 ? `<div class="ftabs">${ev.map((f, i) => `<button data-e="${i}" class="${i ? "" : "on"}">${f.yr}</button>`).join("")}</div>` : ""}</div>
+    <div class="fbody">${fibaEvent(ev[0])}</div></div>`;
+}
+function wireFiba(p) {
+  const ev = [...(p.fiba || [])].sort((a, b) => b.yr - a.yr);
+  document.querySelectorAll("#card .ftabs button").forEach((b) => (b.onclick = () => {
+    document.querySelectorAll("#card .ftabs button").forEach((x) => x.classList.toggle("on", x === b));
+    document.querySelector("#card .fbody").innerHTML = fibaEvent(ev[+b.dataset.e]);
+  }));
 }
 function select(i, fly) {
   st.sel = i; const p = P[i];
-  document.getElementById("card").innerHTML = `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · Class of ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Close">✕</button></div>
-    <div class="cgrid"><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div><div><span class="label">Born</span><b style="font-size:12px">${p.born ? new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</b></div></div>
-    <div class="cnote">${p.league ? `${esc(p.league)}. ` : ""}${p.prev ? `Before: ${esc(p.prev)}. ` : ""}${p.nt ? `<br>${esc(p.nt)}` : ""}</div>
+  document.getElementById("card").innerHTML = `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
+    <div class="cgrid"><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div><div><span class="label">Born</span><b style="font-size:12.5px;white-space:nowrap">${p.born ? new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"}</b></div></div>
+    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
     ${fibaHTML(p)}</div>`;
-  document.querySelector("#card .x").onclick = () => { st.sel = null; document.getElementById("card").innerHTML = ""; highlight(); };
+  wireFiba(p);
+  const cardEl = document.getElementById("card"); cardEl.hidden = false; cardEl.scrollTop = 0; document.getElementById("listview").style.display = "none";
+  document.querySelector("#card .x").onclick = () => { st.sel = null; cardEl.innerHTML = ""; cardEl.hidden = true; document.getElementById("listview").style.display = "contents"; highlight(); };
   if (fly) { if (st.region !== p.reg) { st.region = p.reg; drawConts(); drawList(); } flyTo(p); }
   highlight();
 }
