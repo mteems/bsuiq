@@ -418,6 +418,17 @@ export default {
     }
     if (path === "/logout") return new Response(null, { status: 302, headers: { location: "/login", "set-cookie": `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0` } });
 
+    // Public share links (no password): /s/<token> shows one team page, /s/<token>/data.json its data.
+    // Tokens live in data-src/share.json; only the files named here are reachable without signing in.
+    const sh = path.match(/^\/s\/([a-f0-9]{16,40})(\/data\.json)?\/?$/);
+    if (sh) {
+      const r = await env.ASSETS.fetch(new Request(new URL(`/share-data/${sh[1]}.json`, url)));
+      if (!r.ok) return new Response("This link has expired.", { status: 404, headers: { "content-type": "text/plain" } });
+      if (sh[2]) return new Response(r.body, { headers: { "content-type": "application/json", "cache-control": "no-store", "x-robots-tag": "noindex" } });
+      const page = await env.ASSETS.fetch(new Request(new URL("/share", url)));
+      return new Response(page.body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex", "referrer-policy": "same-origin" } });
+    }
+    if (/^\/assets\/(core|teampage|shotchart)\.js$|^\/assets\/app\.css$/.test(path)) return env.ASSETS.fetch(request); // page code only, no data
     if (!(await validSession(request, env))) {
       if (path.startsWith("/api/") || path.startsWith("/data/")) return json({ error: "unauthorized" }, 401);
       return new Response(null, { status: 302, headers: { location: `/login?next=${encodeURIComponent(path + url.search)}` } });

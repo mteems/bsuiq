@@ -18,7 +18,9 @@ const SEASON = "2025-26";
 // Teams that get a page: Boise St. + the 2026-27 schedule (data names).
 export const TEAMS = ["Boise St.", "Washington", "Butler", "Oakland", "Nebraska", "Sam Houston", "Idaho St.", "Drake", "North Texas",
   "North Dakota St.", "Wichita St.", "A&M-Corpus Christi", "Utah Valley", "Santa Clara", "New Mexico", "Lamar University", "Utah St.",
-  "Oregon St.", "Washington St.", "Gonzaga", "Fresno St.", "San Diego St.", "Texas St.", "Colorado St."];
+  "Oregon St.", "Washington St.", "Gonzaga", "Fresno St.", "San Diego St.", "Texas St.", "Colorado St.",
+  // Shareable sample pages (/share/...), not on the schedule.
+  "Arizona"];
 const slug = (t) => t.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 // ---------------------------------------------------------------- games

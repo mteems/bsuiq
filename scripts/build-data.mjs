@@ -165,6 +165,20 @@ if (existsSync(src("pd"))) cpSync(src("pd"), join(out, "pd"), { recursive: true 
 if (existsSync(src("search"))) cpSync(src("search"), join(out, "search"), { recursive: true });
 if (existsSync(src("rosters-2027.json"))) cpSync(src("rosters-2027.json"), join(out, "rosters-2027.json"));
 if (existsSync(src("positions.json"))) cpSync(src("positions.json"), join(out, "positions.json"));
+// Public share pages (/s/<token>): one bundled file per link with only that team's data.
+if (existsSync(src("share.json"))) {
+  const SH = JSON.parse(readFileSync(src("share.json"), "utf8")).shares || [];
+  const dist = JSON.parse(readFileSync(src("teams/_dist.json"), "utf8"));
+  const R = JSON.parse(readFileSync(src("rankings/national-2025-26.json"), "utf8")), C = Object.fromEntries(R.cols.map((c, i) => [c, i]));
+  const KEEP = ["name", "season", "cls", "pos", "ht", "gp", "min", "mpg", "ppg", "rpg", "apg", "ts", "usg", "p3", "tpa40", "sc", "pl", "rb", "df", "rk_df", "drapm", "stlp", "blkp", "drbp", "role"];
+  mkdirSync(join(root, "public", "share-data"), { recursive: true });
+  for (const sh of SH) {
+    const team = JSON.parse(readFileSync(src(`teams/${sh.slug}.json`), "utf8"));
+    const players = R.rows.filter((r) => r[C.team] === sh.team).map((r) => Object.fromEntries(KEEP.map((k) => [k, r[C[k]]])));
+    writeFileSync(join(root, "public", "share-data", `${sh.token}.json`), JSON.stringify({ ...sh, token: undefined, built: new Date().toISOString(), data: team, dist, players }));
+  }
+  console.log(`share pages: ${SH.map((s) => s.team).join(", ")}`);
+}
 write("roster.json", { team: roster.team, season: roster.season, espnTeamId: roster.espnTeamId, players: rosterRows });
 write("index.json", { players: index });
 write("meta.json", { builtAt: new Date().toISOString(), pools: Object.fromEntries(Object.entries(pool).map(([s, m]) => [s, m.ppg[0]])), source: roster._about });

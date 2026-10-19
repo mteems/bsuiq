@@ -1,0 +1,6 @@
+{
+  "_about": "Public, password-free share links: /s/<token>. Each shows one team page and nothing else on the site. Remove an entry (and rebuild) to turn a link off.",
+  "shares": [
+    { "token": "d0035167817a3cad687f", "team": "Arizona", "slug": "arizona", "name": "Arizona Wildcats", "espnId": 12, "conf": "Big 12" }
+  ]
+}
