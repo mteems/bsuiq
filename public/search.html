@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Player Search · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+.swrap{max-width:1800px;margin:auto;padding:22px 24px 40px}
+.shd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.shd h1{font-size:28px;margin-top:6px}
+.shd p{font-size:13.5px;color:var(--dim);margin-top:4px}
+.badge{font:11px var(--mono);letter-spacing:.05em;color:var(--soft);border:1px solid var(--edge);border-radius:6px;padding:8px 11px;white-space:nowrap}
+.badge b{color:#fff;font-weight:500}
+/* natural-language search */
+.nl{display:flex;gap:8px;margin-top:18px}
+.nlbox{position:relative;flex:1}
+.nlbox svg{position:absolute;left:13px;top:15px;color:var(--muted)}
+.nlbox input{width:100%;height:46px;background:var(--panel);border:1px solid var(--edge);border-radius:8px;color:var(--text);font:600 14px var(--ui);padding:0 14px 0 38px;outline:none}
+.nlbox input:focus{border-color:#8a8e95}
+.sugg{position:absolute;left:0;right:0;top:50px;z-index:40;background:#0f1011;border:1px solid var(--edge);border-radius:8px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.sugg button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line2);color:var(--soft);font:600 12.5px var(--ui);padding:9px 12px;cursor:pointer}
+.sugg button:last-child{border-bottom:0}
+.sugg button:hover{background:var(--card);color:#fff}
+.sugg .h{font:9.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:8px 12px 4px}
+.btn{height:34px;background:var(--card);border:1px solid var(--edge);border-radius:7px;color:var(--soft);font:600 12.5px var(--ui);padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{color:#fff;border-color:#55595f}
+.btn.on{background:#f2f3f4;color:#16171a;border-color:#f2f3f4}
+.btn.pri{background:#f2f3f4;color:#16171a;border-color:#f2f3f4;font-weight:700}
+.btn.pri:hover{background:#fff}
+.btn[disabled]{opacity:.4;cursor:default}
+.btn.ghost{background:none;border-color:transparent}
+.btn.big{height:46px;padding:0 20px;font-size:13.5px}
+.btn i{font:normal 10px var(--mono);background:var(--bg);border:1px solid var(--edge);border-radius:4px;padding:1px 5px;color:var(--dim)}
+.interp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.interp button{background:var(--card);border:1px solid var(--edge);border-radius:4px;color:var(--soft);font:500 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:4px 8px;cursor:pointer}
+.interp button:hover{color:#fff;border-color:#8a8e95}
+.interp button span{color:var(--faint);margin-left:5px}
+/* filter bar */
+.fbar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px}
+.frow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.frow2{display:grid;grid-template-columns:minmax(280px,1fr) 160px 14px 160px auto;gap:14px;align-items:end;margin-top:14px}
+.fl{font:10px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:block}
+.fsel{margin-top:5px;width:100%;height:38px;background:var(--bg);border:1px solid var(--edge);border-radius:7px;color:var(--text);font:600 13px var(--ui);padding:0 10px;outline:none;cursor:pointer}
+.fsel:focus{border-color:#8a8e95}
+.colon{text-align:center;color:var(--faint);padding-bottom:10px;font-weight:700}
+.dd{position:relative}
+.ddt{margin-top:5px;width:100%;height:38px;background:var(--bg);border:1px solid var(--edge);border-radius:7px;color:var(--text);font:600 13px var(--ui);padding:0 10px;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left}
+.ddt:hover{border-color:#55595f}
+.ddt span.t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ddt svg{flex:none;color:var(--muted)}
+.ddm{position:absolute;z-index:45;top:46px;left:0;min-width:100%;width:340px;max-width:calc(100vw - 32px);background:#0f1011;border:1px solid var(--edge);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.55);overflow:hidden}
+.ddm.r{left:auto;right:0}
+.ddm .srch{padding:8px;border-bottom:1px solid var(--line)}
+.ddm .srch input{width:100%;height:32px;background:var(--panel);border:1px solid var(--edge);border-radius:6px;color:var(--text);font:600 12px var(--ui);padding:0 10px;outline:none}
+.ddm .list{max-height:330px;overflow-y:auto;padding:4px}
+.ddm .grp{font:9.5px var(--mono);letter-spacing:.09em;color:var(--muted);padding:9px 8px 4px}
+.opt{display:flex;align-items:center;gap:9px;width:100%;background:none;border:0;border-radius:5px;color:var(--soft);font:600 12.5px var(--ui);padding:7px 8px;cursor:pointer;text-align:left}
+.opt:hover{background:var(--card);color:#fff}
+.opt.on{background:var(--edge);color:#fff}
+.opt .ck{margin-left:auto;color:#fff;font-size:12px}
+.opt.stat strong{color:#fff;font-weight:700;min-width:36px}
+.allb{width:24px;height:24px;flex:none;border:1px dashed #61656c;border-radius:4px;display:grid;place-items:center;font:500 7.5px var(--mono);color:var(--muted)}
+.cfb{width:24px;height:24px;flex:none;border:1px solid var(--edge);border-radius:4px;display:grid;place-items:center;font:500 7.5px var(--mono);color:var(--dim);background:var(--card)}
+.clogo{width:24px;height:24px;flex:none;object-fit:contain}
+.chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:14px}
+.chips .h{font:9.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-right:2px}
+.chip2{background:var(--card);border:1px solid var(--edge);border-radius:999px;color:var(--soft);font:600 11.5px var(--ui);padding:5px 11px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip2:hover{color:#fff}
+.chip2 s{text-decoration:none;color:var(--faint)}
+.sf{display:flex;align-items:center;border:1px solid var(--edge);border-radius:7px;overflow:hidden;background:var(--bg)}
+.sf .k{font:500 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--soft);padding:0 10px}
+.sf select,.sf input{height:32px;background:var(--card);border:0;border-left:1px solid var(--edge);color:#fff;font:600 12px var(--ui);padding:0 8px;outline:none}
+.sf input{width:84px}
+.sf button{background:none;border:0;border-left:1px solid var(--edge);color:var(--muted);height:32px;padding:0 9px;cursor:pointer}
+.sf button:hover{color:#fff}
+.saved{display:inline-flex;border:1px solid var(--edge);border-radius:999px;overflow:hidden}
+.saved button{background:var(--card);border:0;color:#fff;font:600 11.5px var(--ui);padding:5px 11px;cursor:pointer}
+.saved button+button{border-left:1px solid var(--edge);color:var(--muted);padding:5px 8px}
+.matches{font:10px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+/* selected team/conference banner */
+.sban{display:flex;flex-wrap:wrap;gap:18px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-top:14px}
+.sban .it{display:flex;align-items:center;gap:10px}
+.sban .n{font-size:14px;font-weight:750;text-transform:uppercase;letter-spacing:.01em}
+.sban .s{font:9.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+/* toolbar */
+.tbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px}
+.tbar .l,.tbar .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cnt{font:11px var(--mono);color:var(--muted)}
+.colmenu{position:absolute;z-index:45;top:40px;left:0;width:250px;background:#0f1011;border:1px solid var(--edge);border-radius:8px;padding:8px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.colmenu .hd{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:0 4px 8px;margin-bottom:4px}
+.colmenu .hd button{background:none;border:0;color:#fff;font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.box{width:16px;height:16px;border:1px solid #61656c;border-radius:4px;display:grid;place-items:center;flex:none;font-size:11px;color:#16171a}
+.box.on{background:#f2f3f4;border-color:#f2f3f4}
+/* selection bar */
+.selbar{position:sticky;top:58px;z-index:25;display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#1b1c1f;border:1px solid #8a8e95;border-radius:10px;padding:10px 12px;margin-top:14px;box-shadow:0 10px 26px rgba(0,0,0,.45)}
+.selbar .pill{background:#f2f3f4;color:#16171a}
+/* results grid */
+.res{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.rgrid{display:grid;align-items:center;width:100%}
+.rhead{position:sticky;top:51px;z-index:20;background:#232428;border-bottom:1px solid var(--edge);border-radius:10px 10px 0 0;padding:7px 12px;font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.hc{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;cursor:grab;height:100%}
+.hc.name{justify-content:flex-start}
+.hc.st::before,.cell.st::before{content:"";position:absolute;left:0;top:50%;height:16px;width:1px;background:#3f4247;transform:translateY(-50%)}
+.hc button{position:relative;background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:5px 6px;border-radius:4px;cursor:pointer;white-space:nowrap}
+.hc.st button{flex:1}
+.hc button:hover{background:var(--card);color:#fff}
+.hc button.on{background:#f2f3f4;color:#16171a;font-weight:600}
+.hc button sup{position:absolute;right:-5px;top:-6px;background:#8a8e95;color:#16171a;border-radius:3px;font-size:8px;padding:0 3px;line-height:13px}
+.hc.drop{outline:1px dashed #8a8e95;outline-offset:-2px;border-radius:4px}
+.row{border-top:1px solid var(--line2)}
+.row.open{position:relative;z-index:5;margin:8px 0;border:1px solid #8a8e95;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.45);background:#202125}
+.row.open+.row{border-top:0}
+.rmain{min-height:86px;padding:10px 12px;cursor:pointer}
+.rmain:hover{background:#232428}
+.row.open .rmain{background:#26282c;border-radius:10px 10px 0 0}
+.pcell{display:flex;align-items:center;gap:12px;min-width:0}
+.sel{width:18px;height:18px;flex:none;border:1px solid #61656c;border-radius:4px;background:none;display:grid;place-items:center;cursor:pointer;color:transparent;font-size:12px;padding:0}
+.sel.on{background:#f2f3f4;border-color:#f2f3f4;color:#16171a}
+.hs{width:52px;height:64px;flex:none;border-radius:6px;overflow:hidden;background:#2e3034;display:grid;place-items:end center}
+.hs img{width:100%;height:100%;object-fit:cover;object-position:top}
+.hs b{font:600 12px var(--mono);color:var(--dim);padding-bottom:8px}
+.pn{font-size:15px;font-weight:750;line-height:1.2;color:#fff}
+.pn:hover{text-decoration:underline;text-underline-offset:3px}
+.ps{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--dim);line-height:1.2}
+.pj{font:500 11px var(--mono);color:var(--faint);margin-top:6px}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;height:100%;min-height:44px;font:500 13px var(--mono);color:var(--soft);padding:0 2px;white-space:nowrap}
+.cell.t{font:600 12.5px var(--ui);color:var(--dim)}
+.cell.na{color:var(--faint)}
+.acts{display:flex;gap:4px;justify-content:flex-end;padding-left:6px}
+.ib{width:32px;height:32px;border:1px solid var(--edge);border-radius:6px;background:none;color:var(--dim);display:grid;place-items:center;cursor:pointer}
+.ib:hover{color:#fff;border-color:#8a8e95}
+.ib.ghost{border-color:transparent}
+.more{padding:18px;text-align:center;color:var(--muted);font:11px var(--mono)}
+.empty{padding:40px 18px;text-align:center;color:var(--muted);font-size:13px}
+/* expanded */
+.xp{border-top:1px solid var(--edge);padding:12px;background:#1b1c1f;border-radius:0 0 10px 10px}
+.hist{border:1px solid var(--line);border-radius:8px;overflow-x:auto;background:var(--panel)}
+.hrow{display:grid;grid-template-columns:170px repeat(14,minmax(46px,1fr));align-items:center;min-width:860px;padding:9px 12px;border-top:1px solid var(--line2);border-left:3px solid transparent}
+.hrow.hh{background:#232428;border-top:0;border-left-color:transparent;font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:7px 12px}
+.hrow.hh div{text-align:center}.hrow.hh div:first-child{text-align:left}
+.hrow.cur{border-left-color:#f2f3f4;background:#26282c}
+.hrow.car{border-left-color:#8a8e95;background:#222327}
+.hrow .k{font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--soft)}
+.hrow.cur .k{color:#fff}
+.hrow .sch{font-size:11.5px;color:var(--muted);margin-top:2px}
+.hrow .v{text-align:center;font:500 12.5px var(--mono);color:var(--soft)}
+.hrow .yr{text-align:center;font:500 12px var(--mono);color:var(--muted)}
+.gx{margin-top:10px}
+.gxh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.gxh .label{color:var(--dim)}
+.gxg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gbox{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.gbox h3{font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#fff;display:flex;justify-content:space-between;margin-bottom:2px}
+.gbox h3 span{color:var(--muted);font-weight:400;letter-spacing:.04em;text-transform:none}
+.gl{display:grid;grid-template-columns:minmax(120px,1fr) auto auto;gap:10px;align-items:center;border-top:1px solid var(--line2);padding:7px 0;font-size:12px}
+.gl:first-of-type{border-top:0}
+.gl .o{font-weight:700;color:#fff}
+.gl .o span{font:10px var(--mono);color:var(--muted);margin-left:8px;font-weight:400}
+.gl .ln{font:11px var(--mono);color:var(--dim);white-space:nowrap}
+@media (max-width:1300px){.gl{grid-template-columns:1fr auto}.gl .ln{grid-column:1/-1;white-space:normal}}
+.W{color:var(--good);font:600 11px var(--mono)}.L{color:var(--bad);font:600 11px var(--mono)}
+.gnone{border:1px dashed var(--edge);border-radius:6px;padding:16px;text-align:center;color:var(--muted);font-size:12px}
+.full{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.full>button{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:0;color:#fff;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:9px 12px;cursor:pointer}
+.full .tw{max-height:330px;overflow:auto;border-top:1px solid var(--line)}
+.full table{min-width:820px;font-size:12px}
+.full th{position:sticky;top:0;background:#232428;padding:8px 8px;text-align:center}
+.full td{text-align:center;font-family:var(--mono);font-size:11.5px;padding:6px 8px}
+.full th.l,.full td.l{text-align:left}
+.full td.l{font-family:var(--ui);font-weight:600}
+.nd{font:9px var(--mono);letter-spacing:.06em;color:var(--muted);border:1px solid var(--edge);border-radius:3px;padding:0 4px;margin-left:6px}
+tr.ndr td{color:var(--faint)}
+.err{background:#2a2226;border:1px solid #4a3036;color:#f0b4bd;border-radius:7px;padding:8px 10px;font-size:12px;margin-bottom:8px}
+/* modal */
+.mbg{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px}
+.modal{background:var(--panel);border:1px solid var(--edge);border-radius:12px;max-width:min(1000px,100%);width:100%;max-height:90vh;overflow:auto;padding:18px}
+.modal.sm{max-width:420px}
+.modal h2{font-size:18px}
+.modal .sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.modal .x{float:right;background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.modal input.tx{margin-top:14px;width:100%;height:38px;background:var(--bg);border:1px solid var(--edge);border-radius:7px;color:var(--text);font:600 13px var(--ui);padding:0 10px;outline:none}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.cmp{display:grid;margin-top:14px;min-width:640px}
+.cmp>div{padding:10px;border-bottom:1px solid var(--line2);text-align:center;font:500 13px var(--mono);color:var(--soft)}
+.cmp>div.lab{text-align:left;font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:#1b1c1f}
+.cmp>div.top{border-bottom:1px solid var(--edge)}
+.cmp .hs{margin:auto;width:64px;height:78px}
+.cmp .nm{font:700 13.5px var(--ui);color:#fff;margin-top:8px}
+.cmp .best{color:var(--good);font-weight:600}
+@media (max-width:1180px){.frow{grid-template-columns:repeat(3,minmax(0,1fr))}.frow2{grid-template-columns:1fr 1fr 14px 1fr}.frow2>div:first-child{grid-column:1/-1}.frow2>.btns{grid-column:1/-1}}
+@media (max-width:1100px){.res{overflow-x:auto}.rhead{position:static}.rin{min-width:1080px}}
+@media (max-width:700px){.swrap{padding:16px 16px 32px}.frow{grid-template-columns:1fr 1fr}.frow2{grid-template-columns:1fr 14px 1fr}.frow2>div:first-child,.frow2>.btns{grid-column:1/-1}.gxg{grid-template-columns:1fr}.nl .btn.big{padding:0 14px}.selbar{top:8px}}
+</style>
+</head>
+<body>
+<main class="swrap">
+  <div class="shd">
+    <div>
+      <div class="label">Recruiting</div>
+      <h1>Player Search</h1>
+      <p>Filter the player pool, review complete histories, and pull up any player's page.</p>
+    </div>
+    <div class="badge" id="badge" data-def="s_pool">Loading players…</div>
+  </div>
+
+  <div class="nl">
+    <div class="nlbox">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="nlq" placeholder="Search player, team, conference, or describe a player profile..." autocomplete="off" aria-label="Search players">
+      <div class="sugg" id="sugg" hidden></div>
+    </div>
+    <button class="btn pri big" id="apply" disabled>Apply</button>
+  </div>
+  <div class="interp" id="interp"></div>
+
+  <div class="fbar" id="fbar"></div>
+  <div id="sban"></div>
+  <div class="tbar" id="tbar"></div>
+  <div id="selbar"></div>
+  <div class="res"><div class="rin" id="rin"><div class="loading">Loading players…</div></div></div>
+  <footer id="foot"></footer>
+</main>
+<div id="modal"></div>
+<script type="module">
+import { topBar, esc, getJSON, addDefs } from "/assets/core.js";
+import * as H from "/assets/search-logic.js";
+topBar("search");
+
+addDefs({
+  s_pool: ["Player pool", "Every D-I player who played last season (2025-26), with his full college history. Numbers come from our play-by-play pipeline and count D-I games only."],
+  s_season: ["Season", "The season shown on this row: his latest season."],
+  s_class: ["Class", "Class last season."],
+  s_pos: ["Position", "G = guard, F = forward, B = big."],
+  s_ht: ["Height", "Listed height."],
+  gp: ["Games played", "D-I games with at least one minute."],
+  fg_pct: ["Field goal %", ""], two_pct: ["2-point %", "Made twos ÷ attempted twos."], three_pct: ["3-point %", ""], ft_pct: ["Free throw %", ""],
+  efg_pct: ["Effective FG %", "Field-goal % with threes worth 1.5×."], usage_pct: ["Usage %", "Share of his team's possessions he used while on the floor (Barttorvik)."],
+  mpg: ["Minutes per game", ""], ppg: ["Points per game", ""], rpg: ["Rebounds per game", ""], apg: ["Assists per game", ""], spg: ["Steals per game", ""], topg: ["Turnovers per game", "Lower is better."],
+  s_best: ["Best / worst games", "Game score = PTS + 0.7·REB + 0.7·AST + 2·STL + 2·BLK − TO. Only games where he played at least 75% of his usual minutes (and 12+) count. Non-D-I games are left out."],
+});
+
+// ---------------------------------------------------------------- state
+const STAT_KEYS = H.cols.filter((c) => c.key && !H.baseSearchColumns.has(c.key)).map((c) => c.key);
+const PCT = new Set(["fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "usage_pct"]);
+const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const ss = { get(k, d) { try { const v = sessionStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const VIEW = "biq-search-view", SAVED = "biq-saved-searches", RECENT = "biq-natural-search-history", COLS = "biq-search-columns", STATS = "biq-search-stats";
+const blank = () => ({ query: "", natural: "", ns: null, position: "All", minClass: "All", maxClass: "All", confs: [], teams: [], minH: "", maxH: "", statFilters: [], excluded: [], sortKey: "ppg", dir: "desc", sec: [] });
+const S = Object.assign(blank(), ss.get(VIEW, {}));
+let order = H.loadColumnOrder(COLS, H.defaultSearchColumnOrder.filter((k) => k !== "objective" && k !== "daor"));
+let visibleStats = ls.get(STATS, H.defaultStatColumns).filter((k) => STAT_KEYS.includes(k));
+let saved = ls.get(SAVED, []), recent = ls.get(RECENT, []);
+const selected = new Set(), expanded = new Set();
+let P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
+let visible = [], shown = 0;
+const remember = () => ss.set(VIEW, S);
+
+// ---------------------------------------------------------------- data
+const nameKey = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/["“”][^"“”]*["“”]/g, " ").replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, " ").replace(/[^a-z]/g, "");
+const schoolKey = (s) => String(s || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/\b(university|college|the|of)\b/g, " ").replace(/\bst\b/g, "state").replace(/\bsaint\b/g, "state").replace(/\s+/g, " ").trim();
+const tokens = (s) => new Set(schoolKey(s).split(" ").filter((t) => t && t !== "state"));
+function sameSchool(a, b) {
+  const x = schoolKey(a), y = schoolKey(b);
+  if (!x || !y) return false;
+  if (x === y || x.startsWith(y + " ") || y.startsWith(x + " ")) return true;
+  const A = tokens(a), B = tokens(b); let o = 0; for (const t of A) if (B.has(t)) o++;
+  return o > 0 && o / Math.max(1, Math.min(A.size, B.size)) >= 0.99;
+}
+const darkLogo = (u) => String(u || "").replace("/teamlogos/ncaa/500/", "/teamlogos/ncaa/500-dark/");
+function link(hub) {
+  // Team branding from the hub, keyed by the hub's school names.
+  const brand = new Map(hub.teams.map(([n, c, l, al]) => [n, { name: n, conf: c, logo: darkLogo(l), aliases: al || [] }]));
+  for (const [n, l] of hub.confs) confLogo.set(n, l);
+  // 1) ESPN ids by name + school.
+  const byName = new Map();
+  for (const r of hub.players) { const k = nameKey(r[1] + r[2]); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(r); }
+  const votes = new Map(), lastKey = new Map();
+  for (const p of P) {
+    const c = (byName.get(nameKey(p.first_name + p.last_name)) || []).filter((r) => sameSchool(p.school, r[3]));
+    if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; const v = votes.get(p.school) || new Map(); v.set(c[0][3], (v.get(c[0][3]) || 0) + 1); votes.set(p.school, v); }
+  }
+  // 2) Our team name → the hub's school (most common match), then logos + 2026-27 conference.
+  const hubSchool = new Map();
+  for (const [t, v] of votes) hubSchool.set(t, [...v].sort((a, b) => b[1] - a[1])[0][0]);
+  for (const t of new Set(P.map((p) => p.school))) {
+    let b = brand.get(hubSchool.get(t));
+    if (!b) for (const x of brand.values()) if (sameSchool(t, x.name) || x.aliases.some((a) => sameSchool(t, a))) { b = x; break; }
+    teamInfo.set(t, b || null);
+  }
+  // 3) Second pass: same last name + first initial at the matched hub school (nicknames, spelling).
+  const bySchool = new Map();
+  for (const r of hub.players) { if (!bySchool.has(r[3])) bySchool.set(r[3], []); bySchool.get(r[3]).push(r); }
+  const taken = new Set(P.filter((p) => p.espn).map((p) => p.espn));
+  for (const p of P) {
+    if (p.espn) continue;
+    const pool = bySchool.get(hubSchool.get(p.school) || teamInfo.get(p.school)?.name) || [];
+    const c = pool.filter((r) => !taken.has(r[0]) && nameKey(r[2]) === nameKey(p.last_name) && nameKey(r[1])[0] === nameKey(p.first_name)[0]);
+    if (c.length === 1) { p.espn = c[0][0]; p.photo = !!c[0][5]; taken.add(p.espn); }
+  }
+  for (const p of P) { const b = teamInfo.get(p.school); p.logo = b?.logo || ""; if (b?.conf) p.conference = b.conf; }
+}
+async function load(refresh = false) {
+  const [data, hub, rosters] = await Promise.all([
+    getJSON("/data/search/players.json"),
+    getJSON("/api/hub/link" + (refresh ? "?refresh=1" : "")).catch((e) => ({ teams: [], confs: [], players: [], error: String(e.message || e) })),
+    getJSON("/data/rosters-2027.json").catch(() => ({})),
+  ]);
+  meta = { built: data.built, note: data.note, hubError: hub.error, season: data.season };
+  D1 = rosters.d1 ? new Set(rosters.d1.map(String)) : null;
+  const pc = data.pcols, sc = data.scols;
+  P = data.players.map((r) => { const o = Object.fromEntries(pc.map((k, i) => [k, r[i]])); return { id: o.id, first_name: o.first, last_name: o.last, school: o.team, conference: o.conf, position: o.pos, height: o.ht, class_year: o.cls, jersey_number: o.jersey, hometown: o.home, high_school: o.hs, seasons: [] }; });
+  for (const r of data.seasons) {
+    const s = Object.fromEntries(sc.map((k, i) => [k, r[i]]));
+    s.three_pa_pg = s.gp > 0 ? Math.round((s.three_pa / s.gp) * 10) / 10 : 0;
+    P[s.p].seasons.push(s);
+  }
+  byId = new Map(P.map((p) => [p.id, p]));
+  link(hub);
+  TEAMS = [...new Set(P.map((p) => p.school))].sort();
+  CONFS = [...new Set([...H.conferenceOptions, ...P.map((p) => p.conference).filter(Boolean)])];
+  document.getElementById("badge").innerHTML = `<b>${P.length.toLocaleString()}</b> players · ${esc(data.season)}`;
+  document.getElementById("foot").innerHTML = `Numbers: our play-by-play pipeline, D-I games only (non-D-I games are left out on purpose, so games and totals can be a little lower than ESPN's). Usage %: Barttorvik. Headshots, game logs and team logos: ESPN, matched through the Recruiting Hub (read-only)${meta.hubError ? ` <span style="color:#f0b4bd">— hub link unavailable right now (${esc(meta.hubError)}), so headshots and logos are missing</span>` : ""}. Built ${esc(String(meta.built).slice(0, 10))}.`;
+  renderAll();
+}
+
+// ---------------------------------------------------------------- filtering + sorting (hub logic)
+const metric = (p, k) => { const s = H.current(p); if (k === "height") return H.heightInches(p.height) || null; const v = s?.[k]; return v == null || !Number.isFinite(+v) ? null : +v; };
+function sortVal(p, k) {
+  if (k === "name") return `${p.last_name} ${p.first_name}`;
+  if (k === "position") return p.position;
+  if (k === "class") return H.classRank(p.class_year);
+  if (k === "season") return H.current(p)?.season ?? "";
+  return metric(p, k) ?? 0;
+}
+function compute() {
+  const ns = S.ns;
+  const filters = { query: S.query, position: S.position, minClass: S.minClass, maxClass: S.maxClass, conference: "All", teams: S.teams, minHeight: S.minH, maxHeight: S.maxH, recentOnly: false, statFilters: S.statFilters };
+  const sorts = [{ key: S.sortKey, direction: S.dir }, ...S.sec];
+  const vals = new Map();
+  const v = (p, k) => { let m = vals.get(p); if (!m) vals.set(p, (m = {})); return k in m ? m[k] : (m[k] = sortVal(p, k)); };
+  visible = P.filter((p) =>
+    H.passesPlayerFilters(p, H.current(p), filters) &&
+    (!S.confs.length || S.confs.includes(p.conference)) &&
+    !S.excluded.includes(p.conference) &&
+    (!ns?.includedConferences?.length || ns.includedConferences.includes(p.conference)) &&
+    !(ns?.excludedClasses ?? []).includes(p.class_year),
+  ).sort((a, b) => {
+    for (const s of sorts) {
+      const x = v(a, s.key), y = v(b, s.key);
+      const d = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y));
+      if (d) return s.direction === "asc" ? d : -d;
+    }
+    return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+  });
+}
+function toggleSort(k, additive) {
+  if (!additive) {
+    if (S.sortKey === k) S.dir = S.dir === "asc" ? "desc" : "asc";
+    else { S.sortKey = k; S.dir = "desc"; S.sec = []; }
+  } else if (S.sortKey === k) S.dir = S.dir === "asc" ? "desc" : "asc";
+  else {
+    const i = S.sec.findIndex((s) => s.key === k);
+    if (i >= 0) S.sec[i].direction = S.sec[i].direction === "asc" ? "desc" : "asc";
+    else S.sec.push({ key: k, direction: "desc" });
+  }
+  renderResults(true);
+}
+function clearAll() { Object.assign(S, blank(), { sortKey: S.sortKey, dir: S.dir, sec: S.sec }); document.getElementById("nlq").value = ""; renderAll(); }
+
+// ---------------------------------------------------------------- natural-language search (hub logic)
+const nlq = document.getElementById("nlq"), sugg = document.getElementById("sugg"), apply = document.getElementById("apply");
+nlq.value = S.natural || "";
+apply.disabled = !nlq.value.trim();
+function applyNatural() {
+  const text = nlq.value, parsed = H.parseNaturalSearch(text);
+  S.natural = text; S.ns = parsed;
+  if (parsed.position) S.position = parsed.position;
+  if (parsed.minHeight) S.minH = String(parsed.minHeight);
+  if (parsed.maxHeight) S.maxH = String(parsed.maxHeight);
+  if (parsed.minClass) S.minClass = parsed.minClass;
+  if (parsed.maxClass) S.maxClass = parsed.maxClass;
+  if (parsed.conference) S.confs = [parsed.conference];
+  S.excluded = parsed.excludedConferences;
+  const next = [], add = (key, value, bound = "min") => { if (value !== undefined) next.push({ id: crypto.randomUUID(), key, basis: "average", bound, value }); };
+  add("three_pct", parsed.minThreePct); add("three_pa_pg", parsed.minThreePaPg); add("ppg", parsed.minPpg); add("rpg", parsed.minRpg); add("apg", parsed.minApg);
+  add("mpg", parsed.minMpg); add("bpg", parsed.minBpg); add("topg", parsed.minTopg); add("usage_pct", parsed.minUsage);
+  add("topg", parsed.maxTopg, "max"); add("usage_pct", parsed.maxUsage, "max");
+  if (parsed.sortKey) { S.sortKey = parsed.sortKey; S.dir = parsed.sortDirection ?? "desc"; S.sec = []; }
+  if (text.trim()) { recent = [text.trim(), ...recent.filter((x) => x !== text.trim())].slice(0, 6); ls.set(RECENT, recent); }
+  if (next.length) S.statFilters = next;
+  else if (!parsed.position && !parsed.minHeight && !parsed.maxHeight && !parsed.minClass && !parsed.maxClass && !parsed.conference && !parsed.excludedConferences.length && !parsed.includedConferences.length) {
+    const q = text.replace(/^\s*(find|show|search for|look up)\s+/i, "").replace(/\s+please\s*$/i, "").trim();
+    S.query = q; S.ns = { ...parsed, interpretation: [`Text search: ${q}`] };
+  }
+  sugg.hidden = true;
+  renderAll();
+}
+function renderSugg() {
+  const q = H.normalizeSearchText(nlq.value);
+  let html = "";
+  if (q) {
+    const items = [
+      ...P.filter((p) => H.normalizeSearchText(`${p.first_name} ${p.last_name} ${p.school}`).includes(q)).slice(0, 5).map((p) => `${p.first_name} ${p.last_name}`),
+      ...TEAMS.filter((t) => H.normalizeSearchText(t).includes(q)).slice(0, 4),
+      ...CONFS.filter((c) => H.normalizeSearchText(c).includes(q)).slice(0, 3),
+    ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 8);
+    html = items.map((s) => `<button data-s="${esc(s)}" data-q="1">${esc(s)}</button>`).join("");
+  } else if (recent.length) html = `<div class="h">Recent searches</div>` + recent.map((s) => `<button data-s="${esc(s)}">${esc(s)}</button>`).join("");
+  sugg.innerHTML = html; sugg.hidden = !html;
+}
+nlq.addEventListener("focus", renderSugg);
+nlq.addEventListener("input", () => { apply.disabled = !nlq.value.trim(); renderSugg(); });
+nlq.addEventListener("blur", () => setTimeout(() => (sugg.hidden = true), 150));
+nlq.addEventListener("keydown", (e) => { if (e.key === "Enter") applyNatural(); if (e.key === "Escape") sugg.hidden = true; });
+sugg.addEventListener("mousedown", (e) => e.preventDefault());
+sugg.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-s]"); if (!b) return;
+  nlq.value = b.dataset.s; apply.disabled = false; sugg.hidden = true;
+  if (b.dataset.q) { S.query = b.dataset.s; S.natural = b.dataset.s; renderAll(); }
+});
+apply.addEventListener("click", applyNatural);
+function renderInterp() {
+  document.getElementById("interp").innerHTML = (S.ns?.interpretation || []).map((t) => `<button title="Clear interpreted search">${esc(t)}<span>×</span></button>`).join("");
+}
+document.getElementById("interp").addEventListener("click", (e) => { if (e.target.closest("button")) { nlq.value = ""; apply.disabled = true; clearAll(); } });
+
+// ---------------------------------------------------------------- filter bar
+const CHEV = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>`;
+const teamLogo = (t, s = 22) => { const l = teamInfo.get(t)?.logo; return `<span class="lg${l ? "" : " fb"}" style="width:${s}px;height:${s}px">${l ? `<img alt="" loading="lazy" src="${esc(l)}" onerror="this.parentNode.classList.add('fb');this.remove()">` : ""}<b>${esc(String(t).slice(0, 2).toUpperCase())}</b></span>`; };
+const confMark = (c) => confLogo.get(c) ? `<img class="clogo" alt="" src="${esc(confLogo.get(c))}" onerror="this.outerHTML='<span class=cfb>${esc(c.slice(0, 3).toUpperCase())}</span>'">` : `<span class="cfb">${esc(c.slice(0, 3).toUpperCase())}</span>`;
+let openDD = "", ddSearch = "";
+function selectHTML(label, key, options, empty) {
+  return `<label class="fl">${label}<select class="fsel" data-k="${key}"><option value="All">${empty}</option>${options.map((o) => `<option${S[key] === o ? " selected" : ""}>${esc(o)}</option>`).join("")}</select></label>`;
+}
+function heightSel(label, key, opts) {
+  return `<label class="fl">${label}<select class="fsel" data-k="${key}"><option value="">Any</option>${opts.map((h) => `<option value="${h}"${String(S[key]) === String(h) ? " selected" : ""}>${H.heightLabel(h)}</option>`).join("")}</select></label>`;
+}
+function renderFilters() {
+  const C = H.classes, rank = H.classRank;
+  const minC = S.maxClass === "All" ? C : C.filter((v) => rank(v) <= rank(S.maxClass));
+  const maxC = S.minClass === "All" ? C : C.filter((v) => rank(v) >= rank(S.minClass));
+  const hts = Array.from({ length: 31 }, (_, i) => 60 + i);
+  const teamsAvail = TEAMS.filter((t) => !S.confs.length || P.some((p) => p.school === t && S.confs.includes(p.conference)));
+  const confTrig = S.confs.length ? confMark(S.confs[0]) : `<span class="allb">ALL</span>`;
+  const teamTrig = S.teams.length ? teamLogo(S.teams[0], 24) : `<span class="allb">ALL</span>`;
+  let confMenu = "", teamMenu = "", statMenu = "";
+  if (openDD === "conf") {
+    confMenu = `<div class="ddm"><div class="list"><button class="opt" data-conf=""><span class="allb">ALL</span>Any conference${S.confs.length ? "" : `<span class="ck">✓</span>`}</button>${[["HIGH MAJOR", H.highMajorConferences], ["MID-MAJOR", H.midMajorConferences], ["LOW MAJOR", H.lowMajorConferences]].map(([g, names]) => `<div class="grp">${g}</div>` + names.map((n) => `<button class="opt${S.confs.includes(n) ? " on" : ""}" data-conf="${esc(n)}">${confMark(n)}<span>${esc(n)}</span>${S.confs.includes(n) ? `<span class="ck">✓</span>` : ""}</button>`).join("")).join("")}</div></div>`;
+  }
+  if (openDD === "team") {
+    const q = H.normalizeSearchText(ddSearch), list = teamsAvail.filter((t) => H.normalizeSearchText(t).includes(q));
+    teamMenu = `<div class="ddm r"><div class="srch"><input id="tsrch" placeholder="Search teams" value="${esc(ddSearch)}"></div><div class="list"><button class="opt" data-team=""><span class="allb">ALL</span>Any team${S.teams.length ? "" : `<span class="ck">✓</span>`}</button>${list.map((t) => `<button class="opt${S.teams.includes(t) ? " on" : ""}" data-team="${esc(t)}">${teamLogo(t, 24)}<span>${esc(t)}</span>${S.teams.includes(t) ? `<span class="ck">✓</span>` : ""}</button>`).join("") || `<div class="grp" style="text-align:center;padding:20px">NO TEAMS FOUND</div>`}</div></div>`;
+  }
+  if (openDD === "stat") {
+    statMenu = `<div class="ddm" style="width:100%"><div class="list" style="max-height:380px">${["total", "average"].map((b) => `<div class="grp">${b === "average" ? "PER GAME" : "TOTAL"} STATS</div>` + H.statOptions.filter((o) => o.basis === b && o.key !== "gs").map((o) => `<button class="opt stat" data-stat="${o.key}" data-basis="${b}"><strong>${esc(o.abbr)}</strong> ${esc(o.label)} ${b === "average" ? "per game" : "total"}</button>`).join("")).join("")}</div></div>`;
+  }
+  const chips = [
+    S.position !== "All" && ["Position", S.position, "position"], S.minClass !== "All" && ["Min class", S.minClass, "minClass"], S.maxClass !== "All" && ["Max class", S.maxClass, "maxClass"],
+    ...S.confs.map((c) => ["Conference", c, "conf:" + c]),
+    S.teams.length && ["Teams", S.teams.length === 1 ? S.teams[0] : `${S.teams[0]} +${S.teams.length - 1}`, "teams"],
+    S.minH && ["Min height", H.heightLabel(+S.minH), "minH"], S.maxH && ["Max height", H.heightLabel(+S.maxH), "maxH"],
+  ].filter(Boolean);
+  const sfHTML = S.statFilters.map((f) => {
+    const o = H.statOptions.find((x) => x.key === f.key && x.basis === f.basis) ?? H.statOptions.find((x) => x.key === f.key);
+    return `<div class="sf" data-id="${f.id}"><span class="k">${esc(o.abbr)} ${f.basis === "average" ? "per game" : "total"}</span><select data-f="bound"><option value="min"${f.bound === "min" ? " selected" : ""}>MIN</option><option value="max"${f.bound === "max" ? " selected" : ""}>MAX</option></select><input type="number" min="0" step="any" data-f="value" placeholder="Value" value="${f.value ?? ""}"><button data-f="rm" aria-label="Remove">✕</button></div>`;
+  }).join("");
+  document.getElementById("fbar").innerHTML = `
+    <div class="frow">
+      ${selectHTML("Position", "position", H.positions, "Any position")}
+      ${selectHTML("Class minimum", "minClass", minC, "Any class")}
+      ${selectHTML("Class maximum", "maxClass", maxC, "Any class")}
+      <div class="fl dd" data-dd="conf">Conference<button class="ddt" data-open="conf">${confTrig}<span class="t">${S.confs.length === 0 ? "Any conference" : S.confs.length === 1 ? esc(S.confs[0]) : `${S.confs.length} conferences`}</span>${CHEV}</button>${confMenu}</div>
+      <div class="fl dd" data-dd="team">Team<button class="ddt" data-open="team">${teamTrig}<span class="t">${S.teams.length === 0 ? "Any team" : S.teams.length === 1 ? esc(S.teams[0]) : `${S.teams.length} teams selected`}</span>${CHEV}</button>${teamMenu}</div>
+    </div>
+    <div class="frow2">
+      <div class="fl dd" data-dd="stat">Stat filters<button class="ddt" data-open="stat"><span class="t">＋ Add stat filter</span>${CHEV}</button>${statMenu}</div>
+      ${heightSel("Height minimum", "minH", S.maxH ? hts.filter((h) => h <= +S.maxH) : hts)}
+      <div class="colon">:</div>
+      ${heightSel("Height maximum", "maxH", S.minH ? hts.filter((h) => h >= +S.minH) : hts)}
+      <div class="btns" style="display:flex;gap:8px"><button class="btn" id="saveb" style="height:38px">Save search</button><button class="btn ghost" id="clearb" style="height:38px">Clear</button></div>
+    </div>
+    ${chips.length || S.statFilters.length ? `<div class="chips"><span class="h">Active filters</span>${chips.map(([l, v, k]) => `<button class="chip2" data-rm="${esc(k)}">${esc(l)}: ${esc(v)} <s>✕</s></button>`).join("")}</div>` : ""}
+    ${S.statFilters.length ? `<div class="chips">${sfHTML}</div>` : ""}
+    ${saved.length ? `<div class="chips" style="border-top:1px solid var(--line);padding-top:12px"><span class="h">Saved</span>${saved.map((s, i) => `<span class="saved"><button data-load="${i}">${esc(s.name)}</button><button data-del="${i}" aria-label="Delete saved search">✕</button></span>`).join("")}</div>` : ""}
+    <div class="matches">${visible.length.toLocaleString()} matches</div>`;
+  const ts = document.getElementById("tsrch");
+  if (ts) { ts.focus(); ts.setSelectionRange(ts.value.length, ts.value.length); }
+}
+const fbar = document.getElementById("fbar");
+fbar.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.matches("select.fsel")) { S[t.dataset.k] = t.value; renderAll(); return; }
+  const sf = t.closest(".sf");
+  if (sf && t.dataset.f === "bound") { S.statFilters.find((f) => f.id === sf.dataset.id).bound = t.value; renderResults(true); }
+});
+fbar.addEventListener("input", (e) => {
+  const t = e.target, sf = t.closest(".sf");
+  if (sf && t.dataset.f === "value") { S.statFilters.find((f) => f.id === sf.dataset.id).value = t.value === "" ? null : Number(t.value); renderResults(true); document.querySelector(".matches").textContent = `${visible.length.toLocaleString()} matches`; }
+  if (t.id === "tsrch") { ddSearch = t.value; renderFilters(); }
+});
+fbar.addEventListener("keydown", (e) => { if (e.target.id === "tsrch" && e.key === "Escape") { openDD = ""; ddSearch = ""; renderFilters(); } });
+fbar.addEventListener("click", (e) => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.open) { openDD = openDD === t.dataset.open ? "" : t.dataset.open; ddSearch = ""; renderFilters(); return; }
+  if (t.dataset.conf !== undefined) { const c = t.dataset.conf; if (!c) { S.confs = []; openDD = ""; } else S.confs = S.confs.includes(c) ? S.confs.filter((x) => x !== c) : [...S.confs, c]; S.teams = S.teams.filter((x) => !S.confs.length || P.some((p) => p.school === x && S.confs.includes(p.conference))); renderAll(); return; }
+  if (t.dataset.team !== undefined) { const c = t.dataset.team; if (!c) { S.teams = []; openDD = ""; ddSearch = ""; } else S.teams = S.teams.includes(c) ? S.teams.filter((x) => x !== c) : [...S.teams, c]; renderAll(); return; }
+  if (t.dataset.stat) { S.statFilters.push({ id: crypto.randomUUID(), key: t.dataset.stat, basis: t.dataset.basis, bound: "min", value: null }); openDD = ""; renderAll(); return; }
+  if (t.dataset.rm) { const k = t.dataset.rm; if (k.startsWith("conf:")) S.confs = S.confs.filter((c) => c !== k.slice(5)); else if (k === "teams") S.teams = []; else S[k] = ["minH", "maxH"].includes(k) ? "" : "All"; renderAll(); return; }
+  if (t.dataset.f === "rm") { const id = t.closest(".sf").dataset.id; S.statFilters = S.statFilters.filter((f) => f.id !== id); renderAll(); return; }
+  if (t.dataset.load) { applySaved(saved[+t.dataset.load]); return; }
+  if (t.dataset.del) { saved = saved.filter((_, i) => i !== +t.dataset.del); ls.set(SAVED, saved); renderFilters(); return; }
+  if (t.id === "clearb") { nlq.value = ""; apply.disabled = true; clearAll(); return; }
+  if (t.id === "saveb") { saveDialog(); return; }
+});
+document.addEventListener("mousedown", (e) => {
+  if (openDD && !e.target.closest(`.dd[data-dd="${openDD}"]`)) { openDD = ""; ddSearch = ""; renderFilters(); }
+  if (colOpen && !e.target.closest(".colwrap")) { colOpen = false; renderToolbar(); }
+});
+function applySaved(s) {
+  const okC = (c) => (H.classes.includes(c) ? c : "All"), okH = (h) => (h && +h >= 60 && +h <= 90 ? String(+h) : "");
+  let minC = okC(s.minClass), maxC = okC(s.maxClass);
+  if (minC !== "All" && maxC !== "All" && H.classRank(minC) > H.classRank(maxC)) { minC = "All"; maxC = "All"; }
+  let minH = okH(s.minHeight), maxH = okH(s.maxHeight);
+  if (minH && maxH && +minH > +maxH) { minH = ""; maxH = ""; }
+  Object.assign(S, { query: s.query || "", position: H.positions.includes(s.position) ? s.position : "All", minClass: minC, maxClass: maxC, confs: s.conferences || [], teams: s.teams || [], minH, maxH, statFilters: (s.statFilters || []).map((f) => ({ ...f, id: crypto.randomUUID() })), excluded: s.excluded || [], ns: null, natural: "" });
+  nlq.value = ""; renderAll();
+}
+function saveDialog() {
+  const m = document.getElementById("modal");
+  m.innerHTML = `<div class="mbg"><div class="modal sm"><button class="x" data-close>×</button><h2>Save this search</h2><div class="sub">Kept in this browser. It will be here after you refresh or come back.</div><input class="tx" id="sname" placeholder="Search name"><div class="mfoot"><button class="btn" data-close>Cancel</button><button class="btn pri" id="sgo" disabled>Save</button></div></div></div>`;
+  const inp = m.querySelector("#sname"), go = m.querySelector("#sgo");
+  inp.focus();
+  inp.addEventListener("input", () => (go.disabled = !inp.value.trim()));
+  const doSave = () => {
+    const name = inp.value.trim(); if (!name) return;
+    saved = [...saved.filter((s) => s.name !== name), { name, query: S.query, position: S.position, minClass: S.minClass, maxClass: S.maxClass, conferences: S.confs, teams: S.teams, minHeight: S.minH, maxHeight: S.maxH, statFilters: S.statFilters, excluded: S.excluded }];
+    ls.set(SAVED, saved); m.innerHTML = ""; renderFilters();
+  };
+  inp.addEventListener("keydown", (e) => { if (e.key === "Enter") doSave(); if (e.key === "Escape") m.innerHTML = ""; });
+  go.addEventListener("click", doSave);
+}
+document.getElementById("modal").addEventListener("click", (e) => { if (e.target.matches("[data-close]") || e.target.classList.contains("mbg")) e.currentTarget.innerHTML = ""; });
+
+// ---------------------------------------------------------------- selected team / conference banner
+function renderBanner() {
+  const el = document.getElementById("sban");
+  if (!S.teams.length && !S.confs.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="sban">${S.teams.map((t) => `<div class="it">${teamLogo(t, 32)}<div><div class="n">${esc(t)}</div><div class="s">Selected team</div></div></div>`).join("")}${S.confs.map((c) => `<div class="it">${confMark(c).replace('class="clogo"', 'class="clogo" style="width:32px;height:32px"').replace('class="cfb"', 'class="cfb" style="width:32px;height:32px"')}<div><div class="n">${esc(c)}</div><div class="s">${H.highMajorConferences.includes(c) ? "High Major" : H.midMajorConferences.includes(c) ? "Mid-Major" : "Low Major"}</div></div></div>`).join("")}</div>`;
+}
+
+// ---------------------------------------------------------------- toolbar
+let colOpen = false;
+function renderToolbar() {
+  document.getElementById("tbar").innerHTML = `<div class="l"><div class="colwrap" style="position:relative"><button class="btn" id="colb" aria-expanded="${colOpen}">Stat columns <i>${visibleStats.length}</i></button>${colOpen ? `<div class="colmenu"><div class="hd"><span class="label">Displayed stats</span><button id="colreset">Reset</button></div>${H.cols.filter((c) => c.key && !H.baseSearchColumns.has(c.key)).map((c) => `<button class="opt" data-col="${c.key}"><span>${esc(c.label)}</span><span class="box${visibleStats.includes(c.key) ? " on" : ""}" style="margin-left:auto">${visibleStats.includes(c.key) ? "✓" : ""}</span></button>`).join("")}<button class="btn pri" id="coldone" style="width:100%;justify-content:center;margin-top:6px">Done</button></div>` : ""}</div></div>
+    <div class="r"><span class="cnt">${visible.length.toLocaleString()} results</span><button class="btn" id="refb">Refresh data</button><button class="btn" id="csvb"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>Export CSV</button></div>`;
+}
+document.getElementById("tbar").addEventListener("click", async (e) => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "colb") { colOpen = !colOpen; renderToolbar(); }
+  else if (t.id === "colreset") { visibleStats = [...H.defaultStatColumns]; ls.set(STATS, visibleStats); renderToolbar(); renderResults(); }
+  else if (t.id === "coldone") { colOpen = false; renderToolbar(); }
+  else if (t.dataset.col) { const k = t.dataset.col; visibleStats = visibleStats.includes(k) ? visibleStats.filter((x) => x !== k) : [...visibleStats, k]; ls.set(STATS, visibleStats); renderToolbar(); renderResults(); }
+  else if (t.id === "refb") { t.disabled = true; t.textContent = "Refreshing…"; try { await load(true); } catch (err) { alertBox("Could not refresh player data."); } }
+  else if (t.id === "csvb") exportCsv();
+});
+function alertBox(msg) { document.getElementById("rin").innerHTML = `<div class="empty">${esc(msg)} <button class="btn" onclick="location.reload()">Retry</button></div>`; }
+function exportCsv() {
+  const head = ["Player", "School", "Conference", "Position", "Height", "Class", "Season", "GP", "MPG", "PPG", "RPG", "APG", "2P%", "3P%", "eFG%"];
+  const rows = visible.map((p) => { const s = H.current(p); return [`${p.first_name} ${p.last_name}`, p.school, p.conference, p.position, p.height, p.class_year, s?.season ?? "", s?.gp ?? "", s?.mpg ?? "", s?.ppg ?? "", s?.rpg ?? "", s?.apg ?? "", s?.two_pct ?? "", s?.three_pct ?? "", s?.efg_pct ?? ""]; });
+  const csv = [head, ...rows].map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const a = document.createElement("a"); a.href = url; a.download = "bronco-iq-player-search.csv"; a.click(); URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------- selection bar + compare
+function renderSelbar() {
+  document.getElementById("selbar").innerHTML = selected.size ? `<div class="selbar"><span class="pill">${selected.size} selected</span><button class="btn pri" id="cmpb"${selected.size < 2 ? " disabled" : ""}>Compare</button><button class="btn ghost" id="selclr">Clear</button></div>` : "";
+}
+document.getElementById("selbar").addEventListener("click", (e) => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "selclr") { selected.clear(); renderSelbar(); renderResults(); }
+  if (t.id === "cmpb") compareDialog();
+});
+function compareDialog() {
+  const ps = [...selected].map((id) => byId.get(id)).filter(Boolean);
+  const cur = (p) => H.current(p);
+  const rows = [
+    ["School", (p) => p.school], ["Height", (p) => p.height], ["Class", (p) => p.class_year],
+    ["Games", (p) => cur(p)?.gp, 1], ["Minutes", (p) => cur(p)?.mpg, 1], ["Points", (p) => cur(p)?.ppg, 1], ["Rebounds", (p) => cur(p)?.rpg, 1], ["Assists", (p) => cur(p)?.apg, 1],
+    ["3P%", (p) => cur(p)?.three_pct, 1, "%"], ["eFG%", (p) => cur(p)?.efg_pct, 1, "%"],
+  ];
+  const cols = `150px repeat(${ps.length}, minmax(170px,1fr))`;
+  let g = `<div></div>` + ps.map((p) => `<div class="top">${headshot(p)}<div class="nm">${esc(p.first_name)} ${esc(p.last_name)}</div></div>`).join("");
+  for (const [l, f, n, suf = ""] of rows) {
+    const vals = ps.map(f), best = n ? Math.max(...vals.filter((v) => v != null)) : null;
+    g += `<div class="lab">${l}</div>` + vals.map((v) => `<div class="${n && v != null && v === best && ps.length > 1 ? "best" : ""}">${v == null || v === "" ? "—" : esc(v) + (suf && v != null ? suf : "")}</div>`).join("");
+  }
+  document.getElementById("modal").innerHTML = `<div class="mbg"><div class="modal"><button class="x" data-close>×</button><h2>Compare Players</h2><div class="sub">Last season's production side by side. Orange marks the best in each row.</div><div style="overflow-x:auto"><div class="cmp" style="grid-template-columns:${cols}">${g}</div></div></div></div>`;
+}
+
+// ---------------------------------------------------------------- results
+const visCols = () => order.filter((k) => H.baseSearchColumns.has(k) || visibleStats.includes(k));
+const gridStyle = (cols) => `grid-template-columns:${cols.map((k) => H.searchColumnWidths[k]).join(" ")} 80px`;
+const labelOf = (k) => H.cols.find((c) => c.key === k)?.label ?? k;
+const defKey = { position: "s_pos", height: "s_ht", class: "s_class", season: "s_season" };
+const headshot = (p) => p.espn && p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${p.espn}.png&w=150&h=110&scale=crop" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
+const fmt = (v, k) => (v == null || v === "" ? "—" : PCT.has(k) ? `${v}%` : String(v));
+function headerHTML() {
+  const cols = visCols(), active = [{ key: S.sortKey, direction: S.dir }, ...S.sec];
+  return `<div class="rgrid rhead" style="${gridStyle(cols)}">${cols.map((k) => {
+    const st = !H.baseSearchColumns.has(k), i = active.findIndex((s) => s.key === k);
+    return `<div class="hc${k === "name" ? " name" : ""}${st ? " st" : ""}" draggable="true" data-col="${k}" title="Drag ${esc(labelOf(k))} left or right"><button data-sort="${k}" class="${i >= 0 ? "on" : ""}" title="Click to sort. Shift-click to add a secondary sort."><span${defKey[k] || st ? ` data-def="${defKey[k] || k}"` : ""}>${esc(labelOf(k))}</span>${i >= 0 ? (active.length > 1 ? `<sup>${i + 1}</sup>` : "") + (active[i].direction === "asc" ? " ▲" : " ▼") : ""}</button></div>`;
+  }).join("")}<div></div></div>`;
+}
+function rowHTML(p) {
+  const cols = visCols(), s = H.current(p), open = expanded.has(p.id), on = selected.has(p.id);
+  const j = String(p.jersey_number ?? "").trim(), showJ = j !== "" && !/^0+(?:\.0+)?$/.test(j) && j !== "NA";
+  const href = `/player/${encodeURIComponent(p.id)}`;
+  const cell = (k) => {
+    if (k === "name") return `<div class="pcell"><button class="sel${on ? " on" : ""}" data-act="sel" aria-label="Select ${esc(p.first_name)} ${esc(p.last_name)}">✓</button><a href="${href}" data-act="link" aria-label="Open ${esc(p.first_name)} ${esc(p.last_name)} profile">${headshot(p)}</a><div style="min-width:0"><a class="pn" href="${href}" data-act="link">${esc(p.first_name)} ${esc(p.last_name)}</a><div class="ps">${teamLogo(p.school, 18)}<span>${esc(p.school)}</span></div>${showJ ? `<div class="pj">#${esc(j)}</div>` : ""}</div></div>`;
+    if (k === "position") return `<div class="cell t">${esc(p.position || "—")}</div>`;
+    if (k === "height") return `<div class="cell t">${esc(p.height || "—")}</div>`;
+    if (k === "class") return `<div class="cell t">${esc(p.class_year || "—")}</div>`;
+    if (k === "season") return `<div class="cell" style="font-size:11.5px;color:var(--muted)">${esc(s?.season ?? "—")}</div>`;
+    const v = s?.[k];
+    return `<div class="cell st${v == null ? " na" : ""}">${fmt(v, k)}</div>`;
+  };
+  return `<div class="row${open ? " open" : ""}" data-id="${esc(p.id)}"><div class="rgrid rmain" style="${gridStyle(cols)}" data-act="toggle" role="button" tabindex="0">${cols.map(cell).join("")}<div class="acts"><a class="ib ghost" href="${href}" data-act="link" title="Player page" aria-label="Player page"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a><button class="ib ghost" data-act="toggle" title="${open ? "Collapse player" : "Expand player"}" aria-label="${open ? "Collapse player" : "Expand player"}">${open ? "▴" : "▾"}</button></div></div>${open ? expandedHTML(p) : ""}</div>`;
+}
+const rin = document.getElementById("rin");
+const PAGE = 80;
+let io = null;
+function renderResults(recompute = false) {
+  if (recompute) { compute(); remember(); }
+  shown = Math.min(visible.length, Math.max(PAGE, recompute ? PAGE : shown));
+  rin.innerHTML = headerHTML() + (visible.length ? visible.slice(0, shown).map(rowHTML).join("") : `<div class="empty">No players match these filters.</div>`) + (shown < visible.length ? `<div class="more" id="more">Showing ${shown.toLocaleString()} of ${visible.length.toLocaleString()} · scroll for more</div>` : "");
+  for (const p of visible.slice(0, shown)) if (expanded.has(p.id)) loadGames(p);
+  watchMore();
+  if (recompute) { renderToolbar(); const m = document.querySelector(".matches"); if (m) m.textContent = `${visible.length.toLocaleString()} matches`; }
+}
+function watchMore() {
+  io?.disconnect();
+  const m = document.getElementById("more"); if (!m) return;
+  io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) appendMore(); }, { rootMargin: "800px" });
+  io.observe(m);
+}
+function appendMore() {
+  const m = document.getElementById("more"); if (!m) return;
+  const next = visible.slice(shown, shown + PAGE); shown += next.length;
+  m.insertAdjacentHTML("beforebegin", next.map(rowHTML).join(""));
+  if (shown >= visible.length) m.remove(); else m.textContent = `Showing ${shown.toLocaleString()} of ${visible.length.toLocaleString()} · scroll for more`;
+  watchMore();
+}
+function replaceRow(id) {
+  const el = rin.querySelector(`.row[data-id="${CSS.escape(id)}"]`), p = byId.get(id);
+  if (el && p) { el.outerHTML = rowHTML(p); if (expanded.has(id)) loadGames(p); }
+}
+rin.addEventListener("click", (e) => {
+  const sb = e.target.closest("button[data-sort]");
+  if (sb) { toggleSort(sb.dataset.sort, e.shiftKey); return; }
+  const row = e.target.closest(".row"); if (!row) return;
+  const id = row.dataset.id, act = e.target.closest("[data-act]")?.dataset.act;
+  if (act === "link") return;
+  if (e.target.closest(".xp")) {
+    const t = e.target.closest("button[data-full]");
+    if (t) { full.has(id) ? full.delete(id) : full.add(id); replaceRow(id); }
+    return;
+  }
+  if (act === "sel") { selected.has(id) ? selected.delete(id) : selected.add(id); replaceRow(id); renderSelbar(); return; }
+  if (act === "toggle") { expanded.has(id) ? expanded.delete(id) : expanded.add(id); replaceRow(id); }
+});
+rin.addEventListener("keydown", (e) => { const m = e.target.closest(".rmain"); if (m && e.target === m && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); m.click(); } });
+// drag to reorder columns
+let dragCol = "";
+rin.addEventListener("dragstart", (e) => { const h = e.target.closest(".hc"); if (!h) return; dragCol = h.dataset.col; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragCol); });
+rin.addEventListener("dragover", (e) => { const h = e.target.closest(".hc"); if (!h || !dragCol) return; e.preventDefault(); rin.querySelectorAll(".hc.drop").forEach((x) => x.classList.remove("drop")); h.classList.add("drop"); });
+rin.addEventListener("drop", (e) => { const h = e.target.closest(".hc"); if (!h || !dragCol) return; e.preventDefault(); order = H.reordered(order, dragCol, h.dataset.col); ls.set(COLS, order); dragCol = ""; renderResults(); });
+rin.addEventListener("dragend", () => { dragCol = ""; rin.querySelectorAll(".hc.drop").forEach((x) => x.classList.remove("drop")); });
+
+// ---------------------------------------------------------------- expanded row: history + games
+function histRow(s, kind) {
+  const k = kind === "career" ? "Career Average" : kind === "current" ? "Latest Season" : "Previous Season";
+  const sub = kind === "career" ? `${s.gp} total games` : esc(s.school);
+  const v = (x, key) => `<div class="v">${x == null || x === "" ? "—" : PCT.has(key) ? x + "%" : x}</div>`;
+  return `<div class="hrow ${kind === "current" ? "cur" : kind === "career" ? "car" : ""}"><div><div class="k">${k}</div><div class="sch">${sub}</div></div><div class="yr">${esc(s.season)}</div>${v(s.gp)}${v(s.mpg)}${v(s.ppg)}${v(s.rpg)}${v(s.apg)}${v(s.spg)}${v(s.topg)}${v(s.fg_pct, "fg_pct")}${v(s.two_pct, "two_pct")}${v(s.three_pct, "three_pct")}${v(s.ft_pct, "ft_pct")}${v(s.efg_pct, "efg_pct")}${v(s.usage_pct || null, "usage_pct")}</div>`;
+}
+const GAMES = new Map(), full = new Set();
+function expandedHTML(p) {
+  const s = H.current(p), old = p.seasons.slice(1), c = H.career(p.seasons);
+  if (c) { const u = p.seasons.filter((x) => x.usage_pct != null), m = u.reduce((a, x) => a + x.gp, 0); c.usage_pct = m ? Math.round((u.reduce((a, x) => a + x.usage_pct * x.gp, 0) / m) * 10) / 10 : null; }
+  const head = ["Season history", "Year", "GP", "MIN", "PTS", "REB", "AST", "STL", "TO", "FG%", "2P%", "3P%", "FT%", "eFG%", "USG%"].map((l) => `<div>${l}</div>`).join("");
+  return `<div class="xp"><div class="hist"><div class="hrow hh">${head}</div>${s ? histRow(s, "current") : ""}${old.map((x) => histRow(x, "prev")).join("")}${c ? histRow(c, "career") : ""}</div><div class="gx">${gamesHTML(p)}</div></div>`;
+}
+async function loadGames(p) {
+  if (!p.espn || GAMES.has(p.id)) return;
+  GAMES.set(p.id, { loading: true });
+  try {
+    const seasons = [...new Set(p.seasons.map((s) => s.season))].slice(0, 6).join(",");
+    const r = await getJSON(`/api/hub/games/espn-${p.espn}?seasons=${seasons}`);
+    GAMES.set(p.id, { games: r.games || [], errors: r.errors || [] });
+  } catch (e) { GAMES.set(p.id, { games: [], error: String(e.message || e) }); }
+  if (expanded.has(p.id)) replaceRow(p.id);
+}
+const gdate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" }) : "—");
+const isD1 = (g) => !D1 || !g.oppId || D1.has(String(g.oppId));
+function gamesHTML(p) {
+  if (!p.espn) return `<div class="gnone">No ESPN game log linked for this player yet, so best and worst games aren't available.</div>`;
+  const st = GAMES.get(p.id) || { loading: true }, games = st.games || [], loading = !!st.loading;
+  const d1 = games.filter(isD1);
+  const mpg = new Map(p.seasons.map((s) => [s.season, Number(s.mpg || 0)]));
+  const q = (g, m) => g.min >= Math.max(12, (mpg.get(g.season) ?? H.current(p)?.mpg ?? 0) * m);
+  let el = d1.filter((g) => q(g, 0.75)), reduced = false;
+  if (el.length < 3) { el = d1.filter((g) => q(g, 0.6)); reduced = true; }
+  const score = (g) => g.pts + 0.7 * g.reb + 0.7 * g.ast + 2 * g.stl + 2 * g.blk - g.to;
+  const sorted = [...el].sort((a, b) => score(b) - score(a));
+  const groups = [["Best 3 Games", sorted.slice(0, 3)], ["Worst 3 Games", [...sorted].reverse().slice(0, 3)]];
+  const res = (g) => `<span class="${g.result === "W" ? "W" : g.result === "L" ? "L" : ""}">${esc(g.result || "—")} ${g.tm ?? "—"}–${g.op ?? "—"}</span>`;
+  const nd = games.length - d1.length;
+  return `<div class="gxh"><span class="label">${loading ? "Loading career game logs…" : `${d1.length} career D-I games${nd ? ` <span style="color:var(--faint)">· ${nd} non-D-I left out</span>` : ""}`}</span><span class="label" data-def="s_best" style="color:var(--faint)">How games are ranked</span></div>
+    ${st.error ? `<div class="err">Game logs unavailable: ${esc(st.error)}</div>` : ""}
+    <div class="gxg">${groups.map(([l, rows]) => `<section class="gbox"><h3>${l}${reduced && rows.length ? `<span>Reduced sample</span>` : ""}</h3>${rows.length ? rows.map((g) => `<div class="gl"><div class="o">${g.atVs === "@" ? "@" : "vs"} ${esc(g.opp)}<span>${gdate(g.date)}</span></div>${res(g)}<div class="ln">${g.pts} PTS · ${g.reb} REB · ${g.ast} AST · ${g.stl} STL · ${g.blk} BLK · ${g.to} TO · ${g.min} MIN</div></div>`).join("") : `<div class="gnone">${loading ? "Loading games…" : "No qualifying games"}</div>`}</section>`).join("")}</div>
+    ${games.length ? `<section class="full"><button data-full="1">Full game log <span>${full.has(p.id) ? "▴" : "▾"}</span></button>${full.has(p.id) ? `<div class="tw"><table><thead><tr>${["Date", "Opponent", "Result", "MIN", "PTS", "REB", "AST", "STL", "BLK", "TO", "FG", "3P", "FT"].map((h, i) => `<th class="${i < 2 ? "l" : ""}">${h}</th>`).join("")}</tr></thead><tbody>${games.map((g) => `<tr class="${isD1(g) ? "" : "ndr"}"><td class="l">${gdate(g.date)}</td><td class="l">${g.atVs === "@" ? "@" : "vs"} ${esc(g.opp)}${isD1(g) ? "" : `<span class="nd">NON-D-I</span>`}</td><td>${res(g)}</td>${[g.min, g.pts, g.reb, g.ast, g.stl, g.blk, g.to].map((v) => `<td>${v}</td>`).join("")}<td>${g.fgm}-${g.fga}</td><td>${g.tpm}-${g.tpa}</td><td>${g.ftm}-${g.fta}</td></tr>`).join("")}</tbody></table></div>` : ""}</section>` : ""}`;
+}
+
+// ---------------------------------------------------------------- render
+function renderAll() { compute(); remember(); renderInterp(); renderFilters(); renderBanner(); renderToolbar(); renderSelbar(); renderResults(); }
+load().catch((e) => alertBox("Could not load player data. " + (e.message || "")));
+</script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { hubTeams } from "./hub/teams.js";
 // Bronco IQ 2.0 Worker: staff sign-in, ESPN game-log proxy, and the static site
 // in ./public (pages + data/*.json). No database yet: during the formatting
 // phase the data ships as static JSON built by scripts/build-data.mjs.
@@ -192,7 +193,51 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"]];
+const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"]];
+
+
+// ---------- Player Search: links to the Recruiting Hub (read-only) ----------
+// Search numbers are ours (public/data/search/players.json). From the hub's D1 (env.HUB,
+// read-only, staff-approved) we only take what our pipeline doesn't have: each player's
+// ESPN id (headshot, game logs) and the hub's team logos + 2026-27 conferences.
+// Bronco IQ only ever runs SELECTs against it. Cached at the edge for 15 minutes.
+const HUB_SELECT = (sql) => { if (!/^\s*select\b/i.test(sql)) throw new Error("read-only"); return sql; };
+async function hubAll(env, sql, ...binds) {
+  const r = await env.HUB.prepare(HUB_SELECT(sql)).bind(...binds).all();
+  return r.results || [];
+}
+async function hubLinkData(env) {
+  const [tj, players] = await Promise.all([
+    hubTeams(env).then((r) => r.json()),
+    hubAll(env, `SELECT id, first_name, last_name, school, jersey_number, headshot_key FROM players WHERE id LIKE 'espn-%'`),
+  ]);
+  return {
+    built: new Date().toISOString(),
+    teams: (tj.teams || []).map((t) => [t.name, t.conference || "", t.logo || "", t.aliases || []]),
+    confs: (tj.conferences || []).map((c) => [c.name, c.logo || ""]),
+    players: players.map((p) => [p.id.slice(5), p.first_name, p.last_name, String(p.school || "").replace(/(?:\s|\n|\r)+0(?:\.0+)?\s*$/g, "").trim(), p.jersey_number || "", p.headshot_key && /^https?:/.test(p.headshot_key) ? 1 : 0]),
+  };
+}
+async function hubLink(request, env, ctx) {
+  if (!env.HUB) return json({ error: "hub_not_connected" }, 503);
+  const url = new URL(request.url), cache = typeof caches !== "undefined" ? caches.default : null;
+  const key = new Request("https://bsuiq.internal/hub/link?v=1");
+  if (cache && url.searchParams.get("refresh") !== "1") { const hit = await cache.match(key); if (hit) return new Response(hit.body, { headers: { "content-type": "application/json", "cache-control": "private, no-store" } }); }
+  const body = JSON.stringify(await hubLinkData(env));
+  if (cache) ctx.waitUntil(cache.put(key, new Response(body, { headers: { "content-type": "application/json", "cache-control": "public, max-age=900" } })));
+  return new Response(body, { headers: { "content-type": "application/json", "cache-control": "private, no-store" } });
+}
+// Career game logs from ESPN for every season the hub has for this player (max 6).
+async function hubGames(espnId, url, ctx) {
+  const seasons = (url.searchParams.get("seasons") || "2025-26").split(",").filter((s) => /^\d{4}-\d{2}$/.test(s)).slice(0, 6);
+  const out = [], errors = [];
+  await Promise.all(seasons.map(async (s) => {
+    try { for (const g of await gameLog(espnId, s, ctx)) out.push({ ...g, season: s }); } catch (e) { errors.push(`${s}: ${e.message || e}`); }
+  }));
+  const seen = new Set();
+  const games = out.filter((g) => (seen.has(g.id) ? false : seen.add(g.id))).sort((a, b) => b.date.localeCompare(a.date));
+  return json({ games, errors });
+}
 
 // Staff position overrides for depth charts. Stored as one JSON object in KV:
 //   { "<teamKey>|<player name>": { slot: "PF", by: "staff", at: "<iso>" } }
@@ -313,6 +358,11 @@ export default {
       try { return json({ games: await gameLog(m[1], url.searchParams.get("season") || "2025-26", ctx) }); }
       catch (e) { return json({ error: "gamelog_unavailable", detail: String(e.message || e) }, 502); }
     }
+    if (path === "/api/hub/link") {
+      try { return await hubLink(request, env, ctx); } catch (e) { return json({ error: "hub_unavailable", detail: String(e.message || e) }, 502); }
+    }
+    const hg = path.match(/^\/api\/hub\/games\/espn-(\d+)$/);
+    if (hg) return hubGames(hg[1], url, ctx);
     if (path === "/api/positions") return positionsApi(request, env);
     // Raw Torvik team CSVs (barttorvik blocks browsers on this network; the worker can reach it).
     if (path === "/api/torvik/csv") {

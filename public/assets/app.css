@@ -135,6 +135,7 @@ footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:26px}
 @media (max-width:900px){
   .panel{overflow-x:auto}
   .bar{flex-wrap:wrap;gap:10px;padding:10px 16px}
+  .nav{overflow-x:auto;max-width:100%;scrollbar-width:none}
   .search{order:3;width:100%;margin-left:0}
   .user{margin-left:auto}
   .wrap{padding:0 16px 28px}

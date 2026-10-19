@@ -109,6 +109,7 @@ if (existsSync(src("reports/index.json"))) {
 }
 // International board (DraftExpress list + map lookups).
 if (existsSync(src("intl"))) cpSync(src("intl"), join(out, "intl"), { recursive: true });
+if (existsSync(src("search"))) cpSync(src("search"), join(out, "search"), { recursive: true });
 if (existsSync(src("rosters-2027.json"))) cpSync(src("rosters-2027.json"), join(out, "rosters-2027.json"));
 if (existsSync(src("positions.json"))) cpSync(src("positions.json"), join(out, "positions.json"));
 write("roster.json", { team: roster.team, season: roster.season, espnTeamId: roster.espnTeamId, players: rosterRows });

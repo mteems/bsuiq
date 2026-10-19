@@ -1,7 +1,7 @@
 {
-  // Bronco IQ 2.0: standalone staff analytics site. No shared resources with
-  // the Recruiting Hub. Data ships as static JSON (public/data) during the
-  // formatting phase; Bronco IQ's own D1 database gets added at migration.
+  // Bronco IQ 2.0: staff analytics site. Data ships as static JSON (public/data)
+  // during the formatting phase. Player Search reads the Recruiting Hub's player
+  // database (HUB) read-only, approved by staff: Bronco IQ only runs SELECTs on it.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bsuiq",
   "main": "src/worker.js",
@@ -16,6 +16,7 @@
     "not_found_handling": "none"
   },
   // Small staff-edited settings (depth chart position overrides).
+  "d1_databases": [{ "binding": "HUB", "database_name": "bsurecruit", "database_id": "c67911a6-d9a3-4bcb-a9e9-d1d6fb250d2c" }],
   "kv_namespaces": [{ "binding": "STAFF", "id": "837ff1bca61b45549f66eb80f363475a" }],
   // Nightly 5:15 AM Boise (11:15 UTC): refresh Barttorvik T-Rank into KV.
   "triggers": { "crons": ["15 11 * * *"] },
