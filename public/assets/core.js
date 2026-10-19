@@ -151,3 +151,47 @@ export function topBar(active) {
   });
   document.addEventListener("click", (e) => { if (!el.querySelector(".search").contains(e.target)) box.classList.remove("on"); });
 }
+
+// ---------- sortable tables ----------
+// Click any header in the table's last header row to sort by that column
+// (numbers high→low first, text A→Z first; click again to flip). Rows whose
+// cell for that column is missing or spans other columns ("no D-I history")
+// always stay at the bottom.
+const cellAt = (tr, col) => { let c = 0; for (const td of tr.cells) { const span = td.colSpan || 1; if (col < c + span) return span > 1 ? null : td; c += span; } return null; };
+const sortVal = (td) => {
+  if (!td) return null;
+  if (td.dataset.v != null) return td.dataset.v === "" ? null : isNaN(+td.dataset.v) ? td.dataset.v.toLowerCase() : +td.dataset.v;
+  const t = td.textContent.replace(/[▾▲▼]/g, "").trim();
+  if (!t || t === "—" || t === "–") return null;
+  const ht = t.match(/^(\d)['’-](\d{1,2})/); if (ht) return +ht[1] * 12 + +ht[2];
+  const num = t.match(/^[+−-]?\d+(\.\d+)?/); if (num) return parseFloat(num[0].replace("−", "-"));
+  return t.toLowerCase();
+};
+export function sortableTable(table) {
+  if (!table || table.dataset.sortable) return;
+  table.dataset.sortable = "1";
+  const head = table.tHead?.rows[table.tHead.rows.length - 1], body = table.tBodies[0];
+  if (!head || !body) return;
+  let colIdx = 0;
+  [...head.cells].forEach((th) => {
+    const col = colIdx; colIdx += th.colSpan || 1;
+    if (th.dataset.nosort != null || !th.textContent.trim()) return;
+    th.classList.add("sortable");
+    th.addEventListener("click", (e) => {
+      if (e.target.closest("[data-def]") && e.detail === 0) return;
+      const dir = th.dataset.dir === "desc" ? "asc" : th.dataset.dir === "asc" ? "desc" : null;
+      head.querySelectorAll("th").forEach((x) => { delete x.dataset.dir; });
+      const rows = [...body.rows], vals = rows.map((r) => sortVal(cellAt(r, col)));
+      const isText = vals.some((v) => typeof v === "string");
+      const d = dir || (isText ? "asc" : "desc");
+      th.dataset.dir = d;
+      const idx = rows.map((r, i) => i).sort((a, b) => {
+        const x = vals[a], y = vals[b];
+        if (x == null && y == null) return a - b; if (x == null) return 1; if (y == null) return -1;
+        const c = typeof x === "string" || typeof y === "string" ? String(x).localeCompare(String(y)) : x - y;
+        return (d === "asc" ? c : -c) || a - b;
+      });
+      idx.forEach((i) => body.appendChild(rows[i]));
+    });
+  });
+}

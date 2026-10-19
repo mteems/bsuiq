@@ -42,7 +42,7 @@ td a:hover{text-decoration:underline;text-underline-offset:3px}
   <footer>Sample data for the formatting phase: 2026-27 roster and ESPN box-score totals. Freshmen and international players without D-I history show no stats until games start.</footer>
 </main>
 <script type="module">
-import { chip, tc, f1, f0, esc, getJSON, playerName, shortSchool, topBar, LG } from "/assets/core.js";
+import { chip, tc, f1, f0, esc, getJSON, playerName, shortSchool, topBar, LG, sortableTable } from "/assets/core.js";
 topBar("home");
 
 // Upcoming schedule (from the scouting page's opponent list).
@@ -62,17 +62,18 @@ document.getElementById("kpis").innerHTML = [
 ].map(([l, v, s]) => `<div class="kpi"><span class="label">${l}</span><b>${v}</b><div class="sub">${esc(s)}</div></div>`).join("");
 
 const q = (r, k) => (r.last && r.last.gp >= 8 && r.last.mpg >= 8 ? r.last.pct[k]?.pct ?? null : null);
-document.getElementById("roster").innerHTML = `<table><thead>
-  <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="3">Last season</th><th class="grp sep" colspan="8">Production · percentile chips</th></tr>
+document.getElementById("roster").innerHTML = `<table class="dtab"><thead>
+  <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="3">Last season</th><th class="grp sep" colspan="9">Production · percentile chips</th></tr>
   <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th class="l">Cl</th><th class="l sep">Season</th><th class="l">School</th><th><span data-def="gp">GP</span></th>
-  <th class="sep"><span data-def="mpg">MPG</span></th><th><span data-def="ppg">PPG</span></th><th><span data-def="ts">TS%</span></th><th><span data-def="p3">3P%</span></th><th><span data-def="rpg">RPG</span></th><th><span data-def="apg">APG</span></th><th><span data-def="ato">A/TO</span></th><th><span data-def="spg">STL</span></th></tr></thead><tbody>
+  <th class="sep"><span data-def="mpg">MPG</span></th><th><span data-def="ppg">PPG</span></th><th><span data-def="ts">TS%</span></th><th><span data-def="p3">3P%</span></th><th>3PA</th><th><span data-def="rpg">RPG</span></th><th><span data-def="apg">APG</span></th><th><span data-def="ato">A/TO</span></th><th><span data-def="spg">STL</span></th></tr></thead><tbody>
   ${rows.map((r) => { const L = r.last; const tag = r.isNew ? ' <span class="tag new">NEW</span>' : r.noStats ? ' <span class="tag fr">FR</span>' : "";
-    return `<tr><td class="l m">${esc(r.jersey_number || "")}</td><td class="l"><a href="/player/${encodeURIComponent(r.id)}">${esc(playerName(r))}</a>${tag}</td><td class="l m">${esc(r.position)}</td><td class="m">${esc(r.height)}</td><td class="l m">${esc((r.class_year || "").slice(0, 2))}</td>
+    return `<tr><td class="l m">${esc(r.jersey_number || "")}</td><td class="l pl"><a href="/player/${encodeURIComponent(r.id)}">${esc(playerName(r))}</a>${tag}</td><td class="l m">${esc(r.position)}</td><td class="m">${esc(r.height)}</td><td class="l m">${esc((r.class_year || "").slice(0, 2))}</td>
     ${L ? `<td class="l sep m">${L.season}</td><td class="l m">${esc(shortSchool(L.school))}</td><td class="m">${L.gp}</td>
-      <td class="sep">${chip(q(r, "mpg"), f1(L.mpg))}</td><td>${chip(q(r, "ppg"), f1(L.ppg))}</td><td>${chip(q(r, "ts"), f1(L.ts))}</td><td>${!L.three_pa ? `<span class="m">—</span>` : `${L.p3 != null ? chip(q(r, "p3"), f1(L.p3)) : `<span class="m">${f1(L.three_pct)}</span>`} <span class="m" style="font-size:10.5px">${f0(L.three_pa)}</span>`}</td>
+      <td class="sep">${chip(q(r, "mpg"), f1(L.mpg))}</td><td>${chip(q(r, "ppg"), f1(L.ppg))}</td><td>${chip(q(r, "ts"), f1(L.ts))}</td><td data-v="${L.three_pa ? (L.p3 ?? L.three_pct ?? "") : ""}">${!L.three_pa ? `<span class="m">—</span>` : L.p3 != null ? chip(q(r, "p3"), f1(L.p3)) : `<span class="m">${f1(L.three_pct)}</span>`}</td><td class="att">${L.three_pa ? f0(L.three_pa) : "—"}</td>
       <td>${chip(q(r, "rpg"), f1(L.rpg))}</td><td>${chip(q(r, "apg"), f1(L.apg))}</td><td>${chip(q(r, "ato"), L.ato == null ? "—" : L.ato.toFixed(2))}</td><td>${chip(q(r, "spg"), f1(L.spg))}</td>`
-      : `<td class="l sep m" colspan="11">no D-I history</td>`}</tr>`; }).join("")}
-  </tbody></table><div class="cap">Sorted by last season's minutes. <span class="tag new">NEW</span> = transfer in · <span class="tag fr">FR</span> = freshman/international. Chips need 8+ games and 8+ minutes per game; 3P% chips need 40+ attempts.</div>`;
+      : `<td class="l sep m" colspan="12">no D-I history</td>`}</tr>`; }).join("")}
+  </tbody></table><div class="cap">Sorted by last season's minutes; click any column header to sort by it. <span class="tag new">NEW</span> = transfer in · <span class="tag fr">FR</span> = freshman/international. Chips need 8+ games and 8+ minutes per game; 3P% chips need 40+ attempts.</div>`;
+sortableTable(document.querySelector("#roster table"));
 </script>
 </body>
 </html>
