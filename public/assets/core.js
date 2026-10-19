@@ -93,7 +93,7 @@ export const tipOff = () => { custom = false; tip.style.display = "none"; };
 
 // ---------- logos ----------
 export const LG = (id, s, ab) =>
-  `<span class="lg${id ? "" : " fb"}" style="width:${s}px;height:${s}px">${id ? `<img alt="" src="${typeof id === "string" ? id : `https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa/500-dark/${id}.png&w=${s * 2}&h=${s * 2}`}" onerror="this.parentNode.classList.add('fb');this.remove()">` : ""}<b>${esc(ab || "")}</b></span>`;
+  `<span class="lg${id ? "" : " fb"}" style="width:${s}px;height:${s}px">${id ? `<img alt="" src="${typeof id === "string" && !/^\d+$/.test(id) ? id : `https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa/500-dark/${id}.png&w=${s * 2}&h=${s * 2}`}" onerror="this.parentNode.classList.add('fb');this.remove()">` : ""}<b>${esc(ab || "")}</b></span>`;
 
 // ---------- fetch ----------
 export async function getJSON(url) {
