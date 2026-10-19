@@ -1,0 +1,5 @@
+{"_about":"International board. Add a player here (club city as [lon, lat]) and he appears on the map.",
+"players":[
+{"name":"Hugo Alonso","nat":"Spain","pos":"PG","ht":"6-1","wt":null,"born":"2008-07-14","cls":2027,"club":"Real Madrid","team":"Real Madrid U22","league":"Spain U22 League","city":"Madrid","ll":[-3.70,40.42],"nt":"Spain U18 (2026 U18 EuroBasket: 6.6 pts, 5.6 reb, 5.6 ast)","src":"eurobasket.com"},
+{"name":"Leonard Kroger","nat":"Germany","pos":"C","ht":"6-10","wt":225,"born":null,"age":17.8,"cls":2027,"club":"Paderborn Baskets","team":"Paderborn","league":"ProA (German 2nd division)","city":"Paderborn","ll":[8.75,51.72],"nt":"2026 Albert Schweitzer Tournament winner (Germany)","src":"DraftExpress, germanhoops.com, flashscore"}
+]}
