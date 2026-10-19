@@ -314,6 +314,13 @@ export default {
       catch (e) { return json({ error: "gamelog_unavailable", detail: String(e.message || e) }, 502); }
     }
     if (path === "/api/positions") return positionsApi(request, env);
+    // Raw Torvik team CSVs (barttorvik blocks browsers on this network; the worker can reach it).
+    if (path === "/api/torvik/csv") {
+      const f = url.searchParams.get("f") || "";
+      if (!/^20\d\d_team_results\.csv$/.test(f)) return json({ error: "bad_file" }, 400);
+      const r = await fetch(`https://barttorvik.com/${f}`, { headers: { "user-agent": "Mozilla/5.0 (Bronco IQ)" } });
+      return new Response(await r.text(), { status: r.status, headers: { "content-type": "text/csv; charset=utf-8" } });
+    }
     if (path.startsWith("/api/espn/")) {
       try { const r = await espnApi(path, url, ctx); if (r) return r; } catch (e) { return json({ error: "espn_unavailable", detail: String(e.message || e) }, 502); }
     }
