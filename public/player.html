@@ -29,6 +29,8 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 import { d3, pc, chip, tc, f1, f0, esc, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
 import { renderShotChart } from "/assets/shotchart.js";
 import { skillCards } from "/assets/scores.js";
+import { pdPBP, shotProfile } from "/assets/pd-pbp.js";
+import { espnGames } from "/assets/pool.js";
 topBar("player");
 
 const id = decodeURIComponent(location.pathname.split("/")[2] || "");
@@ -38,6 +40,7 @@ try { D = await getJSON("/data/players/" + encodeURIComponent(id) + ".json"); }
 catch (e) { page.innerHTML = `<div class="loading">${/not found|404/i.test(e.message) ? "This player isn't in the Bronco IQ data yet." : `Couldn't load this player (${esc(e.message)}).`}</div>`; throw e; }
 
 const P = D.player, S = D.seasons, last = S[S.length - 1] || null;
+const PBP = D.pbp && !(D.shots || []).some((x) => x.season === D.pbp.label) ? pdPBP(D.pbp) : null;
 document.title = `${playerName(P)} · Bronco IQ`;
 const qualified = (s) => s && s.d.gp >= 8 && (s.d.mpg ?? 0) >= 8;
 const pctOf = (s, k) => (qualified(s) ? s.pct.metrics[k]?.pct ?? null : null);
@@ -85,7 +88,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
 // ======================================================= SHOOTING (Shot Profile mockup)
 (function shooting() {
   const el = document.getElementById("s-shoot");
-  const SH = D.shots;
+  const SH = D.shots || [];
   if (SH.length) {
     let si = SH.length - 1;
     el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label" id="shsub"></span>${SH.length > 1 ? `<div style="margin-left:auto" class="seg" id="sseas">${SH.map((s, i) => `<button data-i="${i}">${s.season.slice(2)}</button>`).join("")}</div>` : ""}</div><div id="shot"></div></section>`;
@@ -103,10 +106,18 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
     el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label">No college stats yet</span></div><div class="story">No college season on file.${P.onRoster ? " Freshmen and international players get stats and a shot chart once games start." : ""}</div></section>`;
     return;
   }
-  el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label">${last.season} · ${esc(shortSchool(last.school))} · efficiency vs D-I</span></div>
+  const fallback = (why) => {
+    el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label">${last.season} · ${esc(shortSchool(last.school))} · efficiency vs D-I</span></div>
     <div class="grid two" style="grid-template-columns:1.15fr 1fr"><div class="panel"><div class="label ptitle">Scoring profile vs D-I</div>
     ${profileTable(last, [["ppg", "Points / g", f1], ["pts40", "Points / 40", f1], ["ts", "True shooting %", f1], ["efg", "Effective FG %", f1], ["p3", "3-point %", f1], ["ft", "Free throw %", f1], ["tpar", "3PA rate", f1], ["ftr", "FT rate", f1]])}</div>
-    <div class="panel"><div class="label ptitle">Shot chart</div><div class="story" style="margin-top:0">No charted shots for this player yet. Shot charts come from play-by-play shot locations; they arrive for every player when the 10-season play-by-play archive moves into Bronco IQ's database.</div></div></div></section>`;
+    <div class="panel"><div class="label ptitle">Shot chart</div><div class="story" style="margin-top:0">${why}</div></div></div></section>`;
+  };
+  if (!PBP) { fallback("No charted shots for this player: no ESPN play-by-play on file for his latest D-I season."); return; }
+  el.innerHTML = `<section><div class="shead"><h2>Shooting</h2><span class="label" id="shsub">${D.pbp.label} · ${esc(D.pbp.school)} · where he shoots · how well · every attempt</span></div><div id="shot"><div class="loading">Reading ESPN play-by-play…</div></div></section>`;
+  PBP.then((X) => {
+    if (!X.shots.length) return fallback("ESPN's play-by-play has no charted shot locations for his games.");
+    renderShotChart(document.getElementById("shot"), shotProfile(X, { id: P.id, season: D.pbp.label, team: D.pbp.school, teamShort: D.pbp.teamShort, confShort: D.pbp.confShort }));
+  }).catch((e) => fallback(`ESPN play-by-play unavailable right now (${esc(e.message || e)}). Reload to try again.`));
 })();
 
 // ======================================================= PLAYMAKING & DEFENSE (mockup)
@@ -171,8 +182,13 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
     document.getElementById("glc").innerHTML = `<div class="loading">Loading ${cur}…</div>`;
     document.getElementById("glt").innerHTML = "";
     let G;
+    // Server first; ESPN turns the server away at times, so then the browser asks ESPN directly.
     try { G = (await getJSON(`/api/gamelog/${encodeURIComponent(P.id)}?season=${cur}`)).games; }
-    catch (e) { document.getElementById("glc").innerHTML = `<div class="loading">ESPN game log unavailable right now (${esc(e.message)}).</div>`; return; }
+    catch (e) {
+      const r = await espnGames(P.espnId, [cur]).catch(() => ({ games: [], failed: true }));
+      if (r.failed || !r.games.length && r.errors?.length) { document.getElementById("glc").innerHTML = `<div class="loading">ESPN game log unavailable right now (${esc(e.message)}).</div>`; return; }
+      G = r.games.filter((g) => !g.season || g.season === cur).map((g) => ({ pf: 0, ...g })).sort((a, b) => a.date.localeCompare(b.date));
+    }
     if (!G.length) { document.getElementById("glc").innerHTML = `<div class="loading">No games logged for ${cur} yet.</div>`; return; }
     for (const g of G) g.gs = g.pts + 0.4 * g.fgm - 0.7 * g.fga - 0.4 * (g.fta - g.ftm) + 0.5 * g.reb + g.stl + 0.7 * g.ast + 0.7 * g.blk - 0.4 * g.pf - g.to;
     const sorted = G.map((g) => g.gs).sort((a, b) => a - b), rank = (v) => Math.round(((sorted.filter((x) => x < v).length + 0.5 * sorted.filter((x) => x === v).length) / sorted.length) * 100);

@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Playmaking & Defense · Bronco IQ module</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<style>
+/* Same layout and styles as DWT's hand-built module (pd-espn-5107273.html), filled from data.
+   SITE CONVENTION: orange = good / high percentile, blue = bad / low percentile */
+:root{--bg:#16171a;--panel:#1e1f22;--line:#2e3034;--text:#f2f3f4;--muted:#8a8e95;--good:#e2622a;--bad:#4a7fe0;--ui:'Inter Tight Variable',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-variant-numeric:tabular-nums;padding:0 0 4px;margin:0;overflow:hidden}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+section{margin-top:28px}
+.shead{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.story{margin-top:10px;font-size:14px;color:#cfd3d9;line-height:1.55;max-width:980px}
+.story b{color:var(--text)}
+.grid{display:grid;gap:16px;margin-top:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.ptitle{margin-bottom:12px}
+.cap{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.55}
+[data-def]{cursor:help;text-decoration:underline dotted rgba(138,142,149,.6);text-underline-offset:3px}
+svg [data-def]{text-decoration:none}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:0 6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td{padding:7px 6px;border-bottom:1px solid #2a2c30;text-align:right;font-weight:500;white-space:nowrap}
+td:first-child{font-weight:400;color:#d6d8db}
+td.med{color:var(--muted);font-weight:400}
+.chip{display:inline-block;min-width:38px;text-align:center;border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:11.5px;font-weight:500;color:#fff}
+.big{font-size:15px;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{background:#26282c;border-radius:8px;padding:12px}
+.card b{display:block;font-size:24px;font-weight:750;margin-top:4px;letter-spacing:-.01em}
+.card .sub{font-size:11.5px;color:#b9bdc4;margin-top:4px;line-height:1.45}
+.card .sub em{font-style:normal;color:var(--text);font-weight:600}
+.mbar{display:flex;height:12px;border-radius:3px;overflow:hidden;margin-top:8px}
+.mleg{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:5px;gap:6px;flex-wrap:wrap}
+.arcgrid{display:grid;gap:12px}
+.arcgrid svg{width:100%;display:block;background:#26282c;border-radius:8px}
+#tip{position:fixed;pointer-events:none;background:#0f1011;border:1px solid #3a3d42;border-radius:6px;padding:8px 10px;font-size:12px;display:none;z-index:5;line-height:1.5;max-width:300px;color:#dfe2e6}
+#tip b{color:#fff}
+.score{display:flex;gap:22px;align-items:center}
+.ring{width:140px;height:140px;flex:none}
+.comp{display:grid;grid-template-columns:130px 40px 1fr 56px;gap:8px;align-items:center;font-size:12.5px;padding:5px 0;border-bottom:1px solid #2a2c30}
+.comp .z{height:10px;position:relative;background:#2a2c30;border-radius:3px}
+.comp .z s{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:#5d6168}
+.comp .z i{position:absolute;top:0;bottom:0;border-radius:3px}
+.tier{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:3px 8px;border-radius:4px;margin-top:6px}
+.tiers{display:flex;gap:4px;margin-top:10px}
+.tiers div{flex:1;font-family:var(--mono);font-size:9.5px;text-align:center;padding:4px 0;border-radius:3px;color:#fff}
+.wait{color:var(--muted);font-size:12px;padding:30px 0;text-align:center}
+footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:22px}
+@media (max-width:1060px){.grid{grid-template-columns:1fr!important}.grid>.panel>svg,.grid>div>svg{max-width:760px;display:block;margin-left:auto;margin-right:auto}}
+@media (max-width:640px){.cards{grid-template-columns:1fr 1fr}.arcgrid{grid-template-columns:1fr 1fr!important}.panel{overflow-x:auto}}
+</style>
+</head>
+<body>
+<div id="root"><div class="wait">Loading playmaking & defense…</div></div>
+<div id="tip"></div>
+<script type="module">
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { pdPBP, gameLabel } from "/assets/pd-pbp.js";
+const GOOD="#e2622a",BAD="#4a7fe0",NEU="#5d6168",GOOD_T="#f08a5d",BAD_T="#7fa6f0";
+const pc=p=>p==null?NEU:p>=50?d3.interpolateLab(NEU,"#d4561f")(Math.min(1,(p-50)/45)):d3.interpolateLab(NEU,"#2f63d6")(Math.min(1,(50-p)/45));
+const chip=p=>p==null?`<span class="chip" style="background:#2a2c30;color:var(--muted)">—</span>`:`<span class="chip" style="background:${pc(p)}">${p}</span>`;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const f1=v=>v==null?"—":v.toFixed(1),f2=v=>v==null?"—":v.toFixed(2),f0=v=>v==null?"—":Math.round(v).toLocaleString();
+const sg=(v,d=1)=>v==null?"—":(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(d);
+const ord=n=>{n=Math.round(n);const s=["th","st","nd","rd"],v=n%100;return n.toLocaleString()+(s[(v-20)%10]||s[v]||s[0])};
+const pctS=(a,b)=>b?Math.round(100*a/b):null;
+
+const id=new URLSearchParams(location.search).get("id")||"";
+const root=document.getElementById("root");
+let D;
+try{const r=await fetch("/data/pd/"+encodeURIComponent(id)+".json");if(!r.ok)throw new Error(r.status);D=await r.json();}
+catch(e){root.innerHTML=`<div class="wait">No playmaking & defense data for this player yet.</div>`;throw e;}
+
+// ---------------------------------------------------------------- labels
+const ROLEAB={"Combo G":"CG","Wing G":"WG","Wing F":"WF","Pure PG":"PPG","Scoring PG":"SPG","Stretch 4":"S4","PF/C":"PF/C","C":"C"};
+const RA=ROLEAB[D.role]||D.role, CS=D.confShort||D.conf, TS=D.teamShort, N=D.poolN.toLocaleString(), yy=D.arcYears, lastY=yy[3];
+const noun=/PG|G$/.test(D.role)?"guard":/Wing F|Stretch/.test(D.role)?"forward":/C/.test(D.role)?"big":"player";
+const pmRow=k=>D.PM.find(r=>r[0]===k), dmRow=k=>D.DM.find(r=>r[0]===k);
+const hasT=D.torvik&&D.PM.length;
+
+// ---------------------------------------------------------------- tooltips
+const DEF={
+ usg:["Usage rate","Share of team possessions he ends (shot, FT trip or turnover) while on the floor. ~20% is average."],
+ ast:["Assist rate (AST%)","Share of teammates' made field goals he assisted while on the floor."],
+ astg:["Assists per game","Raw assists per game. Depends on minutes and pace, so AST% is the cleaner measure."],
+ atr:["Assist-to-turnover ratio","Assists divided by turnovers."],
+ tov:["Turnover rate (TOV%)","Turnovers per 100 of his plays (FGA + 0.44 × FTA + TO). Lower is better."],
+ passidx:["Pass-first index","AST% ÷ usage. Higher = more of his on-ball load turns into assists rather than his own shots. A playmaker-vs-scorer lean, not a quality grade."],
+ tovband:["TOV% vs usage peers",`His turnover rate ranked only against D-I players with similar usage (${D.band?D.band.join("–")+"%":"±3 points"}). High usage normally means more turnovers, so this is the fair comparison.`],
+ ptscr:["Points created per 40","His own points plus points from shots he assisted, per 40 minutes."],
+ ptshare:["Share of team points",`Share of ${TS}'s points while he was on the floor that he either scored or assisted on.`],
+ ppa:["Points per assist","Average points produced by a shot he assisted. 3.0 = every assist set up a three."],
+ live:["Live-ball turnovers","Turnovers logged as an opponent steal. They usually lead to transition chances, which are the costliest kind of turnover. Roughly half of D-I turnovers are steals."],
+ playmix:["How his plays end","Of every play he finished: shot attempt, free-throw trip (0.44 × FTA), assist or turnover."],
+ selfc:["Self-created makes","Made shots with no assist logged. Unassisted makes are mostly off the dribble (also putbacks and transition). Assisted makes are mostly catch-and-shoot."],
+ rapm:["RAPM","Regularized adjusted plus-minus. A regression on every lineup stint of the season that estimates each player's effect on points per 100 possessions, holding the other 9 players on the floor constant. It's 'regularized' because estimates are shrunk toward 0 (average) so small samples can't run wild."],
+ drapm:["Defensive RAPM (DRAPM)",`Points per 100 opponent possessions a player saves vs an average D-I player, after accounting for all teammates and opponents on the floor. Positive = good. 1 SD ≈ 2.7. Bronco IQ ridge model, ${D.season}.`],
+ orapm:["Offensive RAPM (ORAPM)","Points per 100 possessions a player adds on offense vs an average D-I player, after accounting for all teammates and opponents on the floor. 1 SD ≈ 2.6."],
+ defscore:["DEF score (v2)",`Bronco IQ 1–100 percentile of defensive impact among ${N} D-I rotation players. Weights: DBPM 25%, Adj DRtg 15% (both with team credit cut in half), defensive RAPM 20%, STL% 13%, BLK% 10%, DRB% 10%, fouls −7%. Each stat is compared within the player's role, then shrunk for minutes.`],
+ drtg:["Defensive rating (DRtg)","Estimated points allowed per 100 possessions while he's on the floor (Dean Oliver method: stops, steals, blocks, defensive rebounds and team defense). Lower is better."],
+ adrtg:["Adjusted DRtg","DRtg adjusted for opponent strength (Torvik). Lower is better. * = in DEF score, half of the team-wide component is removed (team halo damping)."],
+ dbpm:["Defensive box plus-minus (DBPM)","Estimated defensive points per 100 possessions vs an average D-I player, from box score stats plus a team-defense adjustment. 0 = average, +2 = good, +4 = elite. * = team halo damped 50% in DEF score."],
+ stl:["Steal rate (STL%)","Share of opponent possessions that end in his steal while he's on the floor."],
+ stlg:["Steals per game","Raw steals per game."],
+ drb:["Defensive rebound rate (DRB%)","Share of available defensive rebounds he grabs while on the floor."],
+ pf:["Fouls per 40","Personal fouls per 40 minutes. Lower is better: fouls give away free throws and minutes."],
+ blk:["Block rate (BLK%)","Share of opponent 2-point attempts he blocks while on the floor."],
+ onoff:["On/off","The team's numbers with him on the floor vs off it, from replaying every substitution. Doesn't account for teammates or opponents; RAPM does."],
+ opp100:["Opponent points per 100","Points allowed per 100 opponent possessions (possessions = FGA − ORB + TOV + 0.44 × FTA)."],
+ oefg:["Opponent eFG%","Opponent field-goal % with threes worth 1.5×."],
+ otov:["Opponent TO%","Share of opponent possessions ending in a turnover. Higher is better for the defense."],
+ oorb:["Opponent ORB%","Share of their own misses the opponent rebounds. Lower is better for the defense."],
+ oftr:["Opponent FT rate","Opponent FTA ÷ FGA: how often the defense fouls shooters."],
+ orimr:["Opponent rim rate","Share of opponent shots that are layups, dunks or tips."],
+ orimp:["Opponent rim FG%","Opponent make rate on layups, dunks and tips."],
+ o2p:["Opponent 2P%","Opponent make rate on all twos."],
+ o3r:["Opponent 3PA rate","Share of opponent shots that are threes."],
+ o3p:["Opponent 3P%","Opponent three-point %. Mostly luck in small samples."]
+};
+const tip=document.getElementById("tip");
+const show=(e,h)=>{tip.style.display="block";const x=Math.min(e.clientX+14,innerWidth-320);tip.style.left=x+"px";tip.style.top=e.clientY+14+"px";tip.innerHTML=h};
+const hide=()=>tip.style.display="none";
+let custom=false;
+document.addEventListener("mousemove",e=>{if(custom)return;const el=e.target.closest&&e.target.closest("[data-def]");if(el&&DEF[el.dataset.def]){const[d,t]=DEF[el.dataset.def];show(e,`<b>${d}</b><br>${t}`)}else hide()});
+const tipOn=(e,h)=>{custom=true;show(e,h)}, tipOff=()=>{custom=false;hide()};
+
+// ---------------------------------------------------------------- derived numbers (build data)
+const SBm=Object.fromEntries(D.SB.map(([n,t,a])=>[n,{t,a}]));
+const tpm=SBm["3PT makes"]||{t:0,a:0},rim=SBm["At-rim makes"]||{t:0,a:0},oth=SBm["Other 2 makes"]||{t:0,a:0};
+const unast=D.fgm-(tpm.a+rim.a+oth.a);
+const tb=pmRow("tovband"), atrR=pmRow("atr");
+const P=D.path, pFirst=P[0], pLast=P[P.length-1];
+
+// ---------------------------------------------------------------- page skeleton
+const roleMed=`${esc(D.role)} med`, rolePct=`${esc(RA)} pct`, confPct=`${esc(CS)} pct`;
+const head=`<tr><th>Stat</th><th>His</th><th>D-I med</th><th>D-I pct</th><th>${roleMed}</th><th>${rolePct}</th><th>${confPct}</th></tr>`;
+const missingYears=yy.filter((y,i)=>!D.torvikYears[i]);
+const fromY=yy[D.torvikYears.indexOf(1)];
+root.innerHTML=`
+<section style="margin-top:28px">
+  <div class="shead"><h2>Playmaking</h2><span class="label">Usage · creation · ball security</span></div>
+  <div class="story" id="pmStory"></div>
+  <div class="grid" style="grid-template-columns:1.15fr 1fr">
+    <div class="panel"><div class="label ptitle">Profile vs D-I and peers</div>
+      ${hasT?`<table><thead>${head}</thead><tbody id="pmT"></tbody></table>`:`<div class="story" style="margin-top:0">Not on Barttorvik for ${D.season}.</div>`}
+      <div class="cap">Chip = percentile rank (100 = best). Deep orange = elite, grey = average, blue = weak. Lower-is-better stats are already flipped. Pool: D-I players with 40%+ of team minutes and 15+ games (${N}). ${esc(D.role)} = ${D.roleN.toLocaleString()} per Torvik role.</div></div>
+    <div class="panel"><div class="label ptitle">Creation summary · ${D.gamesDI} D-I games</div>
+      <div class="cards" id="cards"></div>
+      <div style="margin-top:14px"><span class="label" data-def="playmix">How his plays end</span><div class="mbar" id="mixbar"></div><div class="mleg" id="mixleg"></div></div>
+      <div style="margin-top:14px"><span class="label" data-def="selfc">Who created his makes</span><div id="selfbars"></div></div>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1.9fr 1fr">
+    <div class="panel"><div class="label ptitle">Load vs ball security · all ${N} D-I players</div><svg id="scatter" style="width:100%;display:block"></svg></div>
+    <div class="panel"><div class="label ptitle">Reading it</div>
+      <div class="cards" style="grid-template-columns:1fr" id="readCards"></div>
+      <div class="cap">Each grey square counts the D-I players in that spot (brighter = more). Up = fewer turnovers. Dashed lines = D-I medians.${D.band?` Shaded column = his usage band (${D.band.join("–")}%).`:""}</div></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1.5fr">
+    <div class="panel"><div class="label ptitle" id="amapT">Where his assists go</div><div id="amapW"><div class="wait">Reading ESPN play-by-play…</div></div><svg id="amap" style="width:100%;display:block"></svg>
+      <div class="mbar" id="amixbar"></div><div class="mleg" id="amixleg"></div></div>
+    <div class="panel"><div class="label ptitle">Game log · assists up, turnovers down</div><div id="glogW"><div class="wait">Reading ESPN box scores…</div></div><svg id="glog" style="width:100%;display:block"></svg>
+      <div class="cap" id="glogCap"></div></div>
+  </div>
+  <div class="panel" style="margin-top:16px"><div class="label ptitle">Career arc · playmaking (Torvik, ${esc(D.arcTeams.join(" → "))})</div>
+    <div class="arcgrid" id="arcP" style="grid-template-columns:repeat(4,1fr)"></div>
+    <div class="cap">Dashed line = ${D.season} D-I median. ${P.length>1?`Orange end dot = improved since ${fromY}, blue = declined.`:""}${missingYears.length?` No ${missingYears.map(y=>"20"+(+y.slice(1)-1)+"-"+y.slice(1)).join(", ")} season on Torvik.`:""}</div></div>
+</section>
+<section>
+  <div class="shead"><h2>Defense</h2><span class="label">Composite · individual · RAPM · on/off · career</span></div>
+  <div class="story" id="dfStory"></div>
+  <div class="grid" style="grid-template-columns:1fr 1.2fr">
+    <div class="panel"><div class="label ptitle"><span data-def="defscore">DEF score</span> · v2</div>
+      ${D.def?`<div class="score"><svg class="ring" id="ring" viewBox="0 0 140 140"></svg>
+        <div><div class="big">${ord(D.def.rank)} of ${D.def.n.toLocaleString()}</div><span class="tier" id="tierTag"></span>
+          <div class="cap" style="margin-top:6px">${esc(D.role)} ${ord(D.def.rolePct)} pct · ${esc(CS)} ${ord(D.def.confRank)} of ${D.def.confN}</div></div></div>
+      <div class="tiers" id="tiers"></div>
+      <div class="cap" style="margin-top:12px">What moves his score. Bars show standard deviations above or below the average ${esc(D.role.replace(/ G$/," guard").toLowerCase())}; % = weight.</div>
+      <div id="comps" style="margin-top:4px"></div>
+      <div class="cap">* = team halo damped 50%. The weighted sum is shrunk for minutes (Min% ÷ (Min% + 15)), then ranked against all ${D.def.n.toLocaleString()} players to one decimal.</div>`
+      :`<div class="story" style="margin-top:0">No DEF score for ${D.season}: the score ranks rotation players only (40%+ of team minutes on Torvik).</div>`}</div>
+    <div class="panel"><div class="label ptitle">Individual profile vs D-I and peers</div>
+      ${hasT?`<table><thead>${head}</thead><tbody id="dmT"></tbody></table>`:`<div class="story" style="margin-top:0">Not on Barttorvik for ${D.season}.</div>`}</div>
+  </div>
+  <div class="panel" style="margin-top:16px"><div class="label ptitle" id="ooT">${esc(TS)} defense · him <span data-def="onoff">on vs off</span> the floor</div>
+    <div id="ooW"><div class="wait">Replaying ESPN substitutions…</div></div>
+    <div class="grid" style="grid-template-columns:1fr 1.8fr;margin-top:0;display:none" id="ooG">
+      <div class="cards" style="grid-template-columns:1fr" id="ooCards"></div>
+      <div><svg id="onoff" style="width:100%;display:block"></svg>
+        <div class="mleg" style="justify-content:flex-start;gap:14px"><span>● on floor</span><span>○ off floor</span><span style="color:var(--good)">orange = better with him</span><span style="color:var(--bad)">blue = worse</span></div>
+        <div class="cap">Opponent 3P% is mostly luck in samples this size, so it's dimmed. These splits explain <em>how</em> the defense changed. RAPM (left) is the better estimate of <em>how much</em> of it was him.</div></div>
+    </div></div>
+  <div class="panel" style="margin-top:16px"><div class="label ptitle">Career arc · defense (Torvik, ${esc(D.arcTeams.join(" → "))})</div>
+    <div class="arcgrid" id="arcD" style="grid-template-columns:repeat(5,1fr)"></div></div>
+  <div class="cap" style="margin-top:16px">National, Mountain West and Boise St. DEF score rankings live on the <a href="/rankings#defense" target="_top" style="color:var(--text);text-decoration:underline">Rankings page</a>.</div>
+</section>
+<footer id="foot"></footer>`;
+
+// ---------------------------------------------------------------- tables
+const tbl=(id,L)=>{const el=document.getElementById(id);if(el)el.innerHTML=L.map(([k,n,v,dm,dp,cm,cp,sp])=>`<tr><td><span data-def="${k}">${n}</span></td><td style="color:${dp==null||Math.abs(dp-50)<8?'var(--text)':pc(dp)};font-weight:700">${v}</td><td class="med">${dm}</td><td>${chip(dp)}</td><td class="med">${cm}</td><td>${chip(cp)}</td><td>${chip(sp)}</td></tr>`).join("")};
+tbl("pmT",D.PM);tbl("dmT",D.DM);
+
+// ---------------------------------------------------------------- creation cards (PBP fills ptscr / ptshare / ppa / live)
+function cards(X){
+  const c=X?.created, live=X?.live, tos=X?.tos;
+  const scor=D.minutes?D.pts/D.minutes*40:null, offA=c&&D.minutes?c.astPts/D.minutes*40:null;
+  const share=c&&c.teamPtsOn?(D.pts+c.astPts)/c.teamPtsOn:null;
+  const ppa=c?.ppa, liveP=tos?live/tos:null;
+  const C=[
+    ["ptscr","Pts created / 40",c?f1(scor+offA):"…",c?`<em>${f1(scor)}</em> scoring + <em>${f1(offA)}</em> off his assists`:"reading ESPN play-by-play",null],
+    ["ptshare","Share of team pts",share!=null?Math.round(share*100)+"%":"…",share!=null?`of ${esc(TS)} points while he's on: scored or assisted (${f0(D.pts+c.astPts)} of ${f0(c.teamPtsOn)})`:"",null],
+    ["ppa","Pts per assist",ppa!=null?f2(ppa):"…",c&&c.astN?`<em>${pctS(c.ast3,c.astN)}%</em> of his assists set up threes (${c.ast3} of ${c.astN})`:"",ppa==null?null:ppa>=2.55?GOOD:ppa<=2.3?BAD:null],
+    ["atr","AST / TO",D.tov?f2(D.ast/D.tov):"—",`D-I median ${f2(D.medAtr)} · ${esc(D.role)} ${f2(D.roleAtr)}`,atrR?.[4]==null?null:atrR[4]>=65?GOOD:atrR[4]<=35?BAD:null],
+    ["live","Live-ball TOs",liveP!=null?Math.round(liveP*100)+"%":"…",liveP!=null?`<em>${live} of ${tos}</em> turnovers were steals (about half is typical).${liveP>=.58?" These lead straight to opponent breaks.":liveP<=.42?" Mostly dead-ball turnovers, the cheaper kind.":""}`:"",liveP==null?null:liveP>=.58?BAD:liveP<=.42?GOOD:null],
+    ["selfc","Self-created makes",D.fgm?Math.round(unast/D.fgm*100)+"%":"—",`of his FGM unassisted (${unast} of ${D.fgm})`,null]];
+  document.getElementById("cards").innerHTML=C.map(([k,l,v,s,col])=>`<div class="card"><span class="label" data-def="${k}">${l}</span><b style="color:${col||'var(--text)'}">${v}</b><div class="sub">${s}</div></div>`).join("");
+}
+cards(null);
+const mix=[["Shot",D.fga,"#8a8e95"],["FT trip",Math.round(.44*D.fta),"#c9ccd2"],["Assist",D.ast,GOOD],["Turnover",D.tov,BAD]],mt=d3.sum(mix,d=>d[1])||1;
+document.getElementById("mixbar").innerHTML=mix.map(([n,c,f])=>`<div style="width:${c/mt*100}%;background:${f}"></div>`).join("");
+document.getElementById("mixleg").innerHTML=mix.map(([n,c,f])=>`<span><span style="color:${f}">■</span> ${n} <b style="color:var(--text)">${Math.round(c/mt*100)}%</b></span>`).join("");
+document.getElementById("selfbars").innerHTML=D.SB.map(([n,t,a])=>{const u=t-a;return `<div style="display:grid;grid-template-columns:110px 1fr 120px;gap:8px;align-items:center;margin-top:7px;font-size:12px"><span style="color:#d6d8db">${n}</span><div style="display:flex;height:10px;border-radius:3px;overflow:hidden"><div style="width:${u/t*100}%;background:#f2f3f4"></div><div style="width:${a/t*100}%;background:#4a4d53"></div></div><span style="font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right"><b style="color:var(--text)">${Math.round(u/t*100)}%</b> self · ${t} FGM</span></div>`}).join("")+`<div class="mleg" style="justify-content:flex-start;gap:14px;margin-top:8px"><span><span style="color:#f2f3f4">■</span> unassisted (≈ off the dribble)</span><span><span style="color:#4a4d53">■</span> assisted (≈ catch & shoot)</span></div>`;
+
+// ---------------------------------------------------------------- reading-it cards
+(function(){
+  const out=[];
+  if(tb&&tb[4]!=null)out.push(`<div class="card"><span class="label" data-def="tovband">TOV% vs usage peers</span><b style="color:${tb[4]>=60?"var(--good)":tb[4]<=40?"var(--bad)":"var(--text)"}">${ord(tb[4])} pct</b><div class="sub">Among the <em>${D.bandN.toLocaleString()}</em> D-I players with ${D.band.join("–")}% usage, the median TOV% is <em>${f1(D.bandMed)}</em>. His is <em>${f1(D.tovp)}</em>.</div></div>`);
+  if(P.length>1){const du=pLast[0]-pFirst[0],dt=pLast[1]-pFirst[1],good=du>=0&&dt<=0,bad=du<=0&&dt>=0;
+    const q=(u,t)=>`${u>=D.medUsg?"heavy load":"light load"}, ${t<=D.medTov?"safe":"loose"}`;
+    const a=q(pFirst[0],pFirst[1]),b=q(pLast[0],pLast[1]);
+    out.push(`<div class="card"><span class="label">${P.length===2?"Two":P.length===3?"Three":"Four"}-season path</span><b>${sg(du)} USG · ${sg(dt)} TOV</b><div class="sub">${pFirst[2]} → ${pLast[2]} ${a===b?`he stayed in the same zone (${b}), ${dt<0?"with fewer turnovers":dt>0?"with more turnovers":"with the same turnover rate"}.`:`he moved from ${a} to ${b}.`}${good&&(du>1||dt<-1)?" That's the direction you want.":bad&&(du<-1||dt>1)?" That's the wrong direction.":""}</div></div>`);}
+  if(D.orapm!=null)out.push(`<div class="card"><span class="label" data-def="orapm">Offensive RAPM</span><b style="color:${D.orapm>=1?"var(--good)":D.orapm<=-1?"var(--bad)":"var(--text)"}">${sg(D.orapm)}</b><div class="sub">pts/100 added on offense after accounting for every teammate and opponent on the floor${D.orapmPoss?` (${f0(D.orapmPoss)} poss)`:""}.</div></div>`);
+  document.getElementById("readCards").innerHTML=out.join("");
+})();
+
+// ---------------------------------------------------------------- load vs ball security
+(function(){
+  if(!hasT)return;
+  const W=780,Hh=470,m={l:58,r:16,t:16,b:50};
+  const x=d3.scaleLinear([8,36],[m.l,W-m.r]),y=d3.scaleLinear([28,4],[Hh-m.b,m.t]);
+  const svg=d3.select("#scatter").attr("viewBox",`0 0 ${W} ${Hh}`);
+  svg.append("rect").attr("x",x(D.medUsg)).attr("y",m.t).attr("width",x(36)-x(D.medUsg)).attr("height",y(D.medTov)-m.t).attr("fill","rgba(226,98,42,.07)");
+  if(D.band)svg.append("rect").attr("x",x(Math.max(8,D.band[0]))).attr("y",m.t).attr("width",x(Math.min(36,D.band[1]))-x(Math.max(8,D.band[0]))).attr("height",Hh-m.b-m.t).attr("fill","rgba(255,255,255,.035)");
+  const cells=D.H.split(";").map(s=>s.split(",").map(Number)).filter(c=>4+c[1]*1.5<28&&8+c[0]*1.5<36),mx=d3.max(cells,c=>c[2]);
+  svg.append("g").selectAll("rect").data(cells).join("rect").attr("x",c=>x(8+c[0]*1.5)+1).attr("y",c=>y(4+c[1]*1.5)+1).attr("width",x(9.5)-x(8)-2).attr("height",y(5.5)-y(4)-2).attr("rx",2).attr("fill","#c9ccd2").attr("opacity",c=>.07+.6*Math.sqrt(c[2]/mx))
+    .on("mousemove",(e,c)=>tipOn(e,`USG ${(8+c[0]*1.5).toFixed(1)}–${(9.5+c[0]*1.5).toFixed(1)}% · TOV ${(4+c[1]*1.5).toFixed(1)}–${(5.5+c[1]*1.5).toFixed(1)}%<br>${c[2]} players`)).on("mouseleave",tipOff);
+  const ax=svg.append("g").attr("font-size",12).attr("fill","#8a8e95");
+  [10,15,20,25,30,35].forEach(v=>ax.append("text").attr("x",x(v)).attr("y",Hh-m.b+20).attr("text-anchor","middle").text(v+"%"));
+  [5,10,15,20,25].forEach(v=>ax.append("text").attr("x",m.l-10).attr("y",y(v)+4).attr("text-anchor","end").text(v+"%"));
+  ax.append("text").attr("x",(m.l+W-m.r)/2).attr("y",Hh-8).attr("text-anchor","middle").attr("letter-spacing",".08em").attr("data-def","usg").text("USAGE  →  bigger load");
+  ax.append("text").attr("transform",`translate(16,${(m.t+Hh-m.b)/2}) rotate(-90)`).attr("text-anchor","middle").attr("letter-spacing",".08em").attr("data-def","tov").text("TURNOVER %  ·  safer ↑");
+  const ref=svg.append("g").attr("stroke","#6b6e75").attr("stroke-dasharray","4 4");
+  ref.append("line").attr("x1",x(D.medUsg)).attr("x2",x(D.medUsg)).attr("y1",m.t).attr("y2",Hh-m.b);
+  ref.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",y(D.medTov)).attr("y2",y(D.medTov));
+  const q=svg.append("g").attr("font-size",11).attr("letter-spacing",".08em").attr("font-weight",500);
+  q.append("text").attr("x",W-m.r-8).attr("y",m.t+18).attr("text-anchor","end").attr("fill",GOOD_T).text("HEAVY LOAD · SAFE");
+  q.append("text").attr("x",m.l+8).attr("y",m.t+18).attr("fill","#6b6e75").text("LIGHT LOAD · SAFE");
+  q.append("text").attr("x",W-m.r-8).attr("y",Hh-m.b-10).attr("text-anchor","end").attr("fill","#6b6e75").text("HEAVY LOAD · LOOSE");
+  q.append("text").attr("x",m.l+8).attr("y",Hh-m.b-10).attr("fill","#6b6e75").text("LIGHT LOAD · LOOSE");
+  const cl=d=>[Math.max(8.5,Math.min(35.5,d[0])),Math.max(4.5,Math.min(27.5,d[1])),d[2]];
+  const PP=P.map(cl);
+  if(PP.length>1)svg.append("path").attr("d",d3.line().x(d=>x(d[0])).y(d=>y(d[1])).curve(d3.curveCatmullRom)(PP)).attr("fill","none").attr("stroke",GOOD).attr("stroke-width",2).attr("stroke-dasharray","3 4");
+  PP.forEach((d,i)=>{const L=i==PP.length-1;svg.append("circle").attr("cx",x(d[0])).attr("cy",y(d[1])).attr("r",L?10:6).attr("fill",L?GOOD:"#16171a").attr("stroke",L?"#fff":GOOD).attr("stroke-width",L?2.5:2).on("mousemove",e=>tipOn(e,`20${d[2].slice(1)} · USG ${P[i][0]}% · TOV ${P[i][1]}%`)).on("mouseleave",tipOff);
+    if(!L)svg.append("text").attr("x",x(d[0])-11).attr("y",y(d[1])+4).attr("text-anchor","end").attr("font-size",12).attr("fill","#9aa0a8").text(d[2]);});
+  const Ld=PP[PP.length-1],bw=196,left=x(Ld[0])+18+bw>W-m.r;
+  const lx=left?x(Ld[0])-18-bw:x(Ld[0])+18,ly=Math.max(m.t+18,y(Ld[1])-26);
+  svg.append("rect").attr("x",lx).attr("y",ly-16).attr("width",bw).attr("height",40).attr("rx",5).attr("fill","rgba(10,11,13,.9)").attr("stroke","#3a3d42");
+  svg.append("text").attr("x",lx+10).attr("y",ly).attr("font-size",13).attr("font-weight",600).attr("fill","#fff").text(`${D.last} ${lastY} · ${f1(D.usg)} / ${f1(D.tovp)}`);
+  if(tb?.[4]!=null)svg.append("text").attr("x",lx+10).attr("y",ly+16).attr("font-size",11).attr("fill",tb[4]>=50?GOOD_T:BAD_T).text(`${ord(tb[4])} pct TOV% at his usage`);
+})();
+
+// ---------------------------------------------------------------- career arcs
+function arcCard(container,[key,name,vals,better,fm,med]){
+  const fmt=fm==="f2"?f2:f1;
+  const W=300,Hh=200,m={t:44,b:34,l:30,r:30};
+  const svg=d3.select(container).append("svg").attr("viewBox",`0 0 ${W} ${Hh}`);
+  const x=d3.scalePoint(yy,[m.l,W-m.r]);
+  const all=vals.filter(v=>v!=null).concat(med==null?[]:[med]);
+  svg.append("text").attr("x",14).attr("y",22).attr("font-size",12).attr("font-weight",500).attr("fill","#d6d8db").attr("letter-spacing",".06em").attr("data-def",key).text(name.toUpperCase());
+  svg.append("text").attr("x",W-14).attr("y",22).attr("text-anchor","end").attr("font-size",10).attr("fill","#6b6e75").text(better=="low"?"↓ better":"↑ better");
+  yy.forEach((t,i)=>svg.append("text").attr("x",x(t)).attr("y",Hh-10).attr("text-anchor","middle").attr("font-size",11).attr("fill",vals[i]==null?"#4a4d53":"#9aa0a8").text(vals[i]==null?"—":t));
+  if(!all.length)return;
+  const ext=d3.extent(all),pad=(ext[1]-ext[0])*.3||1;
+  const y=d3.scaleLinear([ext[0]-pad,ext[1]+pad],better=="low"?[m.t,Hh-m.b]:[Hh-m.b,m.t]);
+  if(med!=null){svg.append("line").attr("x1",m.l-12).attr("x2",W-m.r+12).attr("y1",y(med)).attr("y2",y(med)).attr("stroke","#6b6e75").attr("stroke-dasharray","4 4");
+    svg.append("text").attr("x",W-m.r+12).attr("y",y(med)-5).attr("text-anchor","end").attr("font-size",9.5).attr("fill","#8a8e95").text("D-I med "+fmt(med));}
+  const pts=vals.map((v,i)=>[yy[i],v,i]).filter(d=>d[1]!=null);
+  const first=pts[0][1],last=pts[pts.length-1][1],imp=better=="low"?last<first:last>first,col=pts.length<2||first===last?NEU:imp?GOOD:BAD;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],gap=b[2]-a[2]>1;
+    svg.append("path").attr("d",d3.line().x(d=>x(d[0])).y(d=>y(d[1]))([a,b])).attr("stroke",col).attr("stroke-width",2.2).attr("stroke-dasharray",gap?"4 4":null).attr("fill","none").attr("opacity",.7);}
+  pts.forEach((d,i)=>{const L=i==pts.length-1;svg.append("circle").attr("cx",x(d[0])).attr("cy",y(d[1])).attr("r",L?7:5).attr("fill",L?col:"#26282c").attr("stroke",L?"#fff":col).attr("stroke-width",2);
+    svg.append("text").attr("x",x(d[0])).attr("y",y(d[1])-13).attr("text-anchor","middle").attr("font-size",L?15:12).attr("font-weight",L?700:500).attr("fill",L?"#fff":"#b9bdc4").text(fmt(d[1]));});
+}
+D.arcP.forEach(a=>arcCard("#arcP",a));D.arcD.forEach(a=>arcCard("#arcD",a));
+
+// ---------------------------------------------------------------- DEF score v2
+const TIERS=[["POOR",0,20],["BELOW",20,40],["AVERAGE",40,60],["SOLID",60,80],["PLUS",80,95],["ELITE",95,100.01]];
+const tierOf=s=>TIERS.find(t=>s>=t[1]&&s<t[2]);
+if(D.def)(function(){
+  const s=D.def.score,svg=d3.select("#ring"),r=60,c=70,col=pc(s);
+  svg.append("circle").attr("cx",c).attr("cy",c).attr("r",r).attr("fill","none").attr("stroke","#2a2c30").attr("stroke-width",11);
+  svg.append("path").attr("d",d3.arc().innerRadius(r-5.5).outerRadius(r+5.5).startAngle(0).endAngle(2*Math.PI*s/100).cornerRadius(5)()).attr("transform",`translate(${c},${c})`).attr("fill",col);
+  svg.append("text").attr("x",c).attr("y",c+12).attr("text-anchor","middle").attr("font-size",36).attr("font-weight",600).attr("fill","#fff").text(s.toFixed(1));
+  svg.append("text").attr("x",c).attr("y",c+31).attr("text-anchor","middle").attr("font-size",9.5).attr("fill","#8a8e95").attr("letter-spacing",".1em").text("DEF · 1–100");
+  const t=tierOf(s);const tt=document.getElementById("tierTag");tt.textContent=t[0];tt.style.background=pc(s);tt.style.color="#fff";
+  document.getElementById("tiers").innerHTML=TIERS.map(([n,a,b])=>`<div style="background:${pc((a+Math.min(b,100))/2)};opacity:${n==t[0]?1:.35};${n==t[0]?'outline:1.5px solid #fff':''}">${n}<br>${a}–${Math.min(100,Math.round(b))}</div>`).join("");
+  document.getElementById("comps").innerHTML=D.def.z.map(([k,n,w,z])=>{const pos=z>=0,wd=Math.min(3,Math.abs(z))/3*50;
+    return `<div class="comp"><span data-def="${k}">${n}</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--muted)">${Math.round(w*100)}%</span><span class="z"><s></s><i style="${pos?`left:50%`:`right:50%`};width:${wd}%;background:${pos?GOOD:BAD}"></i></span><span style="font-family:var(--mono);font-size:11px;text-align:right;color:${pos?GOOD_T:BAD_T}">${z>=0?"+":""}${z.toFixed(2)}σ</span></div>`}).join("");
+})();
+
+// ---------------------------------------------------------------- on/off
+function onoff(O,src){
+  document.getElementById("ooW").style.display="none";
+  if(!O){document.getElementById("ooW").style.display="";document.getElementById("ooW").innerHTML=`<div class="wait">Not enough play-by-play to split his minutes on and off the floor.</div>`;return;}
+  document.getElementById("ooG").style.display="";
+  document.getElementById("ooT").innerHTML=`${esc(TS)} defense · him <span data-def="onoff">on vs off</span> the floor · ${O.games} D-I games`;
+  const r0=O.rows.find(r=>r[0]==="opp100"),d=r0?r0[2]-r0[3]:null,se=1.15*100*Math.sqrt(1/O.onPoss+1/O.offPoss);
+  const dcol=d==null||Math.abs(d)<se*.5?"var(--text)":d>0?"var(--bad)":"var(--good)";
+  document.getElementById("ooCards").innerHTML=`
+    <div class="card"><span class="label" data-def="opp100">Opp pts/100 · on → off</span><b>${r0?`${f1(r0[2])} → ${f1(r0[3])}`:"—"}</b><div class="sub">${f0(O.onPoss)} vs ${f0(O.offPoss)} opponent possessions</div></div>
+    <div class="card"><span class="label">Raw on − off</span><b style="color:${dcol}">${sg(d)}</b><div class="sub">noise ≈ ±${Math.round(se)} (1 SE). Doesn't account for teammates or opponents.</div></div>
+    <div class="card"><span class="label" data-def="drapm">Defensive RAPM</span><b style="color:${D.drapm==null||Math.abs(D.drapm)<.5?"var(--text)":D.drapm>0?"var(--good)":"var(--bad)"}">${sg(D.drapm)}</b><div class="sub">pts/100 vs average, after accounting for everyone on the floor.${D.drapmPct!=null?` <em>${ord(D.drapmPct)} pct</em> of D-I rotation players`:""}${D.drapmPoss?` · ${f0(D.drapmPoss)} poss`:""}.</div></div>`;
+  const OO=O.rows, W=680,rh=30,m={l:120,r:64,t:6},Hh=m.t+OO.length*rh+4;
+  const svg=d3.select("#onoff").html("").attr("viewBox",`0 0 ${W} ${Hh}`);
+  OO.forEach(([k,n,on,off,b,dim],i)=>{
+    const y=m.t+i*rh+rh/2,c=(on+off)/2,span=Math.max(8,Math.abs(on-off)*2.4),x=d3.scaleLinear([c-span,c+span],[m.l+14,W-m.r-14]);
+    const d=on-off,worse=b=="low"?d>0:d<0,col=Math.abs(d)<.5?NEU:worse?BAD:GOOD;
+    const g=svg.append("g").attr("opacity",dim?.45:1);
+    g.append("text").attr("x",0).attr("y",y+4).attr("font-size",12).attr("fill","#d6d8db").attr("font-family","Inter Tight Variable").attr("data-def",k).text(n);
+    g.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",y).attr("y2",y).attr("stroke","#2a2c30");
+    g.append("line").attr("x1",x(off)).attr("x2",x(on)).attr("y1",y).attr("y2",y).attr("stroke",col).attr("stroke-width",4).attr("stroke-linecap","round").attr("opacity",.85);
+    g.append("circle").attr("cx",x(off)).attr("cy",y).attr("r",5.5).attr("fill","#1e1f22").attr("stroke","#8a8e95").attr("stroke-width",1.6);
+    g.append("circle").attr("cx",x(on)).attr("cy",y).attr("r",6).attr("fill","#f2f3f4");
+    g.append("text").attr("x",x(on)+(on>=off?10:-10)).attr("y",y+4).attr("text-anchor",on>=off?"start":"end").attr("font-size",11).attr("fill","#fff").text(on.toFixed(1));
+    g.append("text").attr("x",x(off)+(on>=off?-10:10)).attr("y",y+4).attr("text-anchor",on>=off?"end":"start").attr("font-size",10.5).attr("fill","#8a8e95").text(off.toFixed(1));
+    g.append("text").attr("x",W).attr("y",y+4).attr("text-anchor","end").attr("font-size",12).attr("font-weight",600).attr("fill",col).text((d>0?"+":"")+d.toFixed(1));
+  });
+  return d;
+}
+
+// ---------------------------------------------------------------- stories
+const pcT=(p,hi,lo)=>p==null?null:p>=hi?1:p<=lo?-1:0;
+function pmStory(X){
+  const u=pmRow("usg")?.[4], bp=tb?.[4], c=X?.created;
+  const load=u==null?"":u>=70?"high-usage ":u<=30?"low-usage ":"mid-usage ";
+  const sec=bp==null?"":bp>=65?" who protects the ball":bp<=35?" who turns it over too much for his load":" with average ball security";
+  const s2=rim.t+oth.t, s2u=s2?(s2-rim.a-oth.a)/s2:null, t3a=tpm.t>=10?tpm.a/tpm.t:null, all=D.fgm?unast/D.fgm:null;
+  let c2="";
+  if(s2u!=null&&s2>=15&&s2u>=.7&&t3a!=null&&t3a>=.7)c2=" He creates his own twos, but his threes mostly come off passes.";
+  else if(all!=null&&D.fgm>=20&&all>=.6)c2=" He creates most of his own shots.";
+  else if(all!=null&&D.fgm>=20&&all<=.35)c2=" Most of his makes come off passes.";
+  let t=`<b>A ${load}${noun}${sec}.${c2}</b>`;
+  if(D.usg!=null)t+=` He used ${f1(D.usg)}% of possessions and turned it over on ${f1(D.tovp)}%${bp!=null?`, ${bp>=50?`better than ${bp}%`:`worse than ${100-bp}%`} of D-I players with similar usage`:""}.`;
+  const bits=[];
+  if(rim.t>=8)bits.push(`${Math.round((rim.t-rim.a)/rim.t*100)}% of his made layups`);
+  if(oth.t>=8)bits.push(`${Math.round((oth.t-oth.a)/oth.t*100)}% of his made mid-range shots`);
+  if(bits.length)t+=` ${bits.join(" and ")} ${bits.length>1?"were":"was"} unassisted${tpm.t>=8?`, while ${Math.round(tpm.a/tpm.t*100)}% of his made threes were assisted`:""}.`;
+  if(c&&c.teamPtsOn)t+=` He scored or assisted on ${Math.round((D.pts+c.astPts)/c.teamPtsOn*100)}% of ${esc(TS)}'s points while on the floor.`;
+  const liveP=X?.tos>=10?X.live/X.tos:null;
+  if(liveP!=null&&liveP>=.58)t+=` <b>Watch item:</b> ${Math.round(liveP*100)}% of his turnovers were steals, which lead to opponent fast breaks.`;
+  else if(bp!=null&&bp<=30)t+=` <b>Watch item:</b> turnovers. His rate is high for a player with his usage.`;
+  document.getElementById("pmStory").innerHTML=t;
+}
+function dfStory(gap){
+  const Z=Object.fromEntries((D.def?.z||[]).map(([k,,,z])=>[k,z]));
+  const s=D.def?.score;
+  const lead=s==null?"":s>=95?"An elite defender":s>=80?"A plus defender":s>=60?"A solid defender":s>=40?"An average defender":s>=20?"A below-average defender":"A poor defender";
+  const W={blk:Z.blk<=-.8?"no rim protection":"little rim protection",drb:"light rebounding",pf:"too many fouls",stl:"few steals",dbpm:"a weak DBPM",adrtg:"a poor Adj DRtg"};
+  const G={blk:"real rim protection",drb:"strong defensive rebounding",pf:"few fouls",stl:"active hands",dbpm:"a strong DBPM",adrtg:"a strong Adj DRtg"};
+  const weak=Object.keys(W).filter(k=>Z[k]!=null&&Z[k]<=-.5).sort((a,b)=>Z[a]-Z[b]).slice(0,3).map(k=>W[k]);
+  const strong=Object.keys(G).filter(k=>Z[k]!=null&&Z[k]>=.5).sort((a,b)=>Z[b]-Z[a]).slice(0,3).map(k=>G[k]);
+  const list=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+  const rp=D.drapmPct;
+  const rapm=rp==null?"":rp>=60?"RAPM rates him a plus":rp<=40?(s!=null&&s<40?"RAPM agrees he's a minus":"RAPM has him as a minus"):"RAPM has him about average";
+  let t="";
+  if(lead){const parts=s>=50?strong:weak;t=`<b>${lead}${parts.length?`: ${list(parts)}`:""}${rapm?`, and ${rapm}`:""}.</b>`;}
+  else t=`<b>Not enough minutes for a DEF score.</b>`;
+  if(s!=null)t+=` His DEF score is <b>${s.toFixed(1)}</b>, ${ord(D.def.rank)} of ${D.def.n.toLocaleString()}.`;
+  if(D.drapm!=null){t+=` RAPM credits each player separately from the teammates and opponents he shared the floor with. It puts his defense at <b>${sg(D.drapm)} pts/100</b>${rp!=null?` (${ord(rp)} pct)`:""}`;
+    if(gap!=null&&Math.abs(gap)>=3){const rawGood=gap<0,rapGood=D.drapm>0;
+      t+=rawGood===rapGood?(Math.abs(gap)>2*Math.abs(D.drapm)?`, much milder than ${esc(TS)}'s raw ${sg(gap)} on/off gap. Part of that gap came from who he played with, not him.`:`, in line with ${esc(TS)}'s raw ${sg(gap)} on/off gap.`)
+        :`, while ${esc(TS)}'s raw on/off gap points the other way (${sg(gap)}). On/off doesn't adjust for teammates or opponents.`;}
+    else t+=".";}
+  const avg=[["stl","Steals"],["adrtg","Adj DRtg"],["drb","Rebounding"],["blk","Blocks"]].filter(([k])=>Z[k]!=null&&Math.abs(Z[k])<.3).map(([,l])=>l).slice(0,2);
+  if(avg.length)t+=` ${list(avg)} ${avg.length>1?"are":"is"} about average.`;
+  t+=` These numbers don't measure on-ball defense; that needs film or Synergy.`;
+  document.getElementById("dfStory").innerHTML=t;
+}
+pmStory(null);dfStory(null);
+const foot=X=>document.getElementById("foot").innerHTML=`Sources: Barttorvik player advanced stats (pool = 40%+ team minutes, 15+ games, n = ${N}), our play-by-play pipeline (D-I games: creation splits, RAPM) and ESPN play-by-play (public game feed: assist map, game log, on/off).${X?.onoff?` Player-page on/off covers his ${X.onoff.games} D-I games.`:""} Possessions = FGA − ORB + TOV + 0.44 × FTA. Creation numbers use D-I games only (${D.fga} FGA${X?.created?`, ${X.created.astN} charted assists`:""}).`;
+foot(null);
+
+// ---------------------------------------------------------------- ESPN play-by-play
+const fit=()=>{try{const f=frameElement;if(f)f.style.height=document.documentElement.scrollHeight+"px"}catch{}};
+fit();
+let X=null;
+if(D.espn&&D.teamEspn){
+  try{
+    const d1=new Set(await fetch("/data/pd/_d1.json").then(r=>r.json()));
+    X=await pdPBP({espn:D.espn,team:D.teamEspn,season:D.year,d1});
+  }catch(e){console.warn("pbp",e);}
+}
+const G=X?.games||[];
+const lab=g=>gameLabel(g,CS);
+// assist map
+(function(){
+  const AC=X?.assists||[];
+  document.getElementById("amapW").innerHTML=X?(AC.length?"":`<div class="wait">No assists charted.</div>`):`<div class="wait">ESPN play-by-play unavailable right now.</div>`;
+  if(!AC.length)return;
+  document.getElementById("amapT").textContent=`Where his assists go · ${AC.length} charted`;
+  const PX=9,W=50*PX,Hc=35*PX,BX=25,BY=5.25,R3=22.146,C3=21.65,CY=BY+Math.sqrt(R3*R3-C3*C3),Pp=v=>v*PX;
+  const svg=d3.select("#amap").attr("viewBox",`0 0 ${W} ${Hc}`);
+  svg.append("rect").attr("width",W).attr("height",Hc).attr("fill","#141518").attr("rx",4);
+  const L=svg.append("g").attr("fill","none").attr("stroke","rgba(255,255,255,.3)").attr("stroke-width",1.1);
+  L.append("rect").attr("x",Pp(19)).attr("y",0).attr("width",Pp(12)).attr("height",Pp(19));
+  L.append("path").attr("d",`M${Pp(BX-C3)},0 L${Pp(BX-C3)},${Pp(CY)} A${Pp(R3)},${Pp(R3)} 0 0 0 ${Pp(BX+C3)},${Pp(CY)} L${Pp(BX+C3)},0`);
+  L.append("circle").attr("cx",Pp(BX)).attr("cy",Pp(BY)).attr("r",Pp(.75)).attr("stroke","rgba(255,255,255,.6)");
+  const col=a=>a[3]==3?"#f2f3f4":a[4]?"#9aa0a8":"#55585e";
+  const j=(i,k)=>{const s=Math.sin((i+1)*(k?78.233:12.9898))*43758.5453;return (s-Math.floor(s))-.5};
+  svg.append("g").selectAll("circle").data(AC).join("circle").attr("cx",(a,i)=>Pp(Math.min(49.6,Math.max(.4,a[1]+j(i,0)*1.2)))).attr("cy",(a,i)=>Pp(Math.min(34.6,Math.max(.4,a[2]+4.25+j(i,1)*1.2)))).attr("r",4.5).attr("fill",col).attr("opacity",.9).attr("stroke","#141518").attr("stroke-width",.8)
+    .on("mousemove",(e,a)=>tipOn(e,`${esc(lab(G[a[0]]))}<br>Assisted ${a[3]}PT${a[4]?" at rim":""}`)).on("mouseleave",tipOff);
+  const n3=AC.filter(a=>a[3]==3).length,nr=AC.filter(a=>a[3]!=3&&a[4]).length,no=AC.length-n3-nr;
+  const mx=[["3PT",n3,"#f2f3f4"],["At rim",nr,"#9aa0a8"],["Other 2",no,"#55585e"]];
+  document.getElementById("amixbar").innerHTML=mx.map(([n,c,f])=>`<div style="width:${c/AC.length*100}%;background:${f}"></div>`).join("");
+  document.getElementById("amixleg").innerHTML=mx.map(([n,c,f])=>`<span><span style="color:${f}">■</span> ${n} <b style="color:var(--text)">${Math.round(c/AC.length*100)}%</b> · ${c}</span>`).join("");
+})();
+// game log
+(function(){
+  const GL=X?.gl||[];
+  document.getElementById("glogW").innerHTML=X?(GL.length?"":`<div class="wait">No games found.</div>`):`<div class="wait">ESPN box scores unavailable right now.</div>`;
+  if(!GL.length)return;
+  const W=700,Hh=230,m={l:28,r:10,t:12,b:24},mid=128,top=Math.max(9,d3.max(GL,g=>g[2])),bot=Math.max(4,d3.max(GL,g=>g[3])),u=v=>v*Math.min(11,(mid-m.t-6)/top,(Hh-m.b-mid-4)/bot);
+  const svg=d3.select("#glog").attr("viewBox",`0 0 ${W} ${Hh}`);
+  const x=d3.scaleBand(GL.map(g=>g[0]),[m.l,W-m.r]).padding(.22);
+  (top>12?[4,8,12]:[3,6,9]).forEach(v=>{svg.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",mid-u(v)).attr("y2",mid-u(v)).attr("stroke","#2a2c30");svg.append("text").attr("x",m.l-6).attr("y",mid-u(v)+4).attr("text-anchor","end").attr("font-size",10).attr("fill","#6b6e75").text(v)});
+  [2,4].forEach(v=>svg.append("text").attr("x",m.l-6).attr("y",mid+u(v)+4).attr("text-anchor","end").attr("font-size",10).attr("fill","#6b6e75").text(v));
+  svg.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",mid).attr("y2",mid).attr("stroke","#5d6168");
+  GL.forEach(d=>{const gx=x(d[0]),bw=x.bandwidth(),g=G[d[0]];
+    svg.append("rect").attr("x",gx).attr("y",mid-u(d[2])).attr("width",bw).attr("height",u(d[2])).attr("fill",GOOD).attr("rx",1.5);
+    svg.append("rect").attr("x",gx).attr("y",mid+1).attr("width",bw).attr("height",u(d[3])).attr("fill",BAD).attr("rx",1.5);
+    svg.append("rect").attr("x",gx-1).attr("y",m.t).attr("width",bw+2).attr("height",Hh-m.t-m.b).attr("fill","transparent").on("mousemove",e=>tipOn(e,`${esc(lab(g))}${g.di?"":" (non-D-I)"}<br>${d[1]} min · ${d[2]} ast · ${d[3]} to`)).on("mouseleave",tipOff);});
+  svg.append("text").attr("x",W-m.r).attr("y",m.t+8).attr("text-anchor","end").attr("font-size",10.5).attr("fill",GOOD).text("ASSISTS ↑");
+  svg.append("text").attr("x",W-m.r).attr("y",Hh-m.b-4).attr("text-anchor","end").attr("font-size",10.5).attr("fill",BAD).text("TURNOVERS ↓");
+  const firstPost=GL.find(d=>G[d[0]].post), firstConf=GL.find(d=>G[d[0]].conf&&!G[d[0]].post);
+  if(firstPost){const s=x(firstPost[0]);svg.append("line").attr("x1",s-3).attr("x2",s-3).attr("y1",m.t).attr("y2",Hh-m.b).attr("stroke","#4a4d53").attr("stroke-dasharray","2 3");
+    svg.append("text").attr("x",s).attr("y",Hh-6).attr("font-size",10).attr("fill","#8a8e95").text("POST");}
+  if(firstConf)svg.append("text").attr("x",x(firstConf[0])).attr("y",Hh-6).attr("font-size",10).attr("fill","#8a8e95").text(`${CS.toUpperCase()} PLAY →`);
+  const nonDI=GL.filter(d=>!G[d[0]].di).length;
+  document.getElementById("glogCap").textContent=`${GL.length} games from the ESPN box score${nonDI?` (includes ${nonDI} non-D-I game${nonDI>1?"s":""})`:""}. Hover a game for its line.`;
+})();
+cards(X);pmStory(X);
+// on/off: ESPN replay; if ESPN is unavailable, the lineup stints from our pipeline.
+const gap=onoff(X?.onoff||D.onoff||null);
+dfStory(gap??null);foot(X);
+fit();setTimeout(fit,300);
+addEventListener("resize",fit);
+</script>
+</body>
+</html>

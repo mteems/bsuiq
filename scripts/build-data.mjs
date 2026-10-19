@@ -88,8 +88,11 @@ for (const p of roster.players) {
     player,
     seasons,
     shots: (shots[p.id] || []).sort((a, b) => a.season.localeCompare(b.season)),
-    modules: MODULES[p.id] || [],
+    // DWT keeps his hand-built module; everyone else gets the same module generated from data.
+    modules: MODULES[p.id] || (existsSync(src(`pd/${p.id}.json`)) ? [{ src: `/modules/pd.html?id=${encodeURIComponent(p.id)}`, title: "Playmaking & Defense" }] : []),
     scores: playerScores(p),
+    // Live ESPN play-by-play for his latest D-I season (shot chart when none is prebuilt).
+    pbp: (() => { try { const d = JSON.parse(readFileSync(src(`pd/${p.id}.json`), "utf8")); return d.espn && d.teamEspn ? { espn: d.espn, team: d.teamEspn, season: d.year, label: d.season, school: d.team, teamShort: d.teamShort, confShort: d.confShort } : null; } catch { return null; } })(),
   });
   const lastLite = last ? { season: last.season, school: last.school, gp: last.gp, mpg: last.mpg, ppg: last.ppg, three_pct: last.three_pct, three_pa: last.three_pa, ...last.d, pct: last.pct.metrics } : null;
   rosterRows.push({ ...player, last: lastLite });
@@ -109,6 +112,7 @@ if (existsSync(src("reports/index.json"))) {
 }
 // International board (DraftExpress list + map lookups).
 if (existsSync(src("intl"))) cpSync(src("intl"), join(out, "intl"), { recursive: true });
+if (existsSync(src("pd"))) cpSync(src("pd"), join(out, "pd"), { recursive: true });
 if (existsSync(src("search"))) cpSync(src("search"), join(out, "search"), { recursive: true });
 if (existsSync(src("rosters-2027.json"))) cpSync(src("rosters-2027.json"), join(out, "rosters-2027.json"));
 if (existsSync(src("positions.json"))) cpSync(src("positions.json"), join(out, "positions.json"));
