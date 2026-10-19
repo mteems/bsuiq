@@ -535,7 +535,7 @@ function mergeGames(D,extra){
 // 2026-27 roster: ESPN live (class, hometown) over the stored export (weights, returner flags).
 async function roster27(o){
  const R=await rosters27(),id=eid(o),st=R.teams[oslug(o)]||R.teams[id]||null;
- let live=null;if(id&&!st?.players?.length)try{const j=await getJ(`/api/espn/roster/${id}?season=2027`,6000);if(j.players?.length)live=j.players;}catch{}
+ let live=null;if(id&&!(st?.players?.length&&st.src!=="ESPN"))try{const j=await getJ(`/api/espn/roster/${id}?season=2027`,6000);if(j.players?.length)live=j.players;}catch{}
  const base=live||st?.players||[];if(!base.length)return null;
  const sm=new Map((st?.players||[]).map(p=>[nn(p.name),p]));
  return {src:live?"ESPN (live)":st?.src||"ESPN",last:st?.last||null,level:st?.level||null,players:base.map(p=>{const q=sm.get(nn(p.name))||{};return {...q,...p,wt:p.wt||q.wt||null,ht:p.ht||q.ht||"",ret:!!q.ret};})};
