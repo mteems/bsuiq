@@ -192,7 +192,7 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"]];
+const PAGES = [[/^\/$/, "/"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"]];
 
 // Staff position overrides for depth charts. Stored as one JSON object in KV:
 //   { "<teamKey>|<player name>": { slot: "PF", by: "staff", at: "<iso>" } }

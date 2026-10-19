@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>International · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+:root{--t1:#e2622a;--t2:#f0a07a;--t3:#a8968c}
+.iwrap{max-width:1480px;margin:auto;padding:22px 24px 36px}
+.ihead{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.ihead h1{font-size:28px;margin-top:6px}
+.ikpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-left:auto;min-width:min(720px,100%)}
+.ikpi{background:var(--card);border-radius:8px;padding:9px 12px}
+.ikpi b{display:block;font-size:20px;font-weight:750;margin-top:2px}
+.ikpi .sub{font-size:10.5px;color:var(--muted);margin-top:1px}
+.ibar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.conts{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.conts button{background:none;border:0;border-right:1px solid var(--line);color:var(--muted);font:500 12px var(--ui);padding:8px 13px;cursor:pointer;display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.conts button:last-child{border-right:0}
+.conts button i{font:normal 10px var(--mono);color:var(--faint)}
+.conts button:hover{color:var(--soft)}
+.conts button.on{background:var(--edge);color:#fff}.conts button.on i{color:#cfd3d9}
+.conts button[disabled]{opacity:.35;cursor:default}
+.fgrp{display:flex;align-items:center;gap:6px}
+.fgrp .ddl{font:10px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
+.fchip{background:var(--card);border:1px solid var(--edge);color:var(--dim);border-radius:6px;padding:5px 9px;font:11px var(--mono);cursor:pointer;display:flex;gap:6px;align-items:center}
+.fchip:hover{color:#fff}
+.fchip.off{opacity:.38}
+.fchip s{width:8px;height:8px;border-radius:50%;display:inline-block;text-decoration:none}
+.seg2{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-left:auto}
+.seg2.mode{position:absolute;right:12px;top:12px;background:rgba(22,23,26,.9)}
+.seg2 button{background:none;border:0;color:var(--muted);font:11px var(--mono);padding:7px 11px;cursor:pointer;letter-spacing:.03em}
+.seg2 button.on{background:var(--edge);color:#fff}
+.igrid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;margin-top:12px}
+.mapbox{position:relative;background:#18191c;border:1px solid var(--line);border-radius:12px;overflow:hidden;height:min(640px,72vh);min-height:420px}
+.mapbox svg{width:100%;height:100%;display:block;cursor:grab}
+.mapbox svg:active{cursor:grabbing}
+.land{fill:#25272b;stroke:#33363b;stroke-width:.6;vector-effect:non-scaling-stroke}
+.land.has{fill:#36373c}
+.land.hot{fill:#45464b}
+.grat{fill:none;stroke:#1f2124;stroke-width:.6;vector-effect:non-scaling-stroke}
+.sphere{fill:#18191c}
+.bub circle.bg{fill:#16171a;stroke:#16171a;stroke-width:2}
+.bub text{font:600 11px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.bub{cursor:pointer}
+.bub:hover circle.bg{fill:#2a2c30}
+.dot{cursor:pointer;stroke:#16171a;stroke-width:1.5;transition:r .12s}
+.dot.hl{stroke:#fff;stroke-width:2}
+.dot.dim{opacity:.18}
+.clab{font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;fill:#b9bdc4;paint-order:stroke;stroke:#18191c;stroke-width:3px;pointer-events:none}
+.clab b{fill:#fff}
+.arc{fill:none;stroke:#f0a07a;stroke-width:1;stroke-dasharray:2 3;opacity:.55;pointer-events:none}
+.mapui{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+.mapui button{width:30px;height:30px;border-radius:7px;border:1px solid var(--edge);background:rgba(30,31,34,.92);color:var(--soft);font:16px var(--mono);cursor:pointer}
+.mapui button:hover{color:#fff;border-color:#6a6e75}
+.legend{position:absolute;left:14px;bottom:12px;background:rgba(22,23,26,.86);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:10px var(--mono);color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 80px)}
+.legend span{display:flex;gap:5px;align-items:center}.legend s{width:9px;height:9px;border-radius:50%;display:inline-block}
+.where{position:absolute;left:14px;top:12px;font:500 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--soft);background:rgba(22,23,26,.86);border:1px solid var(--line);border-radius:8px;padding:7px 10px;pointer-events:none}
+.where em{font-style:normal;color:var(--muted);margin-left:6px}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:0;height:min(640px,72vh);min-height:420px;overflow:hidden}
+.shd{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.shd h2{font-size:17px}
+.shd .label{margin-top:3px}
+.slist{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:#3a3d42 transparent}
+.cgrp{border-bottom:1px solid var(--line2)}
+.ch{display:flex;align-items:center;gap:8px;padding:9px 16px 6px;position:sticky;top:0;background:var(--panel);z-index:1;cursor:pointer}
+.ch img{width:18px;height:13px;border-radius:2px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.ch b{font-size:12.5px;font-weight:650}
+.ch span{margin-left:auto;font:10.5px var(--mono);color:var(--muted)}
+.pr{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:9px;align-items:center;padding:6px 16px 6px 18px;cursor:pointer}
+.pr:hover,.pr.hl{background:rgba(255,255,255,.04)}
+.pr.sel{background:rgba(255,255,255,.07)}
+.pr s{width:9px;height:9px;border-radius:50%;display:block}
+.pr .nm{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr .mt{font:10.5px var(--mono);color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr .tr{font:10px var(--mono);color:var(--dim);text-align:right;line-height:1.5}
+.vc{font:9px var(--mono);letter-spacing:.06em;border:1px solid #6b4a3a;color:#f0a27d;border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:1px}
+.pcard{padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#25272b,#1e1f22)}
+.pcard .top{display:flex;gap:10px;align-items:flex-start}
+.pcard h3{font-size:18px;font-weight:750;letter-spacing:-.01em}
+.pcard .x{margin-left:auto;background:none;border:0;color:var(--muted);font:14px var(--mono);cursor:pointer}
+.pcard .x:hover{color:#fff}
+.cgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.cgrid div{background:var(--card);border-radius:6px;padding:7px 8px}
+.cgrid b{display:block;font-size:14px;margin-top:2px}
+.cgrid .label{font-size:9px}
+.cnote{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
+.cnote b{display:inline;font-size:inherit;font-weight:650;margin:0}
+.tierchip{font:600 10px var(--mono);border-radius:4px;padding:2px 6px;color:#16171a}
+.empty{padding:28px 16px;color:var(--muted);font-size:12.5px}
+@media (max-width:1100px){.igrid{grid-template-columns:1fr}.side{height:auto;max-height:560px}.ikpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.iwrap{padding:16px 16px 28px}.conts{overflow-x:auto;max-width:100%;scrollbar-width:none}.seg2{margin-left:0}.mapbox{height:420px}.legend{display:none}.where{display:none}.seg2.mode{left:12px;right:auto}.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main class="iwrap">
+  <div class="ihead">
+    <div><div class="label">Recruiting · International · Class of 2027</div><h1>International board</h1></div>
+    <div class="ikpis" id="kpis"></div>
+  </div>
+  <div class="ibar">
+    <div class="conts" id="conts"></div>
+    <div class="fgrp" id="ftier"><span class="ddl">Level</span></div>
+    <div class="fgrp" id="fpos"><span class="ddl">Pos</span></div>
+    <div class="fgrp" id="fint"><span class="ddl" data-def="ncaaint">NCAA int.</span></div>
+  </div>
+  <div class="igrid">
+    <div class="mapbox" id="mapbox">
+      <svg id="map" aria-label="World map of international recruits"></svg>
+      <div class="where" id="where"></div>
+      <div class="seg2 mode" id="mode"><button data-m="home" class="on" title="Plot each player in his home country">Home country</button><button data-m="now" title="Players at US prep schools and academies move to where they play now">Where they play</button></div>
+      <div class="legend" id="legend"></div>
+      <div class="mapui"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Whole world" style="font-size:12px">⌂</button></div>
+    </div>
+    <aside class="side"><div id="card"></div><div class="shd" id="shd"></div><div class="slist" id="list"></div></aside>
+  </div>
+  <div class="cap">Source: DraftExpress Gold, class of 2027, NCAA level HM+ through HM− (80 players), pulled Oct 18, 2026. Dots sit in each player's home country; "Where they play" moves players at US prep schools and academies to that state. Scroll or pinch to zoom, drag to pan, or pick a region above.</div>
+</main>
+<script type="module">
+import { d3, topBar, tipOn, tipOff, addDefs, esc } from "/assets/core.js";
+topBar("international");
+addDefs({ ncaaint: ["NCAA interest", "DraftExpress's read on how interested the player is in playing college basketball in the US (High / Medium / Low)."],
+  dxlevel: ["NCAA level (DraftExpress)", "DraftExpress's projection of the college level the player can play at. HM+ = top high-major, HM = high-major, HM− = fringe high-major."] });
+
+const TIERS = [["HM+", "var(--t1)", "#e2622a"], ["HM", "var(--t2)", "#f0a07a"], ["HM-", "var(--t3)", "#a8968c"]];
+const TCOL = Object.fromEntries(TIERS.map((t) => [t[0], t[2]]));
+const TLAB = { "HM+": "HM+", HM: "HM", "HM-": "HM−" };
+const POSG = (p) => (/C|PF/.test(p) && !/SF\/PF/.test(p) ? "B" : /SF|SG\/SF/.test(p) || p === "SF/PF" ? "W" : "G");
+const POSL = { G: "Guards", W: "Wings", B: "Bigs" };
+const REGIONS = [["World", null], ["Europe", [-12, 34.5, 50, 61]], ["Africa", [-19, -12, 40, 25]], ["North America", [-128, 9, -58, 58]], ["South America", [-82, -38, -34, 8]], ["Asia", [70, 10, 140, 50]], ["Oceania", [110, -46, 178, -8]]];
+const INT = ["High", "Medium", "Low"];
+
+const [geo, dx, W110] = await Promise.all([fetch("/data/intl/geo.json").then((r) => r.json()), fetch("/data/intl/dx-2027.json").then((r) => r.json()), fetch("/assets/geo/world-110m.json").then((r) => r.json())]);
+let W50 = null;
+const C = geo.countries;
+const P = dx.players.map((p, i) => {
+  const [a3, a2, reg] = C[p.nat] || ["", "", "Other"];
+  const sch = geo.schools[p.school], st = geo.states[p.st];
+  const now = st ? { ll: st, where: `${p.school} · ${p.st}`, us: true } : sch ? { ll: [sch[0], sch[1]], where: sch[2], us: false } : null;
+  return { ...p, i, a3, a2, reg, pg: POSG(p.pos), now, slug: p.name.toLowerCase().normalize("NFKD").replace(/[^a-z]+/g, "-") };
+});
+const feat110 = new Map(W110.features.map((f) => [f.properties.a, f]));
+// Home anchor: Natural Earth label point (manual tweaks for huge countries).
+const home = (a3) => geo.anchor[a3] || (feat110.get(a3) ? [feat110.get(a3).properties.lx, feat110.get(a3).properties.ly] : [0, 0]);
+
+const st = { region: "World", mode: "home", tiers: new Set(["HM+", "HM", "HM-"]), pos: new Set(["G", "W", "B"]), int: new Set(INT), sel: null, hover: null, k: 1 };
+const vis = () => P.filter((p) => st.tiers.has(p.tier) && st.pos.has(p.pg) && st.int.has(p.interest));
+const loc = (p) => (st.mode === "now" && p.now ? p.now.ll : home(p.a3));
+const locKey = (p) => (st.mode === "now" && p.now ? (p.now.us ? "US-" + p.st : "S-" + p.school) : p.a3);
+const locName = (p) => (st.mode === "now" && p.now ? (p.now.us ? `${stateName(p.st)}` : p.now.where.split(",").pop().trim()) : p.nat);
+const STN = { AZ: "Arizona", CA: "California", CT: "Connecticut", FL: "Florida", GA: "Georgia", IN: "Indiana", KS: "Kansas", MA: "Massachusetts", ME: "Maine", NY: "New York", OH: "Ohio", TX: "Texas" };
+const stateName = (s) => (STN[s] ? STN[s] + ", USA" : s);
+const inRegion = (p, r) => { if (r === "World") return true; const [x, y] = loc(p), b = REGIONS.find((q) => q[0] === r)[1]; return st.mode === "now" && p.now ? x >= b[0] - 8 && x <= b[2] + 8 && y >= b[1] - 8 && y <= b[3] + 8 : p.reg === r; };
+
+// ---------------------------------------------------------------- KPIs + controls
+const kp = (l, v, s, d) => `<div class="ikpi"><span class="label"${d ? ` data-def="${d}"` : ""}>${l}</span><b>${v}</b><div class="sub">${s}</div></div>`;
+document.getElementById("kpis").innerHTML = kp("Players", P.length, "HM+ through HM−", "dxlevel") + kp("Countries", new Set(P.map((p) => p.nat)).size, `${new Set(P.map((p) => p.reg)).size} regions`)
+  + TIERS.map(([t, c]) => kp(TLAB[t], `<span style="color:${c}">${P.filter((p) => p.tier === t).length}</span>`, t === "HM+" ? "top high-major" : t === "HM" ? "high-major" : "fringe high-major", "dxlevel")).join("")
+  + kp("In the US now", P.filter((p) => p.now?.us).length, `${P.filter((p) => p.vc).length} verbally committed`);
+const chips = (id, items, set, color) => { const el = document.getElementById(id);
+  el.insertAdjacentHTML("beforeend", items.map(([k, l, c]) => `<button class="fchip" data-k="${k}">${c ? `<s style="background:${c}"></s>` : ""}${l}</button>`).join(""));
+  el.querySelectorAll(".fchip").forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (set.has(k) && set.size > 1) set.delete(k); else set.add(k); if (set.size === items.length) {} b.classList.toggle("off", !set.has(k)); draw(); })); };
+chips("ftier", TIERS.map((t) => [t[0], TLAB[t[0]], t[1]]), st.tiers);
+chips("fpos", [["G", "G"], ["W", "W"], ["B", "B"]], st.pos);
+chips("fint", INT.map((x) => [x, x === "Medium" ? "Med" : x]), st.int);
+document.querySelectorAll("#mode button").forEach((b) => (b.onclick = () => { document.querySelectorAll("#mode button").forEach((x) => x.classList.toggle("on", x === b)); st.mode = b.dataset.m; draw(true); }));
+function drawConts() {
+  const V = vis();
+  document.getElementById("conts").innerHTML = REGIONS.map(([r]) => { const n = V.filter((p) => inRegion(p, r)).length; return `<button data-r="${r}" class="${st.region === r ? "on" : ""}" ${n || r === "World" ? "" : "disabled"}>${r}<i>${n}</i></button>`; }).join("");
+  document.querySelectorAll("#conts button").forEach((b) => (b.onclick = () => goRegion(b.dataset.r)));
+}
+
+// ---------------------------------------------------------------- map
+const box = document.getElementById("mapbox"), svg = d3.select("#map");
+let Wd = box.clientWidth, Ht = box.clientHeight;
+const proj = d3.geoNaturalEarth1(), path = d3.geoPath(proj);
+const land = W110.features;
+function fitWorld() { Wd = box.clientWidth; Ht = box.clientHeight; proj.fitExtent([[8, 8], [Wd - 8, Ht - 8]], { type: "FeatureCollection", features: land.filter((f) => f.properties.ly > -58) }); }
+fitWorld();
+const gMap = svg.append("g"), gSphere = gMap.append("path").attr("class", "sphere"), gGrat = gMap.append("path").attr("class", "grat"), gLand = gMap.append("g");
+const gArc = svg.append("g"), gLab = svg.append("g"), gPts = svg.append("g");
+function drawLand(features) {
+  gSphere.attr("d", path({ type: "Sphere" })); gGrat.attr("d", path(d3.geoGraticule10()));
+  gLand.selectAll("path").data(features, (f) => f.properties.a).join("path").attr("class", "land").attr("d", path)
+    .on("mousemove", (e, f) => { const n = vis().filter((p) => p.a3 === f.properties.a).length; if (n) tipOn(e, `<b>${f.properties.n}</b> · ${n} player${n > 1 ? "s" : ""}`); })
+    .on("mouseleave", tipOff)
+    .on("click", (e, f) => { const p = vis().find((q) => q.a3 === f.properties.a); if (p && st.region === "World") goRegion(p.reg); });
+  shadeLand();
+}
+function shadeLand() { const has = new Set(vis().map((p) => p.a3)), hot = st.hover != null ? P[st.hover].a3 : st.sel != null ? P[st.sel].a3 : null;
+  gLand.selectAll("path").classed("has", (f) => has.has(f.properties.a)).classed("hot", (f) => f.properties.a === hot); }
+drawLand(land);
+
+// zoom: the land scales; dots and labels stay a fixed size and are re-placed each frame
+let T = d3.zoomIdentity;
+const zoom = d3.zoom().scaleExtent([1, 14]).translateExtent([[-Wd * 0.1, -Ht * 0.1], [Wd * 1.1, Ht * 1.1]])
+  .on("zoom", (e) => { T = e.transform; gMap.attr("transform", T); st.k = T.k; if (T.k > 1.8 && !W50) load50(); placePoints(); })
+  .on("end", (e) => { if (e.sourceEvent) { st.region = regionFor(); drawConts(); drawList(); } });
+svg.call(zoom).on("dblclick.zoom", null);
+function load50() { W50 = "loading"; fetch("/assets/geo/world-50m.json").then((r) => r.json()).then((j) => { W50 = j; drawLand(j.features); }).catch(() => (W50 = null)); }
+function tFor(bbox) {
+  const [[x0, y0], [x1, y1]] = [proj([bbox[0], bbox[3]]), proj([bbox[2], bbox[1]])];
+  const k = Math.min(14, (Wd < 640 ? 0.8 : 0.92) / Math.max((x1 - x0) / Wd, (y1 - y0) / Ht));
+  return d3.zoomIdentity.translate(Wd / 2, Ht / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+}
+function goRegion(r) {
+  st.region = r; drawConts(); drawList();
+  const b = REGIONS.find((q) => q[0] === r)[1];
+  svg.transition().duration(950).ease(d3.easeCubicInOut).call(zoom.transform, b ? tFor(b) : d3.zoomIdentity);
+}
+function regionFor() { // which region the user has panned/zoomed into
+  if (T.k < 1.4) return "World";
+  const c = proj.invert(T.invert([Wd / 2, Ht / 2]));
+  let best = "World", bd = 1e9;
+  for (const [r, b] of REGIONS) if (b) { const d = Math.hypot(c[0] - (b[0] + b[2]) / 2, c[1] - (b[1] + b[3]) / 2); if (d < bd) { bd = d; best = r; } }
+  return best;
+}
+document.getElementById("zin").onclick = () => svg.transition().duration(400).call(zoom.scaleBy, 1.6);
+document.getElementById("zout").onclick = () => svg.transition().duration(400).call(zoom.scaleBy, 1 / 1.6);
+document.getElementById("zreset").onclick = () => goRegion("World");
+
+// Groups: one per location. World view = one bubble per country (tier donut + count);
+// zoomed in = every player as his own dot, packed in a sunflower around the country.
+const xy = (ll) => T.apply(proj(ll));
+const arcG = d3.arc();
+function groups() { const m = new Map(); for (const p of vis()) { const k = locKey(p); if (!m.has(k)) m.set(k, { k, ll: loc(p), name: locName(p), a3: p.a3, ps: [] }); m.get(k).ps.push(p); }
+  for (const g of m.values()) g.ps.sort((a, b) => ["HM+", "HM", "HM-"].indexOf(a.tier) - ["HM+", "HM", "HM-"].indexOf(b.tier) || a.name.localeCompare(b.name));
+  return [...m.values()]; }
+// Every player is a dot. Dots pack around their country (force layout, so a crowded
+// country becomes a cluster instead of a pile); zoomed in they grow and get labels.
+const rOf = (p, k) => (k >= 1.8 ? 5.4 : 3.8) * (p.tier === "HM+" ? 1.3 : p.tier === "HM" ? 1 : 0.85);
+let lastPts = new Map();
+function layout(G, k) {
+  const nodes = [], golden = Math.PI * (3 - Math.sqrt(5));
+  for (const g of G) { const [cx, cy] = xy(g.ll); g.cx = cx; g.cy = cy;
+    g.ps.forEach((p, i) => { const rr = i ? (k >= 1.8 ? 7.5 : 4.6) * Math.sqrt(i + 0.3) : 0, a = i * golden; nodes.push({ p, g, r: rOf(p, k), ax: cx, ay: cy, x: cx + rr * Math.cos(a), y: cy + rr * Math.sin(a) }); }); }
+  d3.forceSimulation(nodes).stop().force("x", d3.forceX((d) => d.ax).strength(0.22)).force("y", d3.forceY((d) => d.ay).strength(0.22))
+    .force("c", d3.forceCollide((d) => d.r + (k >= 1.8 ? 1.6 : 0.9)).iterations(2)).tick(90);
+  for (const g of G) { const m = nodes.filter((n) => n.g === g); g.R = Math.max(...m.map((n) => Math.hypot(n.x - g.cx, n.y - g.cy) + n.r)); g.bx = d3.max(m, (n) => n.x + n.r); g.by = d3.mean(m, (n) => n.y); }
+  return nodes;
+}
+function placeLabels(G, indiv) {
+  // country labels when zoomed; region totals at world view. Skip a label that would overlap one already placed.
+  const items = indiv ? G.map((g) => ({ k: g.k, x: g.bx + 6, y: g.by + 3.5, t: `${g.name} ${g.ps.length}`, n: g.ps.length }))
+    : REGIONS.filter((r) => r[1]).map(([r]) => { const ps = [...gPts.selectAll("circle.dot").data()].filter((d) => (st.mode === "now" && d.p.now ? regionOfLL(d.p.now.ll) : d.p.reg) === r); if (!ps.length) return null;
+      return { k: r, x: d3.max(ps, (d) => d.x) + 8, y: d3.min(ps, (d) => d.y) - 4, t: `${r} ${ps.length}`, n: ps.length }; }).filter(Boolean);
+  items.sort((a, b) => b.n - a.n);
+  const placed = [], boxes = [];
+  for (const it of items) { const w = it.t.length * 6.4 + 4, cand = [[it.x, it.y], [it.x - w - 18, it.y], [it.x - w / 2, it.y - 14], [it.x - w / 2, it.y + 18]];
+    const dotsHit = (b) => gPts.selectAll("circle.dot").data().some((d) => d.x > b[0] && d.x < b[0] + b[2] && d.y > b[1] - 2 && d.y < b[1] + b[3] + 2);
+    for (const [x, y] of cand) { const b = [x, y - 10, w, 13]; if (!boxes.some((o) => !(b[0] > o[0] + o[2] || b[0] + b[2] < o[0] || b[1] > o[1] + o[3] || b[1] + b[3] < o[1])) && !dotsHit(b)) { boxes.push(b); placed.push({ ...it, x, y }); break; } } }
+  gLab.selectAll("text.clab").data(placed, (d) => d.k).join("text").attr("class", "clab").attr("x", (d) => d.x).attr("y", (d) => d.y)
+    .html((d) => { const i = d.t.lastIndexOf(" "); return `${esc(d.t.slice(0, i))} <tspan style="fill:#fff">${d.t.slice(i + 1)}</tspan>`; });
+}
+function placePoints(animate) {
+  const G = groups(), indiv = st.k >= 1.8;
+  gPts.selectAll("g.bub").remove();
+  const pts = layout(G, st.k);
+  const dots = gPts.selectAll("circle.dot").data(pts, (d) => d.p.i);
+  dots.exit().transition().duration(200).attr("r", 0).remove();
+  dots.enter().append("circle").attr("class", "dot").attr("r", 0).attr("cx", (d) => d.x).attr("cy", (d) => d.y)
+    .on("mousemove", (e, d) => { st.hover = d.p.i; highlight(); tipOn(e, tipHTML(d.p)); }).on("mouseleave", () => { st.hover = null; highlight(); tipOff(); })
+    .on("click", (e, d) => { select(d.p.i, false); if (st.k < 1.8) goRegion(st.mode === "now" && d.p.now ? regionOfLL(d.p.now.ll) : d.p.reg); })
+    .merge(dots).attr("fill", (d) => TCOL[d.p.tier]).transition().duration(animate ? 650 : 0).attr("cx", (d) => d.x).attr("cy", (d) => d.y).attr("r", (d) => (d.p.i === (st.hover ?? st.sel) ? d.r + 2.5 : d.r));
+  if (animate) setTimeout(() => placeLabels(G, indiv), 680); else placeLabels(G, indiv);
+  const moved = st.mode === "now" ? vis().filter((p) => p.now) : [];
+  gArc.selectAll("path").data(moved, (p) => p.i).join("path").attr("class", "arc").attr("d", (p) => { const [x0, y0] = xy(home(p.a3)), [x1, y1] = xy(p.now.ll), mx = (x0 + x1) / 2, my = (y0 + y1) / 2 - Math.hypot(x1 - x0, y1 - y0) * 0.22; return `M${x0},${y0}Q${mx},${my} ${x1},${y1}`; });
+  document.getElementById("where").innerHTML = `${st.region}<em>${vis().filter((p) => inRegion(p, st.region)).length} players${indiv ? "" : " · click a region or dot to zoom in"}</em>`;
+  highlight();
+}
+const regionOfLL = (ll) => { for (const [r, b] of REGIONS) if (b && ll[0] >= b[0] && ll[0] <= b[2] && ll[1] >= b[1] && ll[1] <= b[3]) return r; return "North America"; };
+function tipHTML(p) { return `<b>${esc(p.name)}</b>${p.vc ? ' <span class="vc">VC</span>' : ""}<br>${p.pos} · ${p.ht} · ${p.wt} lb · ${p.age.toFixed(1)} yrs<br>${p.nat}${p.school ? ` · ${esc(p.school)}${p.st ? ", " + p.st : ""}` : ""}<br><span style="color:${TCOL[p.tier]}">${TLAB[p.tier]}</span> · NCAA interest ${p.interest}`; }
+function highlight() {
+  const on = st.hover ?? st.sel;
+  gPts.selectAll("circle.dot").classed("hl", (d) => d.p.i === on).attr("r", (d) => (d.p.i === on ? d.r + 2.5 : d.r)).filter((d) => d.p.i === on).raise();
+  document.querySelectorAll(".pr").forEach((r) => { r.classList.toggle("hl", +r.dataset.i === st.hover); r.classList.toggle("sel", +r.dataset.i === st.sel); });
+  shadeLand();
+}
+
+// ---------------------------------------------------------------- side panel
+function drawList() {
+  const V = vis().filter((p) => inRegion(p, st.region)), G = new Map();
+  for (const p of V) { const k = st.mode === "now" && p.now ? locName(p) : p.nat; if (!G.has(k)) G.set(k, { name: k, a2: st.mode === "now" && p.now?.us ? "us" : p.a2, ps: [] }); G.get(k).ps.push(p); }
+  const groupsS = [...G.values()].sort((a, b) => b.ps.length - a.ps.length || a.name.localeCompare(b.name));
+  const tc = (t) => V.filter((p) => p.tier === t).length;
+  document.getElementById("shd").innerHTML = `<h2>${st.region === "World" ? "All players" : st.region}</h2><div class="label">${V.length} players · ${groupsS.length} ${st.mode === "now" ? "locations" : "countries"} · ${TIERS.map(([t]) => `${TLAB[t]} ${tc(t)}`).join(" · ")}</div>`;
+  document.getElementById("list").innerHTML = groupsS.length ? groupsS.map((g) => `<div class="cgrp"><div class="ch" data-c="${esc(g.name)}">${g.a2 ? `<img alt="" src="https://flagcdn.com/w40/${g.a2}.png" onerror="this.remove()">` : ""}<b>${esc(g.name)}</b><span>${g.ps.length}</span></div>
+    ${g.ps.sort((a, b) => ["HM+", "HM", "HM-"].indexOf(a.tier) - ["HM+", "HM", "HM-"].indexOf(b.tier) || a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}"><s style="background:${TCOL[p.tier]}"></s><div style="min-width:0"><div class="nm">${esc(p.name)}${p.vc ? '<span class="vc">VC</span>' : ""}</div><div class="mt">${p.pos} · ${p.ht} · ${p.age.toFixed(1)}${p.school ? ` · ${esc(p.school)}` : ""}</div></div><div class="tr"><span style="color:${TCOL[p.tier]}">${TLAB[p.tier]}</span><br>${p.interest}</div></div>`).join("")}</div>`).join("")
+    : `<div class="empty">No players match these filters here.</div>`;
+  document.querySelectorAll(".pr").forEach((r) => { const i = +r.dataset.i;
+    r.onmouseenter = () => { st.hover = i; highlight(); }; r.onmouseleave = () => { st.hover = null; highlight(); }; r.onclick = () => select(i, true); });
+  highlight();
+}
+function select(i, fly) {
+  st.sel = i; const p = P[i];
+  document.getElementById("card").innerHTML = `<div class="pcard"><div class="top"><div><div class="label">${p.nat}${p.reg !== "World" ? " · " + p.reg : ""}</div><h3>${esc(p.name)}${p.vc ? '<span class="vc">VC</span>' : ""}</h3></div><button class="x" title="Close">✕</button></div>
+    <div class="cgrid"><div><span class="label">Level</span><b><span class="tierchip" style="background:${TCOL[p.tier]}">${TLAB[p.tier]}</span></b></div><div><span class="label">Pos</span><b>${p.pos}</b></div><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt}</b></div>
+    <div><span class="label">Age</span><b>${p.age.toFixed(1)}</b></div><div><span class="label">NCAA int.</span><b>${p.interest}</b></div><div><span class="label">English</span><b style="font-size:12px">${p.english || "—"}</b></div><div><span class="label">Class</span><b>${p.cls}</b></div></div>
+    <div class="cnote">${p.school ? `Now at <b style="color:#fff">${esc(p.school)}</b>${p.st ? ` (${p.st})` : ""}. ` : ""}${p.vc ? "Verbally committed. " : ""}Full profile (stats, film, contacts, notes) comes next.</div></div>`;
+  document.querySelector("#card .x").onclick = () => { st.sel = null; document.getElementById("card").innerHTML = ""; highlight(); };
+  if (fly && st.k < 1.8) goRegion(st.mode === "now" && p.now ? regionOfLL(p.now.ll) : p.reg);
+  highlight();
+  document.querySelector(`.pr[data-i="${i}"]`)?.scrollIntoView({ block: "nearest" });
+}
+document.getElementById("legend").innerHTML = TIERS.map(([t, c]) => `<span><s style="background:${c}"></s>${TLAB[t]}</span>`).join("") + `<span style="color:#61656c">one dot per player · bigger = higher level</span>`;
+
+function draw(animate) { drawConts(); drawList(); placePoints(animate); shadeLand(); }
+draw();
+addEventListener("resize", () => { const t = T; fitWorld(); drawLand(W50 && W50 !== "loading" ? W50.features : land); svg.call(zoom.transform, t); });
+const h = location.hash.slice(1); if (h) { const r = REGIONS.find((q) => q[0].toLowerCase().replace(/ /g, "-") === h); if (r) setTimeout(() => goRegion(r[0]), 200); }
+</script>
+</body>
+</html>

@@ -121,7 +121,7 @@ export function topBar(active) {
   el.className = "top";
   el.innerHTML = `<div class="bar">
     <a class="brand" href="/"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png"><b>BRONCO IQ</b></a>
-    <nav class="nav"><a href="/" class="${active === "home" ? "on" : ""}">Roster</a><a href="/scouting" class="${active === "scouting" ? "on" : ""}">Scouting</a><a href="/rankings" class="${active === "rankings" ? "on" : ""}">Rankings</a></nav>
+    <nav class="nav"><a href="/" class="${active === "home" ? "on" : ""}">Roster</a><a href="/scouting" class="${active === "scouting" ? "on" : ""}">Scouting</a><a href="/rankings" class="${active === "rankings" ? "on" : ""}">Rankings</a><a href="/international" class="${active === "international" ? "on" : ""}">International</a></nav>
     <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" placeholder="Search players or schools" autocomplete="off" aria-label="Search players"><div class="results" id="qr"></div></div>
     <div class="user" id="who"></div></div>`;
