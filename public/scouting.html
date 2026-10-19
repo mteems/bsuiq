@@ -292,7 +292,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelect
  const yr=o[0]==="bsu26"?"2025-26":SEASON;VIEWYR=yr;
  if(T[o[0]]&&(o[0]==="bsu26"||yr==="2026-27"))render(T[o[0]],o);else{const dt=dataTeam(o[1]),last=yr==="2025-26",has=!!TIDX[dt];
   document.getElementById("page").innerHTML=shell(o,{
-   trends:last?(has?`<div class="cap" style="margin:0 0 4px">Last season (2025-26): every game, lineup and shot from the play-by-play data, plus any games against non-D-I teams from ESPN box scores.</div><div id="td-trends"></div>`:`<div class="cap" style="margin:0 0 4px">Last season (2025-26). ${o[1]} is not a D-I team, so there's no play-by-play: these are box scores${eid(o)?" from ESPN":" from their athletics site"}, with possessions estimated and no national ranks.</div><div id="td-trends"></div>`)
+   trends:last?(has?`<div class="banner"><b style="color:#fff">You're viewing last season (2025-26).</b> ${T[o[0]]?`The 2026-27 scouting report (coach, projected depth chart, keys, full roster) is under the <b style="color:#fff">2026-27</b> button in the left menu.`:"Click 2026-27 in the left menu for this year's roster."}</div><div class="cap" style="margin:8px 0 4px">Every 2025-26 game, lineup and shot from the play-by-play data, plus any games against non-D-I teams from ESPN box scores.</div><div id="td-trends"></div>`:`<div class="cap" style="margin:0 0 4px">Last season (2025-26). ${o[1]} is not a D-I team, so there's no play-by-play: these are box scores${eid(o)?" from ESPN":" from their athletics site"}, with possessions estimated and no national ranks.</div><div id="td-trends"></div>`)
     :`<div class="cap" style="margin:0 0 4px">Upcoming season (2026-27). ${T[o[0]]?"":"Written scouting report not built yet. "}Games appear here as they're played; switch to 2025-26 with the season buttons for last season's full data.</div><div id="td-sched"></div><div id="td-trends"></div>`,
    personnel:last?`<div id="td-roster"></div>`:`<div id="td-roster"><div class="loading">Loading 2026-27 roster…</div></div>`,lineups:`<div id="td-lineups"></div>`,pace:`<div id="td-pace"></div>`,shooting:`<div id="td-shooting"></div>`,defense:`<div id="td-defense"></div>`},"");
   wireShell();loadTeamData(dt,o,yr);}scrollTo(0,0)});
@@ -476,7 +476,7 @@ function shell(o,parts,foot){
 let spy=null;
 function wireShell(){
  const rail=document.getElementById("rail");if(!rail)return;
- rail.querySelectorAll("#rail-season button").forEach(b=>b.onclick=()=>{if(b.dataset.y===SEASON)return;SEASON=b.dataset.y;try{localStorage.setItem("biq-season",SEASON)}catch{}const y=scrollY;document.querySelector(".tab.on")?.click();scrollTo(0,0);});
+ rail.querySelectorAll("#rail-season button").forEach(b=>b.onclick=()=>{if(b.dataset.y===SEASON)return;SEASON=b.dataset.y;const y=scrollY;document.querySelector(".tab.on")?.click();scrollTo(0,0);});
  rail.querySelectorAll(".rnav button").forEach(b=>b.onclick=()=>{const el=document.getElementById("sec-"+b.dataset.k);if(el){const off=innerWidth<=1050?52+rail.offsetHeight+6:64;scrollTo({top:el.getBoundingClientRect().top+scrollY-off,behavior:"smooth"});}});
  if(spy)spy.disconnect();
  const vis=new Map();
@@ -502,7 +502,8 @@ function personnelHTML(P){
 }
 const scol=v=>pc(50+Math.max(-45,Math.min(45,(v-50)*1.5)));
 // ---------- seasons: 2026-27 (upcoming) vs 2025-26 (last season) ----------
-let SEASON="2026-27",VIEWYR="2026-27";try{const v=localStorage.getItem("biq-season");if(v==="2025-26"||v==="2026-27")SEASON=v;}catch{}
+// Always opens on the upcoming season; the choice carries across tabs until the page is reloaded.
+let SEASON="2026-27",VIEWYR="2026-27";
 let R27=null;const rosters27=async()=>R27||(R27=await fetch("/data/rosters-2027.json").then(r=>r.ok?r.json():{teams:{},d1:[]}).catch(()=>({teams:{},d1:[]})));
 const getJ=async(u,ms=8000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error(r.status);return await r.json();}finally{clearTimeout(t);}};
 const nn=s=>String(s||"").normalize("NFKD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b\.?/g,"").replace(/[^a-z]/g,"");
