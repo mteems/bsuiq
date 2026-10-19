@@ -17,5 +17,7 @@
   },
   // Small staff-edited settings (depth chart position overrides).
   "kv_namespaces": [{ "binding": "STAFF", "id": "837ff1bca61b45549f66eb80f363475a" }],
+  // Nightly 5:15 AM Boise (11:15 UTC): refresh Barttorvik T-Rank into KV.
+  "triggers": { "crons": ["15 11 * * *"] },
   "observability": { "enabled": true }
 }

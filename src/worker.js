@@ -156,9 +156,50 @@ async function positionsApi(request, env) {
   return json({ overrides: cur });
 }
 
+// ---------- team rankings (T-Rank, EvanMiya), refreshed nightly ----------
+// Stored in KV as "ranks:<source>" = { season, updated, list: [team names in rank order] }.
+//  - Cron (wrangler.jsonc "triggers") fetches Barttorvik's CSV directly.
+//  - EvanMiya has no file to download, so a nightly scheduled task reads its
+//    ratings table in a browser and POSTs it here with the RANKS_TOKEN secret.
+const RANK_SOURCES = ["torvik", "torvik_prev", "evanmiya"];
+const seasonYear = (d = new Date()) => (d.getUTCMonth() >= 6 ? d.getUTCFullYear() + 1 : d.getUTCFullYear());
+const CORS = { "access-control-allow-origin": "*", "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type, x-ranks-token" };
+async function putRanks(env, source, season, list) {
+  const clean = list.map((x) => String(x).trim()).filter(Boolean).slice(0, 400);
+  if (clean.length < 300) throw new Error(`only ${clean.length} teams`);
+  await env.STAFF.put("ranks:" + source, JSON.stringify({ season, updated: new Date().toISOString(), list: clean }));
+  return clean.length;
+}
+async function ingestRanks(request, env) {
+  if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+  if (request.method !== "POST") return new Response("method", { status: 405, headers: CORS });
+  if (!env.RANKS_TOKEN || !env.STAFF || !safeEqual(request.headers.get("x-ranks-token") || "", env.RANKS_TOKEN)) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...CORS, "content-type": "application/json" } });
+  try {
+    const b = await request.json();
+    if (!RANK_SOURCES.includes(b.source)) throw new Error("bad source");
+    const n = await putRanks(env, b.source, +b.season || seasonYear(), b.list || []);
+    return new Response(JSON.stringify({ ok: true, source: b.source, teams: n }), { headers: { ...CORS, "content-type": "application/json" } });
+  } catch (e) { return new Response(JSON.stringify({ error: String(e.message || e) }), { status: 400, headers: { ...CORS, "content-type": "application/json" } }); }
+}
+async function torvikList(year) {
+  const r = await fetch(`https://barttorvik.com/${year}_team_results.csv`, { headers: { "user-agent": "Mozilla/5.0 (Bronco IQ nightly)" } });
+  if (!r.ok) throw new Error("torvik " + r.status);
+  return (await r.text()).trim().split(/\r?\n/).slice(1).map((l) => l.split(",")).filter((c) => +c[0]).sort((a, b) => +a[0] - +b[0]).map((c) => c[1]);
+}
+async function refreshTorvik(env) {
+  const y = seasonYear(), out = {};
+  for (const [src, yr] of [["torvik", y], ["torvik_prev", y - 1]]) {
+    try { out[src] = await putRanks(env, src, yr, await torvikList(yr)); } catch (e) { out[src] = String(e.message || e); }
+  }
+  await env.STAFF.put("ranks:log", JSON.stringify({ at: new Date().toISOString(), out }));
+  return out;
+}
+
 export default {
+  async scheduled(event, env, ctx) { if (env.STAFF) ctx.waitUntil(refreshTorvik(env)); },
   async fetch(request, env, ctx) {
     const url = new URL(request.url), path = url.pathname;
+    if (path === "/api/ranks/ingest") return ingestRanks(request, env);
     if (path === "/robots.txt") return new Response("User-agent: *\nDisallow: /\n", { headers: { "content-type": "text/plain" } });
     if (!env.STAFF_PASSWORD || !env.SESSION_SECRET) return setupPage();
 
@@ -188,6 +229,12 @@ export default {
       catch (e) { return json({ error: "gamelog_unavailable", detail: String(e.message || e) }, 502); }
     }
     if (path === "/api/positions") return positionsApi(request, env);
+    if (path === "/api/ranks") {
+      if (!env.STAFF) return json({});
+      if (url.searchParams.get("refresh") === "torvik") await refreshTorvik(env);
+      const o = {}; for (const s2 of [...RANK_SOURCES, "log"]) o[s2] = await env.STAFF.get("ranks:" + s2, "json");
+      return json(o);
+    }
     if (path.startsWith("/api/")) return json({ error: "not_found" }, 404);
 
     for (const [re, asset] of PAGES) if (re.test(path)) return secure(await env.ASSETS.fetch(new Request(new URL(asset, url), request)), true);

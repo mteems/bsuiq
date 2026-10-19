@@ -46,7 +46,7 @@ import { chip, tc, f1, f0, esc, getJSON, playerName, shortSchool, topBar, LG } f
 topBar("home");
 
 // Upcoming schedule (from the scouting page's opponent list).
-const SCHED = [["2026-10-29", "Bismarck St.", "EXH", 0, "bismarck-st"], ["2026-11-04", "West Coast Baptist", "", 0, "west-coast-baptist"], ["2026-11-08", "Butler", "", 2086, "butler"], ["2026-11-11", "Oakland", "", 2473, "oakland"], ["2026-11-15", "Nebraska", "N", 158, "nebraska"], ["2026-11-20", "Sam Houston", "", 2534, "sam-houston"], ["2026-11-24", "Idaho St.", "", 304, "idaho-st"], ["2026-11-27", "Drake", "N", 2181, "drake"]];
+const SCHED = [["2026-10-29", "Bismarck St.", "EXH", "/assets/logos/bismarck-st.png", "bismarck-st"], ["2026-11-04", "West Coast Baptist", "", "/assets/logos/west-coast-baptist.png", "west-coast-baptist"], ["2026-11-08", "Butler", "", 2086, "butler"], ["2026-11-11", "Oakland", "", 2473, "oakland"], ["2026-11-15", "Nebraska", "N", 158, "nebraska"], ["2026-11-20", "Sam Houston", "", 2534, "sam-houston"], ["2026-11-24", "Idaho St.", "", 304, "idaho-st"], ["2026-11-27", "Drake", "N", 2181, "drake"]];
 const today = new Date().toISOString().slice(0, 10);
 document.getElementById("next").innerHTML = SCHED.filter((g) => g[0] >= today).slice(0, 4).map((g) => `<a class="nx" href="/scouting#${g[4]}">${LG(g[3], 28, g[1].slice(0, 3).toUpperCase())}<div><div class="label">${new Date(g[0] + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}${g[2] ? " · " + g[2] : ""}</div><div style="font-weight:650;font-size:13.5px;margin-top:2px">${esc(g[1])}</div></div></a>`).join("");
 
