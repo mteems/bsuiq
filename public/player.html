@@ -31,7 +31,8 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 .ndrawer[hidden]{display:none}.nhead{display:flex;align-items:baseline;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}.nhead b{font-size:16px}.nhead .m{color:var(--muted);font-size:12px}
 .nhead button{margin-left:auto;background:none;border:0;color:var(--muted);font-size:16px;cursor:pointer}
 .nform{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
-.nform select,.nform textarea{background:#26282c;border:1px solid var(--line);color:var(--text);border-radius:7px;padding:8px 10px;font:13px inherit}.nform textarea{min-height:90px;resize:vertical}
+.nwho{display:flex;flex-wrap:wrap;gap:5px}.nwho button{background:#26282c;border:1px solid var(--line);color:var(--soft,#c9ccd2);border-radius:6px;padding:5px 9px;font:600 12px inherit;cursor:pointer}.nwho button:hover{color:#fff;border-color:#55595f}.nwho button.on{background:#f2f3f4;color:#16171a;border-color:#f2f3f4}
+.nform textarea{background:#26282c;border:1px solid var(--line);color:var(--text);border-radius:7px;padding:8px 10px;font:13px inherit}.nform textarea{min-height:90px;resize:vertical}
 .nrow{display:flex;align-items:center;gap:10px}.nrow .m{color:var(--muted);font-size:11.5px;flex:1}
 #nlist{overflow-y:auto;padding:6px 18px 18px;flex:1}.snote{padding:12px 0;border-bottom:1px solid #2a2c30}.snote .who{display:flex;gap:8px;align-items:baseline;font-size:12px}.snote .who b{font-size:13px}.snote .who .m{color:var(--muted)}
 .snote .who button{margin-left:auto;background:none;border:0;color:#6b6e75;font-size:11px;cursor:pointer}.snote .who button:hover{color:var(--bad)}.snote p{margin-top:6px;font-size:13.5px;line-height:1.5;color:#dfe2e6;white-space:pre-wrap}
@@ -86,7 +87,7 @@ const pathText = pathBits.map((p) => `${shortSchool(p.school)} ${p.from === p.to
 
 const photo = LINKS?.photo?.[NKEY] || (P.espnId ? `https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${P.espnId}.png&w=400&h=400&scale=crop` : "");
 const teamName = P.onRoster ? "Boise St." : shortSchool(P.school || last?.school || ""), teamId = P.onRoster ? 68 : P.espnTeamId;
-const conf = P.onRoster ? "Mountain West" : P.conference;
+const conf = P.onRoster ? "Pac-12" : P.conference;
 const fact = (l, v) => (v ? `<div class="pf"><span class="label">${l}</span><b>${esc(v)}</b></div>` : "");
 const ini = (playerName(P).match(/\b\w/g) || []).slice(0, 2).join("");
 page.innerHTML = `
@@ -102,7 +103,7 @@ page.innerHTML = `
   <button class="nbtn" id="nbtn">Staff notes <b id="ncount"></b></button>
 </div>
 <div class="ndrawer" id="ndrawer" hidden><div class="nhead"><b>Staff notes</b><span class="m">${esc(playerName(P))}</span><button id="nclose" aria-label="Close">✕</button></div>
-  <div class="nform"><select id="nauthor"><option value="">Staff member…</option>${STAFF.map((n) => `<option>${esc(n)}</option>`).join("")}</select>
+  <div class="nform"><div class="label">Your name</div><div class="nwho" id="nauthor">${STAFF.map((n) => `<button data-who="${esc(n)}">${esc(n)}</button>`).join("")}</div>
   <textarea id="ntext" placeholder="Add a note…"></textarea><div class="nrow"><span class="m" id="nmsg">Today's date is logged with the note.</span><button class="btn" id="nadd" disabled>Add note</button></div></div>
   <div id="nlist"><div class="m">Loading…</div></div></div>
 <div id="s-scores"></div>
@@ -261,8 +262,10 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
 })();
 // ======================================================= STAFF NOTES (shared across staff, KV)
 (function staffNotes() {
-  const dr = document.getElementById("ndrawer"), list = document.getElementById("nlist"), add = document.getElementById("nadd"), txt = document.getElementById("ntext"), who = document.getElementById("nauthor"), msg = document.getElementById("nmsg");
-  try { const a = localStorage.getItem("biq-note-staff"); if (a && STAFF.includes(a)) who.value = a; } catch {}
+  const dr = document.getElementById("ndrawer"), list = document.getElementById("nlist"), add = document.getElementById("nadd"), txt = document.getElementById("ntext"), whoBox = document.getElementById("nauthor"), msg = document.getElementById("nmsg");
+  const who = { value: "" };
+  const setWho = (v) => { who.value = v; whoBox.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.who === v)); try { localStorage.setItem("biq-note-staff", v); } catch {} ready(); };
+  whoBox.onclick = (e) => { const b = e.target.closest("button[data-who]"); if (b) setWho(b.dataset.who); };
   const fmt = (iso) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const call = async (body) => { const r = await fetch(`/api/notes/${encodeURIComponent(NKEY)}`, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" }); const d = await r.json(); if (!r.ok) throw new Error(d.error || "Could not save the note."); return d.notes || []; };
   const draw = (N) => {
@@ -271,10 +274,10 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
     list.querySelectorAll("[data-del]").forEach((b) => (b.onclick = async () => { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Click again to delete"; return; } try { draw(await call({ remove: b.dataset.del })); } catch (e) { msg.textContent = e.message; } }));
   };
   const ready = () => (add.disabled = !(who.value && txt.value.trim()));
-  who.onchange = () => { try { localStorage.setItem("biq-note-staff", who.value); } catch {} ready(); };
   txt.oninput = ready;
+  try { const a = localStorage.getItem("biq-note-staff"); if (a && STAFF.includes(a)) setWho(a); } catch {}
   add.onclick = async () => { add.disabled = true; msg.textContent = "Saving…"; try { draw(await call({ author: who.value, body: txt.value.trim() })); txt.value = ""; msg.textContent = "Saved. Today's date is logged with the note."; } catch (e) { msg.textContent = e.message; } ready(); };
-  document.getElementById("nbtn").onclick = () => { dr.hidden = false; (who.value ? txt : who).focus(); };
+  document.getElementById("nbtn").onclick = () => { dr.hidden = false; if (who.value) txt.focus(); };
   document.getElementById("nclose").onclick = () => (dr.hidden = true);
   addEventListener("keydown", (e) => { if (e.key === "Escape") dr.hidden = true; });
   call().then(draw).catch(() => (list.innerHTML = `<div class="m" style="color:var(--muted)">Couldn't load notes.</div>`));

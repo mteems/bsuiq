@@ -33,7 +33,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--ui);font-variant-n
 .lg img{width:100%;height:100%;object-fit:contain}
 .lg b{display:none;width:100%;height:100%;border-radius:50%;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:500;color:#fff;background:#3a3d42}
 .lg.fb b{display:flex}
-.cf{display:inline-flex;align-items:center;gap:6px;background:#eceef0;color:#1e1f22;border-radius:5px;padding:3px 8px 3px 4px;font-size:11.5px;font-weight:600}
+.cf{display:inline-flex;align-items:center;gap:7px;background:#26282c;border:1px solid var(--edge);color:#fff;border-radius:6px;padding:4px 10px 4px 6px;font-size:12px;font-weight:600}
 .cf img{height:18px;width:18px;object-fit:contain}
 .kp{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid #3a3d42;border-radius:5px;padding:3px 8px;font-size:11.5px;color:#cfd3d9}
 .kp img{width:14px;height:14px;border-radius:2px}
@@ -208,14 +208,14 @@ footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:22px}
 <div id="page"></div>
 
 <script type="module">
-import { d3, addDefs, tipOn, tipOff, topBar, sortableTable } from "/assets/core.js";
+import { d3, addDefs, tipOn, tipOff, topBar, sortableTable, confImg, esc } from "/assets/core.js";
 import { renderTeamData } from "/assets/teampage.js";
 topBar("scouting");
 const GOOD="#e2622a",BAD="#4a7fe0",NEU="#5d6168";
 const pc=p=>p==null?NEU:p>=50?d3.interpolateLab(NEU,"#d4561f")(Math.min(1,(p-50)/45)):d3.interpolateLab(NEU,"#2f63d6")(Math.min(1,(50-p)/45));
 // id = ESPN team id, or a path to a local logo (D-II/NAIA opponents ESPN doesn't carry).
 const LG=(id,s,ab)=>`<span class="lg${id?'':' fb'}" style="width:${s}px;height:${s}px">${id?`<img alt="" src="${typeof id==="string"?id:`https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa/500-dark/${id}.png&w=${s*2}&h=${s*2}`}" onerror="this.parentNode.classList.add('fb');this.remove()">`:''}<b>${ab||''}</b></span>`;
-const CF=(k,n)=>`<span class="cf"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${k}.png" onerror="this.remove()">${n}</span>`;
+const CF=(k,n)=>`<span class="cf">${confImg(n,18,"")}${n}</span>`;
 // Preseason 2026-27 team rankings (pulled Oct 18, 2026): Barttorvik T-Rank and EvanMiya.
 // tr26 = final 2025-26 T-Rank. Boise St.'s own 2026-27 ranks: T-Rank #85, EvanMiya #81.
 const XR={"Washington": {"tr": 73, "tr26": 53, "em": 68}, "Butler": {"tr": 88, "tr26": 66, "em": 95}, "Oakland": {"tr": 225, "tr26": 182, "em": 220}, "Nebraska": {"tr": 15, "tr26": 17, "em": 26}, "Sam Houston": {"tr": 182, "tr26": 109, "em": 194}, "Idaho St.": {"tr": 318, "tr26": 264, "em": 324}, "Drake": {"tr": 147, "tr26": 217, "em": 113}, "North Texas": {"tr": 117, "tr26": 136, "em": 110}, "North Dakota St.": {"tr": 151, "tr26": 119, "em": 147}, "Wichita St.": {"tr": 69, "tr26": 79, "em": 72}, "TAMU-CC": {"tr": 203, "tr26": 184, "em": 247}, "Utah Valley": {"tr": 123, "tr26": 93, "em": 136}, "Santa Clara": {"tr": 90, "tr26": 31, "em": 65}, "New Mexico": {"tr": 66, "tr26": 51, "em": 60}, "Lamar": {"tr": 208, "tr26": 256, "em": 203}, "Utah St.": {"tr": 59, "tr26": 26, "em": 49}, "Oregon St.": {"tr": 98, "tr26": 166, "em": 80}, "Washington St.": {"tr": 169, "tr26": 133, "em": 175}, "Gonzaga": {"tr": 17, "tr26": 15, "em": 6}, "Fresno St.": {"tr": 137, "tr26": 130, "em": 160}, "San Diego St.": {"tr": 58, "tr26": 44, "em": 77}, "Texas St.": {"tr": 114, "tr26": 228, "em": 128}, "Colorado St.": {"tr": 83, "tr26": 90, "em": 73}, "Boise St. '26": {"tr": 54, "final": true}, "_bsu": {"tr": 85, "em": 81}};
@@ -292,10 +292,13 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelect
  const yr=o[0]==="bsu26"?"2025-26":SEASON;VIEWYR=yr;
  if(T[o[0]]&&(o[0]==="bsu26"||yr==="2026-27"))render(T[o[0]],o);else{const dt=dataTeam(o[1]),last=yr==="2025-26",has=!!TIDX[dt];
   document.getElementById("page").innerHTML=shell(o,{
-   trends:last?(has?`<div class="banner"><b style="color:#fff">You're viewing last season (2025-26).</b> ${T[o[0]]?`The 2026-27 scouting report (coach, projected depth chart, keys, full roster) is under the <b style="color:#fff">2026-27</b> button in the left menu.`:"Click 2026-27 in the left menu for this year's roster."}</div><div class="cap" style="margin:8px 0 4px">Every 2025-26 game, lineup and shot from the play-by-play data, plus any games against non-D-I teams from ESPN box scores.</div><div id="td-trends"></div>`:`<div class="cap" style="margin:0 0 4px">Last season (2025-26). ${o[1]} is not a D-I team, so there's no play-by-play: these are box scores${eid(o)?" from ESPN":" from their athletics site"}, with possessions estimated and no national ranks.</div><div id="td-trends"></div>`)
+   _t:last&&has&&!!REPORTS[o[0]],
+   trends:last?(has?`${REPORTS[o[0]]?lastHeaderHTML(o,REPORTS[o[0]])+lastTrendsHTML(o,REPORTS[o[0]]):""}<div class="banner" style="margin-top:22px"><b style="color:#fff">You're viewing last season (2025-26).</b> ${T[o[0]]?`The 2026-27 scouting report (coach, projected depth chart, keys, full roster) is under the <b style="color:#fff">2026-27</b> button in the left menu.`:"Click 2026-27 in the left menu for this year's roster."}</div><div class="cap" style="margin:8px 0 4px">Every 2025-26 game, lineup and shot from the play-by-play data, plus any games against non-D-I teams from ESPN box scores.</div><div id="td-trends"></div>`:`<div class="cap" style="margin:0 0 4px">Last season (2025-26). ${o[1]} is not a D-I team, so there's no play-by-play: these are box scores${eid(o)?" from ESPN":" from their athletics site"}, with possessions estimated and no national ranks.</div><div id="td-trends"></div>`)
     :`<div class="cap" style="margin:0 0 4px">Upcoming season (2026-27). ${T[o[0]]?"":"Written scouting report not built yet. "}Games appear here as they're played; switch to 2025-26 with the season buttons for last season's full data.</div><div id="td-sched"></div><div id="td-trends"></div>`,
-   personnel:last?`<div id="td-roster"></div>`:`<div id="td-roster"><div class="loading">Loading 2026-27 roster…</div></div>`,lineups:`<div id="td-lineups"></div>`,pace:`<div id="td-pace"></div>`,shooting:`<div id="td-shooting"></div>`,defense:`<div id="td-defense"></div>`},"");
-  wireShell();loadTeamData(dt,o,yr);}scrollTo(0,0)});
+   personnel:last?`<div id="td-roster"></div>${has&&REPORTS[o[0]]?lastLeftHTML(REPORTS[o[0]]):""}`:`<div id="td-roster"><div class="loading">Loading 2026-27 roster…</div></div>`,lineups:`<div id="td-lineups"></div>`,pace:`<div id="td-pace"></div>`,shooting:`<div id="td-shooting"></div>`,defense:`<div id="td-defense"></div>`},"");
+  wireShell();loadTeamData(dt,o,yr);
+  if(last&&has&&REPORTS[o[0]]){const R=REPORTS[o[0]];drawTrends(document.getElementById("trends26"),{yrs:R.yrs.slice(0,3),trends:R.trends.map(t=>[t[0],t[1],t[2],null,t[4],t[5]])});fillPostseason(o);}
+ }scrollTo(0,0)});
 
 // ---------- team data ----------
 // player: [jersey,name,pos,ht,cls,tag(T/F/""),from,slot,starter,mid{...},adv[gp,min,ortg,usg,ts,tpm,tpa,p3,ast,tov,blk,bpm],advLabel,key]
@@ -682,8 +685,61 @@ function render(t,o){
  setHead("personnel",t.leaders?.[0]?.[1]?.[0]?`${mid?"proj. ":""}top scorer ${String(t.leaders[0][1][0][0]).split(" ").filter(w=>!/^(Jr\.?|Sr\.?|II|III|IV)$/.test(w)).slice(-1)[0]} ${t.leaders[0][1][0][1]}`:"");
  wireDepth(t);
  loadTeamData(t.dataTeam,o||OPP.find(x=>x[0]===t.key),t.key==="bsu26"?"2025-26":SEASON);
- // trends
- const tg=document.getElementById("trends");const yrs=t.yrs;
+ drawTrends(document.getElementById("trends"),t);
+ if(t.after)t.after();
+}
+
+// ---------- last season (2025-26) header: same layout as the 2026-27 report ----------
+let TVF=null;
+async function tvFinal(){if(!TVF)TVF=await fetch("/data/torvik-final-2026.json").then(r=>r.ok?r.json():{t:{}}).catch(()=>({t:{}}));return TVF;}
+const ordn=n=>{const v=n%100;return n+(v>=11&&v<=13?"th":["th","st","nd","rd"][n%10]||"th");};
+function coach26(r){
+ if(!r)return null;const c=r.coach||"",bio=r.coachBio||"";
+ // The current coach was there in 2025-26 unless the report says he replaced someone.
+ const rep=bio.match(/Replaced ([A-Z][\w.'-]+(?: [A-Z][\w.'-]+)+)/);
+ if(rep&&/yr 1\b|first/.test(c))return {name:`HC ${rep[1]}`,bio:`2025-26 coach. ${bio.replace(/^.*?Replaced [^(;.]+/,"").replace(/^[\s(;]+|[)\s]+$/g,"")?bio.slice(bio.indexOf("Replaced")).replace(/^Replaced [^(]+\(?/,"").replace(/\)$/,""):""} Now: ${c.replace(/^HC /,"")}.`};
+ return {name:c.replace(/\s*\(yr (\d+)\)/,(m,y)=>` (yr ${+y-1} in 2025-26)`),bio};
+}
+function lastHeaderHTML(o,r){
+ const R=r||{},tv=TVF?.t?.[R.tv||o[1]];
+ const c=coach26(R);
+ const kpi=(l,v,sub,col,def)=>`<div class="kpi"><span class="label"${def?` data-def="${def}"`:""}>${l}</span><b style="color:${col||"#fff"}">${v}</b><div class="sub">${sub||""}</div></div>`;
+ const tone=rk=>rk==null?"#fff":rk<=60?GOOD:rk>=250?BAD:"#fff";
+ const k=[];
+ k.push(rankTile(o,R));
+ if(tv)k.push(kpi("Final record",tv[1],`${tv[2]} in conference${tv[9]?` · ${tv[9]}`:""}`));
+ if(tv)k.push(kpi("Final offense",(+tv[3]).toFixed(1),`T-Rank AdjO · ${ordn(tv[4])} in D-I`,tone(tv[4]),"adjo"));
+ if(tv)k.push(kpi("Final defense",(+tv[5]).toFixed(1),`T-Rank AdjD · ${ordn(tv[6])} in D-I`,tone(tv[6]),"adjd"));
+ if(tv)k.push(kpi("Tempo",(+tv[7]).toFixed(1),`possessions / 40 · ${ordn(tv[8])} fastest`,"#fff","tempo"));
+ if(R.retPct!=null)k.push(kpi("Minutes back for '27",R.retPct+"%",`of 2025-26 minutes return${R.left?.rows?.length?` · ${R.left.rows.length} key players gone`:""}`,R.retPct>=50?GOOD:R.retPct<=25?BAD:"#fff","retmin"));
+ return `<div class="hero"><div class="game"><div><span class="label">Head coach · 2025-26</span><div style="font-size:15px;font-weight:650;margin-top:4px">${c?c.name:"—"}</div>${c?.bio?`<div class="cap" style="margin-top:4px">${c.bio}</div>`:""}</div><div id="lh-post"><span class="label">Postseason</span><div class="cap" style="margin-top:6px">Loading results…</div></div></div>
+ <div class="kpis">${k.join("")}</div></div>`;
+}
+function lastTrendsHTML(o,r){
+ if(!r?.trends?.length)return"";
+ return `<section><div class="shead"><h2>End-of-season trends</h2><span class="label">${esc(r.name)} · '24 → '26 final · dot color = national percentile</span></div><div class="panel" style="margin-top:14px"><div class="tgrid" id="trends26"></div><div class="cap">Dashed line = 2025-26 D-I average. Latest dot colored by national percentile (orange = strong, blue = weak). Grey = style stat.</div></div></section>`;
+}
+function lastLeftHTML(r){
+ const G=r?.left?.rows||[];if(!G.length)return"";
+ return `<section><div class="shead"><h2>Who left after 2025-26</h2><span class="label">${r.left.pct}% of last season's minutes</span></div><div class="panel" style="margin-top:14px"><table><thead><tr><th class="l">Player</th><th class="l">Role</th><th>Min%</th><th>PPG</th><th>RPG</th><th>BPM</th><th class="l">Next</th></tr></thead><tbody>${G.map(g=>`<tr><td class="l" style="color:#fff">${g[0]}</td><td class="l m">${g[1]}</td><td class="m">${(+g[2]).toFixed(0)}</td><td style="font-weight:700">${f1(g[3])}</td><td>${f1(g[4])}</td><td>${g[5]==null?"—":chip("bpm",g[5],sg(g[5]))}</td><td class="l m"><span class="tl">${g[7]?LG(g[7],16):""}${g[6]}</span></td></tr>`).join("")}</tbody></table></div></section>`;
+}
+// Postseason line from ESPN: conference tournament + NCAA / NIT / CBI / Crown.
+async function fillPostseason(o){
+ const el=document.getElementById("lh-post");if(!el)return;const id=eid(o);
+ if(typeof id!=="number"){el.innerHTML=`<span class="label">Postseason</span><div class="cap" style="margin-top:6px">Not on ESPN.</div>`;return;}
+ try{
+  const S=await getJ(`/api/espn/schedule/${id}?season=2026&post=1`);
+  const G=S.games.filter(g=>g.done&&g.pts!=null&&g.d>="2026-03-01"&&(g.post||/tournament|championship/i.test(g.note||""))).filter((g,i,a)=>a.findIndex(x=>x.d===g.d&&x.oid===g.oid)===i);
+  const short=n=>String(n||"").replace(/ Men's Basketball.*$/i,"").replace(/^(.*?) (?:Championship|Tournament)\s*-?\s*/,"$1 · ").replace(/Region - /,"").replace(/\s+/g," ").trim();
+  if(!G.length){el.innerHTML=`<span class="label">Postseason</span><div style="font-size:13.5px;margin-top:6px;color:#cfd3d9">No postseason games.${S.record?` Finished ${S.record}.`:""}</div>`;return;}
+  const lastG=G[G.length-1],w=lastG.pts>lastG.op;
+  el.innerHTML=`<span class="label">Postseason${S.standing?` · ${esc(S.standing)}`:""}</span><span class="pill" style="background:${w?"var(--good)":"var(--bad)"};margin-top:6px">FINAL GAME · ${w?"W":"L"} ${lastG.pts}-${lastG.op} ${lastG.loc==="A"?"@":"vs"} ${esc(lastG.opp).toUpperCase()}</span>
+   <div style="margin-top:8px;display:grid;gap:3px">${G.map(g=>`<div style="font-size:12.5px;color:#cfd3d9"><b style="color:${g.pts>g.op?"var(--good)":"var(--bad)"}">${g.pts>g.op?"W":"L"} ${g.pts}-${g.op}</b> vs ${esc(g.opp)} <span class="m" style="color:var(--muted)">· ${esc(short(g.note)||"Postseason")}</span></div>`).join("")}</div>`;
+ }catch(e){el.innerHTML=`<span class="label">Postseason</span><div class="cap" style="margin-top:6px">ESPN results unavailable right now.</div>`;}
+}
+
+// Team-trend line charts (one per stat over the coach's seasons; ◇ = projection when given).
+function drawTrends(tg,t){if(!tg)return;const yrs=t.yrs;
  t.trends.forEach(([k,name,vals,proj,better,avg])=>{const W=290,H=170,m={t:40,b:30,l:26,r:30},svg=d3.select(tg).append("svg").attr("viewBox",`0 0 ${W} ${H}`),x=d3.scalePoint(yrs,[m.l,W-m.r]);
   const all=vals.map(v=>v[0]).concat([avg],proj?[proj]:[]),e=d3.extent(all),pad=(e[1]-e[0])*.35||1,y=d3.scaleLinear([e[0]-pad,e[1]+pad],better=="low"?[m.t,H-m.b]:[H-m.b,m.t]);
   svg.append("text").attr("x",12).attr("y",20).attr("font-size",11.5).attr("font-weight",500).attr("fill","#d6d8db").attr("letter-spacing",".06em").attr("data-def",k).text(name.toUpperCase());
@@ -697,7 +753,6 @@ function render(t,o){
    svg.append("text").attr("x",x(d[0])).attr("y",y(d[1])-11).attr("text-anchor","middle").attr("font-size",L?13.5:11).attr("font-weight",L?700:500).attr("fill",L?"#fff":"#b9bdc4").text(d[1].toFixed(1))});
   if(proj){svg.append("path").attr("d",d3.symbol(d3.symbolDiamond,70)()).attr("transform",`translate(${x(yrs[li+1])},${y(proj)})`).attr("fill","#16171a").attr("stroke","#f2f3f4").attr("stroke-width",1.5);svg.append("text").attr("x",x(yrs[li+1])).attr("y",y(proj)-11).attr("text-anchor","middle").attr("font-size",11).attr("fill","#d6d8db").text(proj.toFixed(1))}
   yrs.forEach((yy,i)=>svg.append("text").attr("x",x(yy)).attr("y",H-9).attr("text-anchor","middle").attr("font-size",10).attr("fill",i>li&&!proj?"#4a4d53":"#9aa0a8").text(i>li&&!proj?"—":yy));});
- if(t.after)t.after();
 }
 // ---------- written reports for every opponent (scripts/build-reports.mjs) ----------
 const RC={GOOD,BAD,NEU};
@@ -728,7 +783,7 @@ for(const k in T)T[k].key=k;
  const [ti,td]=await Promise.all([fetch("/data/teams/_index.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/data/teams/_dist.json").then(r=>r.ok?r.json():null).catch(()=>null)]);
  if(ti){TIDX=Object.fromEntries(ti.teams.filter(x=>!x.season||x.season==="2025-26").map(x=>[x.team,x.slug]));EXH=Object.fromEntries(ti.teams.filter(x=>x.season==="2026-27").map(x=>[x.team,x.slug]));PBPSRC=new Set(ti.teams.filter(x=>x.pbpSource&&(!x.season||x.season==="2025-26")).map(x=>x.team));}TDIST=td;
  try{const rj=await fetch("/data/reports.json").then(r=>r.ok?r.json():null);if(rj){REPORTS=rj.teams;addReports();}}catch{}
- await loadLiveRanks();}
+ await loadLiveRanks();await tvFinal();}
 {const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);document.querySelector(`.tab[data-i="${i>=0?i:1}"]`).click();}
 </script>
 </body>

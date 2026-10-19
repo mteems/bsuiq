@@ -205,3 +205,6 @@ table th:has(+ .sep),table td:has(+ .sep){padding-right:14px}
 .smain table th:has(+ .sep),.smain table td:has(+ .sep){padding-right:10px}
 th.grp{padding-left:10px;padding-right:10px}
 thead tr:last-child th{padding-top:7px;padding-bottom:8px;vertical-align:bottom}
+
+/* conference text badge when no logo */
+.cfb{width:24px;height:24px;flex:none;border:1px solid var(--edge);border-radius:4px;display:grid;place-items:center;font:500 7.5px var(--mono);color:var(--dim);background:var(--card)}

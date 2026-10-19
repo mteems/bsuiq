@@ -278,7 +278,7 @@ export const lowMajorConferences = [
   "Summit",
   "Sun Belt",
   "SWAC",
-  "WAC",
+  "United Athletic",
 ];
 export const conferenceOptions = [
   ...highMajorConferences,
@@ -438,7 +438,7 @@ export function parseNaturalSearch(input)                {
       "Mountain West",
       "WCC",
       "Big West",
-      "WAC",
+      "United Athletic",
     ];
     result.interpretation.push("Region: Western conferences");
   }
@@ -584,6 +584,10 @@ export const defaultSearchColumnOrder= [
   "ft_pct",
   "efg_pct",
   "usage_pct",
+  "sk_sc",
+  "sk_pl",
+  "sk_rb",
+  "sk_df",
 ];
 export const searchColumnWidths= {
   name: "minmax(275px,1.85fr)",
@@ -606,6 +610,10 @@ export const searchColumnWidths= {
   ft_pct: "minmax(43px,.46fr)",
   efg_pct: "minmax(43px,.46fr)",
   usage_pct: "minmax(43px,.46fr)",
+  sk_sc: "minmax(48px,.5fr)",
+  sk_pl: "minmax(48px,.5fr)",
+  sk_rb: "minmax(48px,.5fr)",
+  sk_df: "minmax(48px,.5fr)",
 };
 export function loadColumnOrder(
   storageKey,
@@ -642,7 +650,7 @@ function resultGridStyle(columnOrder) {
   };
 }
 export const defaultStatColumns= [
-  "gp", "mpg", "ppg", "rpg", "apg", "spg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct",
+  "gp", "mpg", "ppg", "rpg", "apg", "spg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "sk_sc", "sk_pl", "sk_rb", "sk_df",
 ];
 export const cols= [
   { key: "name", label: "Player" },
@@ -663,6 +671,10 @@ export const cols= [
   { key: "ft_pct", label: "FT%" },
   { key: "efg_pct", label: "eFG%" },
   { key: "usage_pct", label: "USG%" },
+  { key: "sk_sc", label: "SCOR" },
+  { key: "sk_pl", label: "PLAY" },
+  { key: "sk_rb", label: "RBND" },
+  { key: "sk_df", label: "DEF" },
   { label: "" },
 ];
 

@@ -142,7 +142,7 @@ export function parseSchedule(j, teamId) {
     const c = e.competitions?.[0] || {}, me = (c.competitors || []).find((x) => String(x.id) === String(teamId)), op = (c.competitors || []).find((x) => String(x.id) !== String(teamId));
     const sc = (x) => (x?.score == null ? null : +(x.score.value ?? x.score.displayValue ?? x.score));
     return { id: e.id, d: e.date ? new Date(Date.parse(e.date) - 7 * 3600e3).toISOString().slice(0, 10) : "", per: c.status?.period || 2, done: !!c.status?.type?.completed, loc: c.neutralSite ? "N" : me?.homeAway === "home" ? "H" : "A",
-      opp: op?.team?.shortDisplayName || op?.team?.displayName || "", oid: +op?.id || 0, pts: sc(me), op: sc(op), type: e.seasonType?.name || "" };
+      opp: op?.team?.shortDisplayName || op?.team?.displayName || "", oid: +op?.id || 0, pts: sc(me), op: sc(op), type: e.seasonType?.name || "", note: c.notes?.[0]?.headline || "", seed: me?.curatedRank?.current < 99 ? me.curatedRank.current : null };
   });
 }
 // Team box score totals for one game, for both teams.
@@ -166,7 +166,10 @@ async function espnApi(path, url, ctx) {
   if ((m = path.match(/^\/api\/espn\/schedule\/(\d+)$/))) {
     const season = url.searchParams.get("season") || seasonYear();
     const j = await espnCached(`${ESPN_MBB}/teams/${m[1]}/schedule?season=${season}&seasontype=2`, ctx, 3 * 3600);
-    return json({ team: j.team?.displayName, season: +season, games: parseSchedule(j, m[1]) });
+    let games = parseSchedule(j, m[1]);
+    // ?post=1 adds the postseason (NCAA, NIT, CBI, Crown), which ESPN lists separately.
+    if (url.searchParams.get("post")) { try { const p = await espnCached(`${ESPN_MBB}/teams/${m[1]}/schedule?season=${season}&seasontype=3`, ctx, 3 * 3600); games = games.concat(parseSchedule(p, m[1]).map((g) => ({ ...g, post: true }))); } catch {} }
+    return json({ team: j.team?.displayName, season: +season, record: j.team?.recordSummary || "", standing: j.team?.standingSummary || "", games });
   }
   if ((m = path.match(/^\/api\/espn\/box\/(\d+)$/))) {
     const j = await espnCached(`${ESPN_MBB}/summary?event=${m[1]}`, ctx, 30 * 86400);

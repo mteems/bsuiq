@@ -92,6 +92,27 @@ export const tipOn = (e, h) => { custom = true; show(e, h); };
 export const tipOff = () => { custom = false; tip.style.display = "none"; };
 
 // ---------- logos ----------
+// Conference logos, one table for the whole site. ESPN's dark-background versions where they
+// exist; logos that are dark on a dark page (Pac-12, WCC, Horizon, ...) are shown solid white.
+const EC = (v, n) => `https://a.espncdn.com/i/teamlogos/ncaa_conf/${v}/${n}.png`;
+const CONF_LOGO = {
+  "Pac-12": [EC("500-dark", 9)], SEC: [EC("500-dark", 8)], "Big 12": [EC("500-dark", 4)], "Big Ten": [EC("500-dark", 5)], ACC: [EC("500-dark", 1)],
+  "Big East": ["https://sportslogohistory.com/wp-content/uploads/2017/12/big_east_conference_2005-pres.png"], American: [EC("500-dark", 151)], "Mountain West": [EC("500-dark", 17)],
+  WCC: ["https://commons.wikimedia.org/wiki/Special:Redirect/file/West_Coast_Conference_logo_2019_with_name.svg", 1], MVC: [EC(500, 21)], CUSA: [EC(500, 12), 1],
+  "Atlantic 10": ["https://sportslogohistory.com/wp-content/uploads/2018/03/atlantic__10_conference_2014-pres.png", 1], MAC: [EC("500-dark", 15)],
+  "America East": ["https://commons.wikimedia.org/wiki/Special:Redirect/file/America_East_Conference_logo_2024.svg"], ASUN: ["https://sportslogohistory.com/wp-content/uploads/2019/10/atlantic_sun_conference_2016-pres.png"],
+  "Big Sky": [EC(500, 20)], "Big South": [EC("500-dark", 40)], "Big West": ["https://commons.wikimedia.org/wiki/Special:Redirect/file/Big_West_Conference_logo_2021.svg", 1], CAA: [EC("500-dark", 48)],
+  Horizon: ["https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Hl-logo-large-dark.png/250px-Hl-logo-large-dark.png", 1], "Ivy League": [EC(500, 22)],
+  MAAC: ["https://commons.wikimedia.org/wiki/Special:Redirect/file/Metro_Atlantic_Athletic_Conference_logo.svg"], MEAC: [EC(500, 24)], NEC: [EC("500-dark", 25)], OVC: [EC(500, 26)], Patriot: [EC("500-dark", 27)],
+  SoCon: [EC(500, 29), 1], Southland: [EC("500-dark", 30)], Summit: ["https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Summit_League_logo.svg/250px-Summit_League_logo.svg.png"],
+  "Sun Belt": [EC(500, 37)], SWAC: [EC("500-dark", 31)],
+};
+const CONF_ALIAS = { "Horizon League": "Horizon", "Missouri Valley": "MVC", "Conference USA": "CUSA", "C-USA": "CUSA", "Summit League": "Summit", MWC: "Mountain West", "Mountain West Conference": "Mountain West", AAC: "American", "Atlantic Sun": "ASUN", "Southern": "SoCon", "Pac 12": "Pac-12" };
+export const confLogo = (name) => { const c = CONF_LOGO[CONF_ALIAS[name] || name]; return c ? { src: c[0], white: !!c[1] } : null; };
+// <img> for a conference, or a small text badge when there is no logo.
+export const confImg = (name, size = 24, cls = "clogo") => { const c = confLogo(name), ab = esc(String(name || "").replace(/^The /, "").slice(0, 3).toUpperCase());
+  return c ? `<img class="${cls}" alt="" src="${esc(c.src)}" style="width:${size}px;height:${size}px;object-fit:contain${c.white ? ";filter:brightness(0) invert(1)" : ""}" onerror="this.outerHTML='<span class=cfb style=width:${size}px;height:${size}px>${ab}</span>'">` : `<span class="cfb" style="width:${size}px;height:${size}px">${ab}</span>`; };
+
 export const LG = (id, s, ab) =>
   `<span class="lg${id ? "" : " fb"}" style="width:${s}px;height:${s}px">${id ? `<img alt="" src="${typeof id === "string" && !/^\d+$/.test(id) ? id : `https://a.espncdn.com/combiner/i?img=/i/teamlogos/ncaa/500-dark/${id}.png&w=${s * 2}&h=${s * 2}`}" onerror="this.parentNode.classList.add('fb');this.remove()">` : ""}<b>${esc(ab || "")}</b></span>`;
 

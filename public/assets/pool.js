@@ -50,16 +50,20 @@ function link(pool, hub, links) {
     p.espn = links.espn?.[p.id] || p.espnB || p.espnH || "";
     p.photoUrl = links.photo?.[p.id] || (p.espn ? headshotUrl(p.espn) : "");
     p.photo = !!p.photoUrl;
-    const b = teamInfo.get(p.school); p.logo = b?.logo || ""; if (b?.conf) p.conference = b.conf;
+    const b = teamInfo.get(p.school); p.logo = b?.logo || "";
+    // 2026-27 conference from ESPN (by team id); the hub's conference field has errors (e.g. Texas Southern as SEC).
+    p.conference = pool.conf27?.[p.tid] || p.conference;
+    if (b) b.conf = p.conference;
   }
 }
 
 export async function loadPool({ refresh = false } = {}) {
-  const [data, hub, rosters, links] = await Promise.all([
+  const [data, hub, rosters, links, c27] = await Promise.all([
     getJSON("/data/search/players.json"),
     getJSON("/api/hub/link" + (refresh ? "?refresh=1" : "")).catch((e) => ({ teams: [], confs: [], players: [], error: String(e.message || e) })),
     getJSON("/data/rosters-2027.json").catch(() => ({})),
     getJSON("/api/search/links").catch(() => ({ espn: {}, photo: {} })),
+    getJSON("/data/conf-2027.json").catch(() => ({ conf: {} })),
   ]);
   const pc = data.pcols, sc = data.scols;
   const P = data.players.map((r) => { const o = Object.fromEntries(pc.map((k, i) => [k, r[i]])); return { id: o.id, first_name: o.first, last_name: o.last, school: o.team, conference: o.conf, position: o.pos, height: o.ht, class_year: o.cls, jersey_number: o.jersey, hometown: o.home, high_school: o.hs, espnB: o.espn || "", tid: o.tid || "", weight: o.wt || null, seasons: [] }; });
@@ -68,7 +72,9 @@ export async function loadPool({ refresh = false } = {}) {
     s.three_pa_pg = s.gp > 0 ? Math.round((s.three_pa / s.gp) * 10) / 10 : 0;
     P[s.p].seasons.push(s);
   }
-  const pool = { P, byId: new Map(P.map((p) => [p.id, p])), teamInfo: new Map(), confLogo: new Map(), D1: rosters.d1 ? new Set(rosters.d1.map(String)) : null, links,
+  // Skill scores (2025-26) ride on the current season so Search can show and sort them like stats.
+  data.players.forEach((r, i) => { const cur = P[i].seasons[0]; if (!cur) return; for (const k of ["sk_sc", "sk_pl", "sk_rb", "sk_df"]) { const j = pc.indexOf(k); if (j >= 0) cur[k] = r[j]; } });
+  const pool = { P, byId: new Map(P.map((p) => [p.id, p])), teamInfo: new Map(), confLogo: new Map(), D1: rosters.d1 ? new Set(rosters.d1.map(String)) : null, links, conf27: c27.conf || {},
     meta: { built: data.built, note: data.note, hubError: hub.error, season: data.season } };
   link(pool, hub, links);
   pool.TEAMS = [...new Set(P.map((p) => p.school))].sort();

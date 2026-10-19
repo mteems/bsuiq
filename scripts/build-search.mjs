@@ -55,6 +55,10 @@ function espnFor(r) {
   return any && any.size === 1 ? [...any][0] : "";
 }
 const current = rows.filter((r) => +r.season === LAST);
+// Bronco IQ skill scores, 2025-26 (scripts/build-rankings.mjs; bell scale, 50 = D-I average).
+const SK = new Map();
+try { const R = JSON.parse(readFileSync(new URL("../data-src/rankings/national-2025-26.json", import.meta.url), "utf8")), C = Object.fromEntries(R.cols.map((c, i) => [c, i]));
+  for (const r of R.rows) SK.set(r[C.id], ["sc", "pl", "rb", "df"].map((k) => r[C[k]] ?? null)); } catch { /* rankings not built */ }
 const ids = new Map(); // canonical id → player index
 const players = [];
 for (const r of current) {
@@ -66,7 +70,7 @@ for (const r of current) {
     r.canonical_player_id, sp > 0 ? name.slice(0, sp) : name, sp > 0 ? name.slice(sp + 1) : "", r.team,
     CONF[r.conference] || r.conference, POS[r.position] || r.position || "", f && i != null ? `${f}'${i}"` : "",
     CLASS[r.class] || "", String(r.jersey || "").replace(/\.0+$/, ""), r.hometown || "", r.high_school || "",
-    espnFor(r), TID.get(r.team_ncaa_team_id) || "", WT.get(espnFor(r)) || null,
+    espnFor(r), TID.get(r.team_ncaa_team_id) || "", WT.get(espnFor(r)) || null, ...(SK.get(r.canonical_player_id) || [null, null, null, null]),
   ]);
 }
 const seasons = [];
@@ -90,7 +94,7 @@ seasons.sort((a, b) => a[0] - b[0] || b[1].localeCompare(a[1]) || b[5] - a[5]);
 const out = {
   built: new Date().toISOString(), season: label(LAST),
   note: "D-I games only (our play-by-play pipeline). Non-D-I games are left out on purpose, so games and totals can be a little lower than ESPN's.",
-  pcols: ["id", "first", "last", "team", "conf", "pos", "ht", "cls", "jersey", "home", "hs", "espn", "tid", "wt"],
+  pcols: ["id", "first", "last", "team", "conf", "pos", "ht", "cls", "jersey", "home", "hs", "espn", "tid", "wt", "sk_sc", "sk_pl", "sk_rb", "sk_df"],
   players,
   scols: ["p", "season", "school", "conf", "gp", "min", "mpg", "ppg", "rpg", "apg", "spg", "bpg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "ts_pct", "usage_pct", "fgm", "fga", "three_pm", "three_pa", "ftm", "fta", "points", "rebounds", "assists", "steals", "blocks", "turnovers", "oreb", "dreb", "src"],
   seasons,

@@ -48,6 +48,7 @@
 .fl{font:10px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:block}
 .fsel{margin-top:5px;width:100%;height:38px;background:var(--bg);border:1px solid var(--edge);border-radius:7px;color:var(--text);font:600 13px var(--ui);padding:0 10px;outline:none;cursor:pointer}
 .fsel:focus{border-color:#8a8e95}
+.sfb{display:inline-flex}.sfb button{padding:3px 7px;font-size:10px}
 .colon{text-align:center;color:var(--faint);padding-bottom:10px;font-weight:700}
 .dd{position:relative}
 .ddt{margin-top:5px;width:100%;height:38px;background:var(--bg);border:1px solid var(--edge);border-radius:7px;color:var(--text);font:600 13px var(--ui);padding:0 10px;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left}
@@ -66,7 +67,6 @@
 .opt .ck{margin-left:auto;color:#fff;font-size:12px}
 .opt.stat strong{color:#fff;font-weight:700;min-width:36px}
 .allb{width:24px;height:24px;flex:none;border:1px dashed #61656c;border-radius:4px;display:grid;place-items:center;font:500 7.5px var(--mono);color:var(--muted)}
-.cfb{width:24px;height:24px;flex:none;border:1px solid var(--edge);border-radius:4px;display:grid;place-items:center;font:500 7.5px var(--mono);color:var(--dim);background:var(--card)}
 .clogo{width:24px;height:24px;flex:none;object-fit:contain}
 .chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:14px}
 .chips .h{font:9.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-right:2px}
@@ -228,7 +228,8 @@ tr.ndr td{color:var(--faint)}
 </main>
 <div id="modal"></div>
 <script type="module">
-import { topBar, esc, getJSON, addDefs } from "/assets/core.js";
+import { topBar, esc, getJSON, addDefs, pc, confImg } from "/assets/core.js";
+const scol = (v) => pc(50 + Math.max(-45, Math.min(45, (v - 50) * 1.5)));
 import * as H from "/assets/search-logic.js";
 import { loadPool, espnGames } from "/assets/pool.js";
 topBar("search");
@@ -243,6 +244,7 @@ addDefs({
   fg_pct: ["Field goal %", ""], two_pct: ["2-point %", "Made twos ÷ attempted twos."], three_pct: ["3-point %", ""], ft_pct: ["Free throw %", ""],
   efg_pct: ["Effective FG %", "Field-goal % with threes worth 1.5×."], usage_pct: ["Usage %", "Share of his team's possessions he used while on the floor (Barttorvik)."],
   mpg: ["Minutes per game", ""], ppg: ["Points per game", ""], rpg: ["Rebounds per game", ""], apg: ["Assists per game", ""], spg: ["Steals per game", ""], topg: ["Turnovers per game", "Lower is better."],
+  sk_sc: ["Scoring score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_pl: ["Playmaking score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_rb: ["Rebounding score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_df: ["Defense score (DEF v2)", "Bronco IQ defensive score, 2025-26. Ranked among D-I rotation players (40%+ of team minutes)."],
   s_best: ["Best / worst games", "Game score = PTS + 0.7·REB + 0.7·AST + 2·STL + 2·BLK − TO. Only games where he played at least 75% of his usual minutes (and 12+) count. Non-D-I games are left out."],
 });
 
@@ -256,6 +258,8 @@ const blank = () => ({ query: "", natural: "", ns: null, position: "All", minCla
 const S = Object.assign(blank(), ss.get(VIEW, {}));
 let order = H.loadColumnOrder(COLS, H.defaultSearchColumnOrder.filter((k) => k !== "objective" && k !== "daor"));
 let visibleStats = ls.get(STATS, H.defaultStatColumns).filter((k) => STAT_KEYS.includes(k));
+// Skill-score columns were added later: show them once for people with a saved column choice.
+if (!ls.get("biq-skill-cols", false)) { for (const k of ["sk_sc", "sk_pl", "sk_rb", "sk_df"]) if (!visibleStats.includes(k)) visibleStats.push(k); ls.set(STATS, visibleStats); ls.set("biq-skill-cols", true); }
 let saved = ls.get(SAVED, []), recent = ls.get(RECENT, []);
 const selected = new Set(), expanded = new Set();
 let P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
@@ -280,6 +284,7 @@ function sortVal(p, k) {
   if (k === "position") return p.position;
   if (k === "class") return H.classRank(p.class_year);
   if (k === "season") return H.current(p)?.season ?? "";
+  if (k.startsWith("sk_")) { const v = metric(p, k); return v == null ? (S.dir === "asc" ? 1e9 : -1e9) : v; }
   return metric(p, k) ?? 0;
 }
 function compute() {
@@ -377,14 +382,17 @@ document.getElementById("interp").addEventListener("click", (e) => { if (e.targe
 // ---------------------------------------------------------------- filter bar
 const CHEV = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg>`;
 const teamLogo = (t, s = 22) => { const l = teamInfo.get(t)?.logo; return `<span class="lg${l ? "" : " fb"}" style="width:${s}px;height:${s}px">${l ? `<img alt="" loading="lazy" src="${esc(l)}" onerror="this.parentNode.classList.add('fb');this.remove()">` : ""}<b>${esc(String(t).slice(0, 2).toUpperCase())}</b></span>`; };
-const confMark = (c) => confLogo.get(c) ? `<img class="clogo" alt="" src="${esc(confLogo.get(c))}" onerror="this.outerHTML='<span class=cfb>${esc(c.slice(0, 3).toUpperCase())}</span>'">` : `<span class="cfb">${esc(c.slice(0, 3).toUpperCase())}</span>`;
+const confMark = (c, size = 24) => confImg(c, size);
 let openDD = "", ddSearch = "";
-function selectHTML(label, key, options, empty) {
-  return `<label class="fl">${label}<select class="fsel" data-k="${key}"><option value="All">${empty}</option>${options.map((o) => `<option${S[key] === o ? " selected" : ""}>${esc(o)}</option>`).join("")}</select></label>`;
+// Site-styled dropdowns (same look as the conference / team menus), not the browser's own menu.
+function pickHTML(label, key, items, empty, allVal) {
+  const cur = items.find(([v]) => String(v) === String(S[key]));
+  const list = [[allVal, empty], ...items];
+  return `<div class="fl dd" data-dd="${key}">${label}<button class="ddt" data-open="${key}"><span class="t">${esc(cur ? cur[1] : empty)}</span>${CHEV}</button>${openDD === key ? `<div class="ddm" style="width:100%"><div class="list">${list.map(([v, l]) => { const on = String(S[key]) === String(v); return `<button class="opt${on ? " on" : ""}" data-pick="${key}" data-val="${esc(v)}"><span>${esc(l)}</span>${on ? `<span class="ck">✓</span>` : ""}</button>`; }).join("")}</div></div>` : ""}</div>`;
 }
-function heightSel(label, key, opts) {
-  return `<label class="fl">${label}<select class="fsel" data-k="${key}"><option value="">Any</option>${opts.map((h) => `<option value="${h}"${String(S[key]) === String(h) ? " selected" : ""}>${H.heightLabel(h)}</option>`).join("")}</select></label>`;
-}
+const POSN = { G: "Guards", W: "Wings", F: "Forwards", B: "Bigs" };
+function selectHTML(label, key, options, empty) { return pickHTML(label, key, options.map((o) => [o, key === "position" ? `${o} · ${POSN[o] || o}` : o]), empty, "All"); }
+function heightSel(label, key, opts) { return pickHTML(label, key, opts.map((h) => [String(h), H.heightLabel(h)]), "Any", ""); }
 function renderFilters() {
   const C = H.classes, rank = H.classRank;
   const minC = S.maxClass === "All" ? C : C.filter((v) => rank(v) <= rank(S.maxClass));
@@ -412,7 +420,7 @@ function renderFilters() {
   ].filter(Boolean);
   const sfHTML = S.statFilters.map((f) => {
     const o = H.statOptions.find((x) => x.key === f.key && x.basis === f.basis) ?? H.statOptions.find((x) => x.key === f.key);
-    return `<div class="sf" data-id="${f.id}"><span class="k">${esc(o.abbr)} ${f.basis === "average" ? "per game" : "total"}</span><select data-f="bound"><option value="min"${f.bound === "min" ? " selected" : ""}>MIN</option><option value="max"${f.bound === "max" ? " selected" : ""}>MAX</option></select><input type="number" min="0" step="any" data-f="value" placeholder="Value" value="${f.value ?? ""}"><button data-f="rm" aria-label="Remove">✕</button></div>`;
+    return `<div class="sf" data-id="${f.id}"><span class="k">${esc(o.abbr)} ${f.basis === "average" ? "per game" : "total"}</span><span class="seg sfb"><button data-f="bound" data-b="min" class="${f.bound === "min" ? "on" : ""}">MIN</button><button data-f="bound" data-b="max" class="${f.bound === "max" ? "on" : ""}">MAX</button></span><input type="number" min="0" step="any" data-f="value" placeholder="Value" value="${f.value ?? ""}"><button data-f="rm" aria-label="Remove">✕</button></div>`;
   }).join("");
   document.getElementById("fbar").innerHTML = `
     <div class="frow">
@@ -452,6 +460,8 @@ fbar.addEventListener("keydown", (e) => { if (e.target.id === "tsrch" && e.key =
 fbar.addEventListener("click", (e) => {
   const t = e.target.closest("button"); if (!t) return;
   if (t.dataset.open) { openDD = openDD === t.dataset.open ? "" : t.dataset.open; ddSearch = ""; renderFilters(); return; }
+  if (t.dataset.pick) { S[t.dataset.pick] = t.dataset.val; openDD = ""; renderAll(); return; }
+  if (t.dataset.f === "bound") { S.statFilters.find((f) => f.id === t.closest(".sf").dataset.id).bound = t.dataset.b; renderAll(); return; }
   if (t.dataset.conf !== undefined) { const c = t.dataset.conf; if (!c) { S.confs = []; openDD = ""; } else S.confs = S.confs.includes(c) ? S.confs.filter((x) => x !== c) : [...S.confs, c]; S.teams = S.teams.filter((x) => !S.confs.length || P.some((p) => p.school === x && S.confs.includes(p.conference))); renderAll(); return; }
   if (t.dataset.team !== undefined) { const c = t.dataset.team; if (!c) { S.teams = []; openDD = ""; ddSearch = ""; } else S.teams = S.teams.includes(c) ? S.teams.filter((x) => x !== c) : [...S.teams, c]; renderAll(); return; }
   if (t.dataset.stat) { S.statFilters.push({ id: crypto.randomUUID(), key: t.dataset.stat, basis: t.dataset.basis, bound: "min", value: null }); openDD = ""; renderAll(); return; }
@@ -495,7 +505,7 @@ document.getElementById("modal").addEventListener("click", (e) => { if (e.target
 function renderBanner() {
   const el = document.getElementById("sban");
   if (!S.teams.length && !S.confs.length) { el.innerHTML = ""; return; }
-  el.innerHTML = `<div class="sban">${S.teams.map((t) => `<div class="it">${teamLogo(t, 32)}<div><div class="n">${esc(t)}</div><div class="s">Selected team</div></div></div>`).join("")}${S.confs.map((c) => `<div class="it">${confMark(c).replace('class="clogo"', 'class="clogo" style="width:32px;height:32px"').replace('class="cfb"', 'class="cfb" style="width:32px;height:32px"')}<div><div class="n">${esc(c)}</div><div class="s">${H.highMajorConferences.includes(c) ? "High Major" : H.midMajorConferences.includes(c) ? "Mid-Major" : "Low Major"}</div></div></div>`).join("")}</div>`;
+  el.innerHTML = `<div class="sban">${S.teams.map((t) => `<div class="it">${teamLogo(t, 32)}<div><div class="n">${esc(t)}</div><div class="s">Selected team</div></div></div>`).join("")}${S.confs.map((c) => `<div class="it">${confMark(c, 32)}<div><div class="n">${esc(c)}</div><div class="s">${H.highMajorConferences.includes(c) ? "High Major" : H.midMajorConferences.includes(c) ? "Mid-Major" : "Low Major"}</div></div></div>`).join("")}</div>`;
 }
 
 // ---------------------------------------------------------------- toolbar
@@ -573,6 +583,7 @@ function rowHTML(p) {
     if (k === "class") return `<div class="cell t">${esc(p.class_year || "—")}</div>`;
     if (k === "season") return `<div class="cell" style="font-size:11.5px;color:var(--muted)">${esc(s?.season ?? "—")}</div>`;
     const v = s?.[k];
+    if (k.startsWith("sk_")) return `<div class="cell st">${v == null ? `<span class="m">—</span>` : `<span class="chip" style="background:${scol(v)}">${Math.round(v)}</span>`}</div>`;
     return `<div class="cell st${v == null ? " na" : ""}">${fmt(v, k)}</div>`;
   };
   return `<div class="row${open ? " open" : ""}" data-id="${esc(p.id)}"><div class="rgrid rmain" style="${gridStyle(cols)}" data-act="toggle" role="button" tabindex="0">${cols.map(cell).join("")}<div class="acts"><a class="ib ghost" href="${href}" data-act="link" title="Player page" aria-label="Player page"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a><button class="ib ghost" data-act="toggle" title="${open ? "Collapse player" : "Expand player"}" aria-label="${open ? "Collapse player" : "Expand player"}">${open ? "▴" : "▾"}</button></div></div>${open ? expandedHTML(p) : ""}</div>`;
