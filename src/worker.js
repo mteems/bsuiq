@@ -172,6 +172,10 @@ async function espnApi(path, url, ctx) {
     const j = await espnCached(`${ESPN_MBB}/summary?event=${m[1]}`, ctx, 30 * 86400);
     return json({ teams: parseBox(j), conf: !!j.header?.competitions?.[0]?.conferenceCompetition });
   }
+  if ((m = path.match(/^\/api\/espn\/team\/(\d+)$/))) {
+    const j = await espnCached(`${ESPN_MBB}/teams/${m[1]}`, ctx, 7 * 86400);
+    return json({ name: j.team?.displayName, links: (j.team?.links || []).map((l) => ({ text: l.text, href: l.href, rel: l.rel })) });
+  }
   if ((m = path.match(/^\/api\/espn\/roster\/(\d+)$/))) {
     const season = url.searchParams.get("season") || seasonYear();
     const j = await espnCached(`${ESPN_MBB}/teams/${m[1]}/roster?season=${season}`, ctx, 12 * 3600);
@@ -237,6 +241,41 @@ async function hubGames(espnId, url, ctx) {
   const seen = new Set();
   const games = out.filter((g) => (seen.has(g.id) ? false : seen.add(g.id))).sort((a, b) => b.date.localeCompare(a.date));
   return json({ games, errors });
+}
+
+// Player Search links that ESPN/hub matching can't make on its own, kept in KV ("search:links"):
+//   { espn: { <canonical id>: <ESPN athlete id> }, photo: { <canonical id>: <image URL> } }
+// Filled by staff tools (the headshot check); GET returns it, POST merges into it.
+async function searchLinks(request, env) {
+  if (!env.STAFF) return json({ espn: {}, photo: {} });
+  const cur = (await env.STAFF.get("search:links", "json")) || { espn: {}, photo: {} };
+  if (request.method === "GET") return json(cur);
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const ok = (k) => /^[\w-]{3,40}$/.test(k);
+  for (const [k, v] of Object.entries(b.espn || {})) if (ok(k) && /^\d{3,12}$/.test(String(v))) cur.espn[k] = String(v);
+  for (const [k, v] of Object.entries(b.photo || {})) if (ok(k) && /^https:\/\/[^\s"'<>]{8,400}$/.test(String(v))) cur.photo[k] = String(v);
+  for (const k of b.remove || []) { delete cur.espn[k]; delete cur.photo[k]; }
+  await env.STAFF.put("search:links", JSON.stringify(cur));
+  return json({ espn: Object.keys(cur.espn).length, photo: Object.keys(cur.photo).length });
+}
+// School roster pages (for players ESPN has no headshot for): returns each roster photo with its
+// alt text. Only https pages whose path is a roster page; only image names/URLs come back.
+async function scrapeRoster(url) {
+  const target = url.searchParams.get("url") || "";
+  let u; try { u = new URL(target); } catch { return json({ error: "bad_url" }, 400); }
+  if (u.protocol !== "https:" || !/roster/i.test(u.pathname)) return json({ error: "not_a_roster_page" }, 400);
+  const r = await fetch(u, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36", accept: "text/html" }, redirect: "follow" });
+  const html = await r.text(), out = [], seen = new Set();
+  for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+    const tag = m[0], alt = (tag.match(/\balt="([^"]*)"/i) || [])[1] || "";
+    const src = (tag.match(/\b(?:data-src|src)="([^"]+)"/i) || [])[1] || "";
+    if (!alt || !src || src.startsWith("data:")) continue;
+    let abs; try { abs = new URL(src.replace(/&amp;/g, "&"), r.url).href; } catch { continue; }
+    if (seen.has(abs)) continue; seen.add(abs);
+    out.push({ alt: alt.replace(/&#39;|&apos;/g, "'").replace(/&amp;/g, "&").trim(), src: abs });
+  }
+  return json({ status: r.status, final: r.url, images: out.slice(0, 400) });
 }
 
 // Staff position overrides for depth charts. Stored as one JSON object in KV:
@@ -364,6 +403,8 @@ export default {
     const hg = path.match(/^\/api\/hub\/games\/espn-(\d+)$/);
     if (hg) return hubGames(hg[1], url, ctx);
     if (path === "/api/positions") return positionsApi(request, env);
+    if (path === "/api/search/links") return searchLinks(request, env);
+    if (path === "/api/scrape/roster") return scrapeRoster(url);
     // Raw Torvik team CSVs (barttorvik blocks browsers on this network; the worker can reach it).
     if (path === "/api/torvik/csv") {
       const f = url.searchParams.get("f") || "";

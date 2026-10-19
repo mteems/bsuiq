@@ -257,7 +257,7 @@ let order = H.loadColumnOrder(COLS, H.defaultSearchColumnOrder.filter((k) => k !
 let visibleStats = ls.get(STATS, H.defaultStatColumns).filter((k) => STAT_KEYS.includes(k));
 let saved = ls.get(SAVED, []), recent = ls.get(RECENT, []);
 const selected = new Set(), expanded = new Set();
-let P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
+let LINKS = { espn: {}, photo: {} }, P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
 let visible = [], shown = 0;
 const remember = () => ss.set(VIEW, S);
 
@@ -317,18 +317,22 @@ function link(hub) {
   for (const p of P) {
     if (p.espnB && p.espn && p.espnB !== p.espn) window.biqConflicts.push([p.first_name + " " + p.last_name, p.espnB, p.espn]);
     if (p.espnB) p.espn = p.espnB;
-    p.photo = !!p.espn;
+    if (LINKS.espn?.[p.id]) p.espn = LINKS.espn[p.id];
+    p.photoUrl = LINKS.photo?.[p.id] || (p.espn ? `https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${p.espn}.png&w=150&h=110&scale=crop` : "");
+    p.photo = !!p.photoUrl;
   }
   for (const p of P) { const b = teamInfo.get(p.school); p.logo = b?.logo || ""; if (b?.conf) p.conference = b.conf; }
   for (const t of TEAMS_TID(P)) if (!teamInfo.get(t[0])?.logo) teamInfo.set(t[0], { ...(teamInfo.get(t[0]) || { name: t[0], conf: "" }), logo: `https://a.espncdn.com/i/teamlogos/ncaa/500-dark/${t[1]}.png` });
   window.biqSearch = { matched: P.filter((p) => p.espn).length, photos: P.filter((p) => p.photo).length, missing: P.filter((p) => !p.espn).map((p) => [p.id, p.first_name + " " + p.last_name, p.school, p.tid]), total: P.length, noLogo: [...teamInfo].filter(([, b]) => !b?.logo).map(([t]) => t) };
 }
 async function load(refresh = false) {
-  const [data, hub, rosters] = await Promise.all([
+  const [data, hub, rosters, links] = await Promise.all([
     getJSON("/data/search/players.json"),
     getJSON("/api/hub/link" + (refresh ? "?refresh=1" : "")).catch((e) => ({ teams: [], confs: [], players: [], error: String(e.message || e) })),
     getJSON("/data/rosters-2027.json").catch(() => ({})),
+    getJSON("/api/search/links").catch(() => ({ espn: {}, photo: {} })),
   ]);
+  LINKS = links;
   meta = { built: data.built, note: data.note, hubError: hub.error, season: data.season };
   D1 = rosters.d1 ? new Set(rosters.d1.map(String)) : null;
   const pc = data.pcols, sc = data.scols;
@@ -627,7 +631,7 @@ const visCols = () => order.filter((k) => H.baseSearchColumns.has(k) || visibleS
 const gridStyle = (cols) => `grid-template-columns:${cols.map((k) => H.searchColumnWidths[k]).join(" ")} 80px`;
 const labelOf = (k) => H.cols.find((c) => c.key === k)?.label ?? k;
 const defKey = { position: "s_pos", height: "s_ht", class: "s_class", season: "s_season" };
-const headshot = (p) => p.espn && p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${p.espn}.png&w=150&h=110&scale=crop" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
+const headshot = (p) => p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="${esc(p.photoUrl)}" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
 const fmt = (v, k) => (v == null || v === "" ? "—" : PCT.has(k) ? `${v}%` : String(v));
 function headerHTML() {
   const cols = visCols(), active = [{ key: S.sortKey, direction: S.dir }, ...S.sec];
