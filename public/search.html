@@ -313,7 +313,7 @@ function link(hub) {
   }
   // Our own ESPN ids (team roster + name) win; the hub match fills the rest. Every ESPN id gets a
   // headshot attempt; a missing photo falls back to initials.
-  window.biqConflicts = [];
+  window.biqConflicts = []; window.biqP = P;
   for (const p of P) {
     if (p.espnB && p.espn && p.espnB !== p.espn) window.biqConflicts.push([p.first_name + " " + p.last_name, p.espnB, p.espn]);
     if (p.espnB) p.espn = p.espnB;
