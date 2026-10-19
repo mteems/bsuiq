@@ -172,6 +172,17 @@ async function putRanks(env, source, season, list) {
 }
 async function ingestRanks(request, env) {
   if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+  // GET form for sites whose security policy blocks sending data out (EvanMiya):
+  // the browser just navigates to ?source=&season=&token=&list=a|b|c
+  if (request.method === "GET") {
+    const q = new URL(request.url).searchParams;
+    if (!env.RANKS_TOKEN || !env.STAFF || !safeEqual(q.get("token") || "", env.RANKS_TOKEN)) return new Response("unauthorized", { status: 401 });
+    try {
+      if (!RANK_SOURCES.includes(q.get("source"))) throw new Error("bad source");
+      const n = await putRanks(env, q.get("source"), +q.get("season") || seasonYear(), (q.get("list") || "").split("|"));
+      return new Response(`<!doctype html><title>saved</title><body style="font:16px system-ui;background:#16171a;color:#fff;padding:40px">Saved ${n} teams for ${q.get("source")}.</body>`, { headers: { "content-type": "text/html" } });
+    } catch (e) { return new Response("error: " + (e.message || e), { status: 400 }); }
+  }
   if (request.method !== "POST") return new Response("method", { status: 405, headers: CORS });
   if (!env.RANKS_TOKEN || !env.STAFF || !safeEqual(request.headers.get("x-ranks-token") || "", env.RANKS_TOKEN)) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...CORS, "content-type": "application/json" } });
   try {
