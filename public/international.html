@@ -75,7 +75,8 @@
 .ch img{width:18px;height:13px;border-radius:2px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
 .ch b{font-size:12.5px;font-weight:650}
 .ch span{margin-left:auto;font:10.5px var(--mono);color:var(--muted)}
-.pr{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:9px;align-items:center;padding:6px 16px 6px 18px;cursor:pointer}
+.pr .av{width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:top;background:#2a2c30;box-shadow:0 0 0 2px var(--good)}
+.pr{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;padding:6px 16px 6px 18px;cursor:pointer}
 .pr:hover,.pr.hl{background:rgba(255,255,255,.04)}
 .pr.sel{background:rgba(255,255,255,.07)}
 .pr s{width:9px;height:9px;border-radius:50%;display:block}
@@ -84,7 +85,12 @@
 .pr .tr{font:10px var(--mono);color:var(--dim);text-align:right;line-height:1.5}
 .vc{font:9px var(--mono);letter-spacing:.06em;border:1px solid #6b4a3a;color:#f0a27d;border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:1px}
 .pcard{padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#25272b,#1e1f22)}
-.pcard .ptop{display:flex;gap:10px;align-items:flex-start}
+.pcard .ptop{display:flex;gap:12px;align-items:center}
+.pcard .hs{width:72px;height:72px;border-radius:50%;object-fit:cover;object-position:top;background:#2a2c30;box-shadow:0 0 0 2.5px var(--good);flex:none}
+.pcard .fl{width:16px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.pcard .cteam{font-size:12px;color:var(--dim);margin-top:3px}
+.fiba{overflow-x:auto}.fiba table{font-size:11.5px}.fiba td,.fiba th{padding:5px 4px}.fiba a{color:#fff}.fiba tr.sub td{padding-top:0;font-size:10.5px;border-bottom:1px solid var(--line)}
+.fiba tr:not(.sub) td{border-bottom:0}
 .pcard h3{font-size:18px;font-weight:750;letter-spacing:-.01em}
 .pcard .x{margin-left:auto;background:none;border:0;color:var(--muted);font:14px var(--mono);cursor:pointer}
 .pcard .x:hover{color:#fff}
@@ -118,7 +124,7 @@
     </div>
     <aside class="side"><div id="card"></div><div class="shd" id="shd"></div><div class="slist" id="list"></div></aside>
   </div>
-  <div class="cap">Each dot sits in the city where the player plays now. Scroll or pinch to zoom, drag to pan, or pick a region above. Add players in data-src/intl/board.json.</div>
+  <div class="cap">Each dot sits in the city where the player plays now. Scroll or pinch to zoom, drag to pan, or pick a region above. To add a player, ask Claude to add him by name.</div>
 </main>
 <script type="module">
 import { d3, topBar, tipOn, tipOff, esc } from "/assets/core.js";
@@ -134,7 +140,9 @@ const C = geo.countries;
 const feat110 = new Map(W110.features.map((f) => [f.properties.a, f]));
 const home = (a3) => geo.anchor[a3] || (feat110.get(a3) ? [feat110.get(a3).properties.lx, feat110.get(a3).properties.ly] : [0, 0]);
 const ageOf = (p) => (p.born ? (Date.now() - Date.parse(p.born)) / 3.15576e10 : p.age ?? null);
-const P = board.players.map((p, i) => { const [a3, a2, reg] = C[p.nat] || ["", "", "Other"]; return { ...p, i, a3, a2, reg, pg: POSG(p.pos), ll: p.ll || home(a3), age: ageOf(p) }; });
+// Region = where he plays now (a Spaniard at a Utah prep school shows under North America).
+const regionOfLL = (ll) => { for (const [r, b] of REGIONS) if (b && ll[0] >= b[0] && ll[0] <= b[2] && ll[1] >= b[1] && ll[1] <= b[3]) return r; return "World"; };
+const P = board.players.map((p, i) => { const [a3, a2] = C[p.nat] || ["", ""]; const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos), ll, age: ageOf(p) }; });
 const st = { region: "World", pos: new Set(["G", "W", "B"]), sel: null, hover: null, k: 1 };
 const vis = () => P.filter((p) => st.pos.has(p.pg));
 const inRegion = (p, r) => r === "World" || p.reg === r;
@@ -160,6 +168,7 @@ function fitWorld() { Wd = box.clientWidth; Ht = box.clientHeight; proj.fitExten
 fitWorld();
 const gMap = svg.append("g"), gSphere = gMap.append("path").attr("class", "sphere"), gGrat = gMap.append("path").attr("class", "grat"), gLand = gMap.append("g");
 const gLab = svg.append("g"), gPts = svg.append("g");
+const countryAt = (ll) => { for (const f of land) if (d3.geoContains(f, ll)) return f.properties.a; return null; };
 function drawLand(features) {
   gSphere.attr("d", path({ type: "Sphere" })); gGrat.attr("d", path(d3.geoGraticule10()));
   gLand.selectAll("path").data(features, (f) => f.properties.a).join("path").attr("class", "land").attr("d", path)
@@ -167,7 +176,7 @@ function drawLand(features) {
     .on("mouseleave", tipOff).on("click", (e, f) => { const p = vis().find((q) => q.a3 === f.properties.a); if (p && st.region === "World") goRegion(p.reg); });
   shadeLand();
 }
-function shadeLand() { const has = new Set(vis().map((p) => p.a3)), on = st.hover ?? st.sel, hot = on != null ? P[on].a3 : null;
+function shadeLand() { const has = new Set(vis().flatMap((p) => [p.a3, countryAt(p.ll)])), on = st.hover ?? st.sel, hot = on != null ? countryAt(P[on].ll) : null;
   gLand.selectAll("path").classed("has", (f) => has.has(f.properties.a)).classed("hot", (f) => f.properties.a === hot); }
 drawLand(land);
 let T = d3.zoomIdentity;
@@ -195,18 +204,21 @@ function placePoints() {
   const k = st.k, r = k >= 1.8 ? 6.5 : 5, golden = Math.PI * (3 - Math.sqrt(5));
   const byCity = d3.group(vis(), (p) => p.city || p.nat);
   const pts = [];
-  for (const [, ps] of byCity) { const [cx, cy] = xy(ps[0].ll); ps.forEach((p, i) => { const rr = i ? r * 1.6 * Math.sqrt(i) : 0, a = i * golden; pts.push({ p, x: cx + rr * Math.cos(a), y: cy + rr * Math.sin(a), r }); }); }
-  const halo = gPts.selectAll("circle.halo").data(pts, (d) => d.p.i);
-  halo.exit().remove();
-  halo.enter().append("circle").attr("class", "halo").merge(halo).attr("cx", (d) => d.x).attr("cy", (d) => d.y).attr("r", (d) => d.r + 6).attr("fill", DOT).attr("opacity", 0.16).style("pointer-events", "none");
-  const dots = gPts.selectAll("circle.dot").data(pts, (d) => d.p.i);
-  dots.exit().remove();
-  dots.enter().append("circle").attr("class", "dot")
+  for (const [, ps] of byCity) { const [cx, cy] = xy(ps[0].ll); ps.forEach((p, i) => { const rr = i ? (k >= 1.8 ? 48 : 36) * Math.sqrt(i) : 0, a = i * golden; pts.push({ p, x: cx + rr * Math.cos(a), y: cy + rr * Math.sin(a), r }); }); }
+  // markers: headshot in an orange ring (dot if no photo)
+  const R = k >= 1.8 ? 22 : 16;
+  const M = gPts.selectAll("g.mk").data(pts, (d) => d.p.i);
+  M.exit().remove();
+  const me = M.enter().append("g").attr("class", "mk").style("cursor", "pointer")
     .on("mousemove", (e, d) => { st.hover = d.p.i; highlight(); tipOn(e, tipHTML(d.p)); }).on("mouseleave", () => { st.hover = null; highlight(); tipOff(); })
-    .on("click", (e, d) => { select(d.p.i, true); })
-    .merge(dots).attr("fill", DOT).attr("cx", (d) => d.x).attr("cy", (d) => d.y).attr("r", (d) => d.r);
+    .on("click", (e, d) => select(d.p.i, true));
+  me.append("clipPath").attr("id", (d) => "hc" + d.p.i).append("circle");
+  me.append("circle").attr("class", "halo").attr("fill", DOT).attr("opacity", 0.18);
+  me.append("circle").attr("class", "ring").attr("fill", "#2a2c30").attr("stroke", DOT).attr("stroke-width", 2.5);
+  me.filter((d) => d.p.headshot).append("image").attr("href", (d) => d.p.headshot).attr("clip-path", (d) => `url(#hc${d.p.i})`).attr("preserveAspectRatio", "xMidYMin slice");
+  me.merge(M).attr("transform", (d) => `translate(${d.x},${d.y})`).each((d) => (d.r = R));
   // labels: name always (only a few players); club + city when zoomed in
-  const labs = pts.map((d) => ({ k: d.p.i, x: d.x + d.r + 8, y: d.y, name: d.p.name, sub: k >= 1.8 ? `${d.p.club} · ${d.p.city}` : `${d.p.city}, ${d.p.nat}` }));
+  const labs = pts.map((d) => ({ k: d.p.i, x: d.x + R + 9, y: d.y, name: d.p.name, sub: k >= 1.8 ? `${d.p.club} · ${d.p.city}` : `${d.p.city}, ${d.p.nat}` }));
   const L = gLab.selectAll("g.plab").data(labs, (d) => d.k).join((en) => { const g = en.append("g").attr("class", "plab"); g.append("text").attr("class", "pn"); g.append("text").attr("class", "ps"); return g; })
     .attr("transform", (d) => `translate(${d.x},${d.y})`);
   L.select("text.pn").attr("y", -2).text((d) => d.name);
@@ -218,7 +230,9 @@ const fmtAge = (p) => (p.age ? p.age.toFixed(1) : "—");
 function tipHTML(p) { return `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""} · ${fmtAge(p)} yrs<br>${esc(p.team || p.club)} · ${esc(p.city)}, ${p.nat}`; }
 function highlight() {
   const on = st.hover ?? st.sel;
-  gPts.selectAll("circle.dot").classed("hl", (d) => d.p.i === on).attr("r", (d) => (d.p.i === on ? d.r + 2.5 : d.r));
+  gPts.selectAll("g.mk").each(function (d) { const rr = (d.r || 16) + (d.p.i === on ? 3 : 0), g = d3.select(this);
+    g.select("clipPath circle").attr("r", rr - 1.5); g.select(".halo").attr("r", rr + 6).attr("opacity", d.p.i === on ? 0.35 : 0.18); g.select(".ring").attr("r", rr).attr("stroke", d.p.i === on ? "#fff" : DOT);
+    g.select("image").attr("x", -rr).attr("y", -rr).attr("width", rr * 2).attr("height", rr * 2); if (d.p.i === on) g.raise(); });
   document.querySelectorAll(".pr").forEach((r) => { r.classList.toggle("hl", +r.dataset.i === st.hover); r.classList.toggle("sel", +r.dataset.i === st.sel); });
   shadeLand();
 }
@@ -229,16 +243,27 @@ function drawList() {
   const gs = [...G].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
   document.getElementById("shd").innerHTML = `<h2>${st.region === "World" ? "All players" : st.region}</h2><div class="label">${V.length} player${V.length === 1 ? "" : "s"} · ${gs.length} countr${gs.length === 1 ? "y" : "ies"}</div>`;
   document.getElementById("list").innerHTML = gs.length ? gs.map(([nat, ps]) => `<div class="cgrp"><div class="ch">${ps[0].a2 ? `<img alt="" src="https://flagcdn.com/w40/${ps[0].a2}.png" onerror="this.remove()">` : ""}<b>${esc(nat)}</b><span>${ps.length}</span></div>
-    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}"><s style="background:${DOT}"></s><div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
+    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}">` : `<s style="background:${DOT}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
     : `<div class="empty">No players here yet.</div>`;
   document.querySelectorAll(".pr").forEach((r) => { const i = +r.dataset.i; r.onmouseenter = () => { st.hover = i; highlight(); }; r.onmouseleave = () => { st.hover = null; highlight(); }; r.onclick = () => select(i, true); });
   highlight();
 }
+const fx1 = (v) => (v == null ? "—" : (+v).toFixed(1));
+const pct = (a) => (a && a[1] ? `<span class="m">${fx1(a[0])}/${fx1(a[1])}</span> ${a[2] == null ? "—" : (+a[2]).toFixed(1)}%` : "—");
+function fibaHTML(p) {
+  if (!p.fiba?.length) return "";
+  return `<div class="label" style="margin:14px 0 6px">FIBA stats${p.fibaId ? ` · <a href="https://www.fiba.basketball/en/players/${p.fibaId}" target="_blank" rel="noopener" style="color:var(--dim)">profile ↗</a>` : ""}</div>
+  <div class="fiba"><table><thead><tr><th class="l">Event</th><th>GP</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>TO</th><th>STL</th><th>BLK</th><th>EFF</th></tr></thead><tbody>
+  ${p.fiba.map((f) => `<tr><td class="l"><a href="${f.url}" target="_blank" rel="noopener">${f.yr} ${f.event.replace("FIBA ", "")}</a><div class="m" style="font-size:10px">${f.team}${f.finish ? " · " + f.finish : ""}</div></td><td class="m">${f.gp}</td><td class="m">${fx1(f.min)}</td><td style="font-weight:700">${fx1(f.pts)}</td><td>${fx1(f.reb)}</td><td>${fx1(f.ast)}</td><td>${fx1(f.to)}</td><td>${fx1(f.stl)}</td><td>${fx1(f.blk)}</td><td>${fx1(f.eff)}</td></tr>
+    <tr class="sub"><td class="l m" colspan="10">FG ${pct(f.fg)} · 3P ${pct(f.tp)} · FT ${pct(f.ft)} · OREB ${fx1(f.oreb)} · +/− ${f.pm > 0 ? "+" : ""}${fx1(f.pm)}${f.rank ? ` · <b style="color:var(--soft)">${f.rank}</b>` : ""}</td></tr>`).join("")}
+  </tbody></table></div>`;
+}
 function select(i, fly) {
   st.sel = i; const p = P[i];
-  document.getElementById("card").innerHTML = `<div class="pcard"><div class="ptop"><div><div class="label">${p.nat} · ${esc(p.city)}</div><h3>${esc(p.name)}</h3></div><button class="x" title="Close">✕</button></div>
-    <div class="cgrid"><div><span class="label">Pos</span><b>${p.pos}</b></div><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div></div>
-    <div class="cnote"><b>${esc(p.team || p.club)}</b> · ${esc(p.league || "")}${p.born ? `<br>Born ${new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : ""}${p.nt ? `<br>${esc(p.nt)}` : ""}<br><span style="color:var(--muted)">Full profile (stats, film, contacts, notes) comes next.</span></div></div>`;
+  document.getElementById("card").innerHTML = `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · Class of ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Close">✕</button></div>
+    <div class="cgrid"><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div><div><span class="label">Born</span><b style="font-size:12px">${p.born ? new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</b></div></div>
+    <div class="cnote">${p.league ? `${esc(p.league)}. ` : ""}${p.prev ? `Before: ${esc(p.prev)}. ` : ""}${p.nt ? `<br>${esc(p.nt)}` : ""}</div>
+    ${fibaHTML(p)}</div>`;
   document.querySelector("#card .x").onclick = () => { st.sel = null; document.getElementById("card").innerHTML = ""; highlight(); };
   if (fly) { if (st.region !== p.reg) { st.region = p.reg; drawConts(); drawList(); } flyTo(p); }
   highlight();
