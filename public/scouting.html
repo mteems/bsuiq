@@ -143,6 +143,7 @@ footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:22px}
 
 <script type="module">
 import { d3, addDefs, tipOn, tipOff, topBar } from "/assets/core.js";
+import { renderTeamData } from "/assets/teampage.js";
 topBar("scouting");
 const GOOD="#e2622a",BAD="#4a7fe0",NEU="#5d6168";
 const pc=p=>p==null?NEU:p>=50?d3.interpolateLab(NEU,"#d4561f")(Math.min(1,(p-50)/45)):d3.interpolateLab(NEU,"#2f63d6")(Math.min(1,(50-p)/45));
@@ -180,12 +181,12 @@ const sg=v=>(v>0?"+":"")+v.toFixed(1),f1=v=>v==null?"—":(+v).toFixed(1);
 const OPP=[["bsu26","Boise St. '26","SAMPLE · final",68,"BSU"],["uw","Washington","Oct 17 · EXH",264,"UW"],["","Bismarck St.","Oct 29 · EXH",0,"BIS"],["","West Coast Baptist","Nov 4",0,"WCB"],["","Butler","Nov 8",2086],["","Oakland","Nov 11",2473],["","Nebraska","Nov 15 · N",158],["","Sam Houston","Nov 20",2534],["","Idaho St.","Nov 24",304],["","Drake","Nov 27 · N",2181],["","North Texas","Nov 28 · N",249],["","North Dakota St.","Nov 29 · N",2449],["","Wichita St.","Dec 5 · A",2724],["","TAMU-CC","Dec 12",357],["","Utah Valley","Dec 16",3084],["","Santa Clara","Dec 21 · N",2541],["","New Mexico","Dec 23 · N",167],["","Lamar","Dec 29",2320],["","Utah St.","Jan 6 · A · P12",328],["","Oregon St.","Jan 9 · P12",204],["","Washington St.","Jan 13 · P12",265],["","Gonzaga","Jan 16 · A · P12",2250],["","Fresno St.","Jan 20 · A · P12",278],["","San Diego St.","Jan 23 · P12",21],["","Texas St.","Jan 30 · A · P12",326],["","Colorado St.","Feb 18 · A · P12",36]];
 document.getElementById("tabs").innerHTML=OPP.map((o,i)=>`<button class="tab${i==1?' on':''}${i==0?' sample':''}" data-i="${i}">${LG(o[3],20,o[4]||o[1].slice(0,3).toUpperCase())}<span>${o[1]}<small>${o[2]}</small></span></button>`).join("");
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));b.classList.add("on");const o=OPP[+b.dataset.i];history.replaceState(null,"","#"+(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-")));
- if(T[o[0]])render(T[o[0]]);else document.getElementById("page").innerHTML=`<div class="ph-empty">${LG(o[3],72,o[1].slice(0,3).toUpperCase())}<div class="label" style="margin-top:12px">${o[2]}</div><h1 style="color:#fff;margin-top:6px">${o[1]}</h1><div style="margin-top:10px">Scouting report not built yet. Same template as Washington, so it's queued for build.</div></div>`;scrollTo(0,0)});
+ if(T[o[0]])render(T[o[0]]);else{const dt=dataTeam(o[1]);document.getElementById("page").innerHTML=`<div class="hero" style="grid-template-columns:1fr"><div class="game"><div style="display:flex;gap:14px;align-items:center">${LG(o[3],60,o[4]||o[1].slice(0,3).toUpperCase())}<div><span class="label">${o[2]}</span><h1>${o[1]}</h1></div></div><div class="cap" style="margin-top:0">${TIDX[dt]?"Written scouting report not built yet. Everything below comes straight from last season's game, lineup and shot data.":"No D-I game data for this opponent."}</div></div></div><div id="teamdata"></div>`;loadTeamData(dt);}scrollTo(0,0)});
 
 // ---------- team data ----------
 // player: [jersey,name,pos,ht,cls,tag(T/F/""),from,slot,starter,mid{...},adv[gp,min,ortg,usg,ts,tpm,tpa,p3,ast,tov,blk,bpm],advLabel,key]
 const T={};
-T.uw={id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:"HC Danny Sprinkle (yr 3) · 29-35 at UW",kp:"68",mode:"proj",
+T.uw={dataTeam:"Washington",id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:"HC Danny Sprinkle (yr 3) · 29-35 at UW",kp:"68",mode:"proj",
  game:`<div class="label">Next up · Exhibition</div><span class="pill" style="background:var(--good);margin-top:6px">SAT OCT 17 · 7:00 PM MT</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">Idaho Central Arena, Boise · Washington's first game of the season</div><div class="cap" style="margin-top:6px">Exhibition: no 2026-27 game data exists yet. Everything below is a projection from each player's prior seasons. Refresh after the box score.</div>`,
  kpis:[["kenpom","Preseason ranks","#68 · #73","","KenPom · T-Rank. <b style='color:#fff'>Boise: #59 · #85</b>. The two models disagree on who's better."],
   ["adjo","Proj. offense","114.0",GOOD,"KenPom AdjO · #57<br>T-Rank 112.6 (#69)"],["adjd","Proj. defense","101.4",GOOD,"KenPom AdjD · #83<br>T-Rank 100.8 (#80)"],
@@ -228,7 +229,7 @@ T.uw={id:264,ab:"UW",name:"Washington Huskies",conf:["big_ten","Big Ten"],coach:
   <div class="cap">Players from WCC/A10/MWC get a BPM discount (−1.0 to −1.5) for the step up to the Big Ten. Gonzaga counts as high-major. Freshmen/intl: Wini Braga (6-9, 21-year-old from Brazil), Tristan Devers (Australia, NBL development player), Lat Ford (3★, Renton, WA).</div></div></div></section>`},
  foot:`Sources: KenPom (2027 preseason ratings), Barttorvik (player stats 2023-24 to 2025-26; team results; 2026-27 preseason T-Rank), ESPN roster API, UW roster release (Oct 7), Boise State athletics schedule. <b style="color:#b9bdc4">Projection method:</b> weighted average of the last 3 seasons (3/2/1 × minutes), pulled toward a bench-level prior for small samples. Then adjusted for conference level and development, with minutes assigned from the depth chart and usage normalized to the team. Mady Traore has no D-I minutes since 2023-24.`};
 
-T.bsu26={posSeason:"2025-26",posTeam:"Boise St.",id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
+T.bsu26={dataTeam:"Boise St.",posSeason:"2025-26",posTeam:"Boise St.",id:68,ab:"BSU",name:"Boise State Broncos",conf:["mountain_west","Mountain West"],coach:"HC Leon Rice (yr 16) · 2025-26, frozen after the final game",kp:"60",kpNote:"<span style='color:#8a8e95'> · Mar 2</span>",mode:"final",
  banner:`<b style="color:#fff">Sample tab:</b> the template run on Boise State as if scouting them after their last game (Mar 12, 2026). This shows what an opponent tab looks like once real game data exists: actual rotation, results and lineups instead of projections.`,
  game:`<div class="label">Season complete</div><span class="pill" style="background:var(--bad);margin-top:6px">FINAL · L 74-84 vs SAN JOSÉ ST.</span><div style="font-size:12.5px;color:#cfd3d9;margin-top:8px">MWC Tournament 1st round · Mar 12, 2026 · Las Vegas. As the 6 seed, lost to the 11 seed (8-23 before the game).</div>`,
  kpis:[["kenpom","Rankings","#60 · #54","","KenPom (Mar 2) · T-Rank final"],["adjo","Offense","118.3",GOOD,"AdjO · #52 nationally"],["adjd","Defense","103.9",GOOD,"AdjD · #77 · 3rd straight year slipping"],["","Record","20-12","","12-8 MWC · 6th seed"],
@@ -342,6 +343,16 @@ function wireDepth(t){
 document.addEventListener("click",()=>document.querySelectorAll(".mvm").forEach(m=>m.remove()));
 addEventListener("scroll",()=>document.querySelectorAll(".mvm").forEach(m=>m.remove()),{passive:true});
 
+// ---------- team game data (assets/teampage.js) ----------
+let TIDX={},TDIST=null;
+const DATA_NAME={"Boise St. '26":"Boise St.","Lamar":"Lamar University","TAMU-CC":"A&M-Corpus Christi"};
+const dataTeam=n=>DATA_NAME[n]||n;
+async function loadTeamData(team){
+ const el=document.getElementById("teamdata");if(!el||!team||!TIDX[team])return;
+ try{const D=await (await fetch(`/data/teams/${TIDX[team]}.json`)).json();if(document.getElementById("teamdata")!==el)return;renderTeamData(el,D,TDIST);}
+ catch(e){el.innerHTML=`<div class="cap">Game data unavailable (${e.message}).</div>`;}
+}
+
 // ---------- render ----------
 function render(t){
  const P=t.P,mid=t.mode=="proj";
@@ -349,6 +360,7 @@ function render(t){
  <div class="hero"><div class="game"><div><div style="display:flex;gap:14px;align-items:center">${LG(t.id,60,t.ab)}<div><h1>${t.name}</h1><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">${CF(t.conf[0],t.conf[1])}${KP(t.kp,t.kpNote||"")}</div></div></div>
  <div style="font-size:12.5px;color:#b9bdc4;margin-top:10px">${t.coach}</div></div><div>${t.game}</div></div>
  <div class="kpis">${t.kpis.map(k=>`<div class="kpi"><span class="label"${k[0]?` data-def="${k[0]}"`:""}>${k[1]}</span><b style="color:${k[3]||'#fff'}">${k[2]}</b><div class="sub">${k[4]}</div></div>`).join("")}</div></div>
+ <div id="teamdata"></div>
  <section><div class="shead"><h2>${mid?"Projected depth chart":"Rotation · depth chart"}</h2><span class="label">${mid?"Bar = projected minutes · starters outlined":"Bar = minutes per game · starters outlined"}</span></div>
  <div class="grid g-depth"><div class="panel" id="depthbox">${depthHTML(t)}</div>
  <div class="panel"><div class="label ptitle"><span>${mid?"Projected leaders":"Season leaders"}</span><span>${t.leadHdr}</span></div><div class="lgrid">${t.leaders.map(([g,L])=>`<div class="lgrp"><div class="label" style="margin-bottom:5px">${g}</div>${L.map((l,i)=>`<div class="lrow"><span class="r">${i+1}</span><span>${l[0]}</span><span class="v">${l[1]}</span><span class="ls">${l[2]}</span></div>`).join("")}</div>`).join("")}</div></div></div></section>
@@ -367,6 +379,7 @@ function render(t){
  <footer>${t.foot} Logos: ESPN.</footer>`;
  document.getElementById("page").innerHTML=h;
  wireDepth(t);
+ loadTeamData(t.dataTeam);
  // trends
  const tg=document.getElementById("trends");const yrs=t.yrs;
  t.trends.forEach(([k,name,vals,proj,better,avg])=>{const W=290,H=170,m={t:40,b:30,l:26,r:30},svg=d3.select(tg).append("svg").attr("viewBox",`0 0 ${W} ${H}`),x=d3.scalePoint(yrs,[m.l,W-m.r]);
@@ -386,7 +399,9 @@ function render(t){
 }
 for(const k in T)T[k].key=k;
 {const [pj,oj]=await Promise.all([fetch("/data/positions.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/api/positions").then(r=>r.ok?r.json():null).catch(()=>null)]);
- if(pj)POS=pj;if(oj)OVR=oj.overrides||{};}
+ if(pj)POS=pj;if(oj)OVR=oj.overrides||{};
+ const [ti,td]=await Promise.all([fetch("/data/teams/_index.json").then(r=>r.ok?r.json():null).catch(()=>null),fetch("/data/teams/_dist.json").then(r=>r.ok?r.json():null).catch(()=>null)]);
+ if(ti)TIDX=Object.fromEntries(ti.teams.map(x=>[x.team,x.slug]));TDIST=td;}
 {const h=location.hash.slice(1),i=OPP.findIndex(o=>(o[0]||o[1].toLowerCase().replace(/[^a-z]+/g,"-"))===h);if(i>=0)document.querySelector(`.tab[data-i="${i}"]`).click();else render(T.uw);}
 </script>
 </body>

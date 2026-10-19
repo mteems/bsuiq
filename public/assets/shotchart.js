@@ -49,12 +49,14 @@ export function renderShotChart(el, profile) {
   const id = "sc" + ++uid, I = (s) => `${id}_${s}`;
   el.classList.add("sc");
   const games = profile.games || [];
+  // Wording: player pages say "his", team pages pass pron: "team".
+  const PR = profile.pron === "team" ? { his: "their", he: "they", His: "Their", HIS: "TEAM", does: "do" } : { his: "his", he: "he", His: "His", HIS: "HIS", does: "does" };
   const rangeLabel = profile.rangeLabels?.conf || "CONF + POST";
   el.innerHTML = `
   <div class="story" id="${I("story")}"></div>
   <div class="sc-controls">
     <div class="seg" data-k="mode"><button class="on" data-v="freq">FREQUENCY</button><button data-v="success">SUCCESS</button><button data-v="shots">SHOTS</button></div>
-    <div class="seg" data-k="succ"><button class="on" data-v="vs">VS D-I</button><button data-v="raw">HIS FG%</button></div>
+    <div class="seg" data-k="succ"><button class="on" data-v="vs">VS D-I</button><button data-v="raw">${PR.HIS} FG%</button></div>
     ${games.length ? `<div class="seg" data-k="range"><button class="on" data-v="all">SEASON</button><button data-v="nonconf">NON-CONF</button><button data-v="conf">${rangeLabel}</button><button data-v="l10">LAST 10</button></div>` : ""}
     <div class="seg" data-k="type"><button class="on" data-v="all">ALL FGA</button><button data-v="2">2PT</button><button data-v="3">3PT</button></div>
     <div class="seg" data-k="lbl"><button class="on" data-v="on">LABELS</button><button data-v="off">CLEAN</button></div>
@@ -196,12 +198,12 @@ export function renderShotChart(el, profile) {
         svg.append("g").attr("clip-path", `url(#${I(clip)})`).attr("filter", `url(#${I("edge")})`)
           .selectAll("path").data(d3.contours().size([NX, NY]).thresholds(M.levels)(M.grids[p])).join("path")
           .attr("d", gpath).attr("fill", (d, i) => colorFor(i)).attr("fill-opacity", 0.95).attr("stroke", "rgba(8,9,11,.65)").attr("stroke-width", 1).attr("stroke-linejoin", "round")
-          .on("mousemove", (e, d) => { const i = M.levels.indexOf(d.value); tip(e, `Band ${i + 1} of ${M.levels.length}<br>Densest ${Math.round(M.shareIn[i] * 100)}% of his attempts sit inside this line`); })
+          .on("mousemove", (e, d) => { const i = M.levels.indexOf(d.value); tip(e, `Band ${i + 1} of ${M.levels.length}<br>Densest ${Math.round(M.shareIn[i] * 100)}% of ${PR.his} attempts sit inside this line`); })
           .on("mouseleave", untip);
       });
       courtLines(svg); labels(svg, zs, "freq");
       leg.innerHTML = `<div class="sc-lrow"><span class="label">Share of attempts inside band</span>${sw(M.levels.map((l, i) => [colorFor(i), Math.round(M.shareIn[i] * 100) + "%"]))}<span class="label">→ hottest spots</span></div>`;
-      how.innerHTML = `<b style="color:var(--text)">Frequency</b> answers "where does he get his shots?" Each color band is a contour line. The number under each color is the share of his attempts inside that line, so the warm core shows his go-to spots and the outer band shows his full range. Twos and threes are smoothed separately and clipped at the arc. Zone labels add up to 100%.`;
+      how.innerHTML = `<b style="color:var(--text)">Frequency</b> answers "where ${PR.does} ${PR.he} get ${PR.his} shots?" Each color band is a contour line. The number under each color is the share of ${PR.his} attempts inside that line, so the warm core shows ${PR.his} go-to spots and the outer band shows ${PR.his} full range. Twos and threes are smoothed separately and clipped at the arc. Zone labels add up to 100%.`;
     } else if (succ) {
       const M = freqModel(data), vs = st.succ == "vs", sc = scaleFor(vs);
       const rate = {}; for (const k in ZONES) rate[k] = zoneRating(zs[k], vs, sc);
@@ -232,10 +234,10 @@ export function renderShotChart(el, profile) {
       const dom = sc.domain(), lo = dom[0], hi = dom[dom.length - 1], pos = (v) => (((v - lo) / (hi - lo)) * 100).toFixed(1) + "%";
       const ticks = vs ? [[-0.3, "−.30"], [-0.15, "−.15"], [0, "avg"], [0.15, "+.15"], [0.3, "+.30"]] : [[-0.18, "32"], [-0.09, "41"], [0, "50"], [0.09, "59"], [0.18, "68"]];
       leg.innerHTML = `<div class="sc-lrow"><span class="label">Colder</span><div class="sc-grad"><i style="background:${gradCSS(sc)}"></i>${ticks.map(([v, t]) => `<span style="left:${pos(v)}">${t}</span>`).join("")}</div><span class="label">Hotter${vs ? "" : " · eFG%"}</span><span style="width:10px"></span>${sw([[LOW, "<15"]])}<span class="label">low sample</span></div>
-        <div class="cap">Color = ${vs ? "points per shot vs the D-I average for that zone" : "his eFG% in that zone (a made 3 counts 1.5×; labels show plain FG%)"}, the same numbers as the labels and table. Colors blend over about a foot at zone borders but never across the arc. Lines = how often he shoots there: tighter rings = more shots.</div>`;
+        <div class="cap">Color = ${vs ? "points per shot vs the D-I average for that zone" : PR.his + " eFG% in that zone (a made 3 counts 1.5×; labels show plain FG%)"}, the same numbers as the labels and table. Colors blend over about a foot at zone borders but never across the arc. Lines = how often ${PR.he} shoots there: tighter rings = more shots.</div>`;
       how.innerHTML = vs
         ? `<b style="color:var(--text)">Success · vs D-I</b>: color shows how good, lines show how often. Each zone's color comes from its pts/shot vs the D-I average for that zone, on a smooth scale: deeper red = further above average, deeper blue = further below, grey = within ±0.03, dark grey = under ${MIN_Z} attempts. Colors fade into each other at zone borders so the court reads as one surface.`
-        : `<b style="color:var(--text)">Success · His FG%</b>: only his own makes and misses, with no D-I comparison. Each zone sits on one fixed shot-value scale (eFG%) so threes and twos compare fairly: 48% on corner 3s = 72% eFG (deep red), 52% at the rim = 52% (near grey), 25% on long 2s = 25% (deep blue). Lines show how often he shoots there.`;
+        : `<b style="color:var(--text)">Success · ${PR.His} FG%</b>: only ${PR.his} own makes and misses, with no D-I comparison. Each zone sits on one fixed shot-value scale (eFG%) so threes and twos compare fairly: 48% on corner 3s = 72% eFG (deep red), 52% at the rim = 52% (near grey), 25% on long 2s = 25% (deep blue). Lines show how often ${PR.he} shoots there.`;
     } else {
       courtLines(svg);
       svg.append("g").selectAll("circle").data(data).join("circle")
@@ -256,7 +258,7 @@ export function renderShotChart(el, profile) {
   function side(data, zs) {
     const made = data.filter((s) => s.m), t3 = data.filter((s) => s.p == 3), m3 = t3.filter((s) => s.m).length;
     const efg = (made.length + 0.5 * m3) / (data.length || 1), ast = made.filter((s) => s.a).length / (made.length || 1);
-    const k = [["FGA", data.length, ""], ["FG%", ((made.length / (data.length || 1)) * 100).toFixed(1), "fg"], ["3P%", t3.length ? ((m3 / t3.length) * 100).toFixed(1) : "–", "p3"], ["eFG%", (efg * 100).toFixed(1), "efg"], ["Ast'd makes", Math.round(ast * 100) + "%", "astd"]];
+    const k = [["FGA", data.length, ""], ["FG%", ((made.length / (data.length || 1)) * 100).toFixed(1), "fg"], ["3P%", t3.length ? ((m3 / t3.length) * 100).toFixed(1) : "–", "p3"], ["eFG%", (efg * 100).toFixed(1), "efg"], ["Ast'd makes", Math.round(ast * 100) + "%", "astd"]].filter((x) => !(profile.noAssist && x[2] === "astd"));
     $("kpis").innerHTML = k.map(([l, v, d]) => `<div class="k"><span class="label"${d ? ` data-def="${d}"` : ""}>${l}</span><b>${v}</b></div>`).join("");
     $("zones").innerHTML = Object.keys(ZONES).filter((k) => zs[k].n).map((k) => {
       const z = zs[k], c = z.n < MIN_Z ? "" : z.diff >= 0.06 ? HOT_TXT : z.diff <= -0.06 ? COLD_TXT : "";
@@ -270,7 +272,7 @@ export function renderShotChart(el, profile) {
     const left = data.filter((s) => s.p == 3 && s.x < 25).length, right = data.filter((s) => s.p == 3 && s.x > 25).length;
     const best = Object.keys(ZONES).filter((k) => zs[k].n >= MIN_Z).sort((a, b) => zs[b].diff - zs[a].diff);
     const sd = right > left * 1.25 ? "favors the right side" : left > right * 1.25 ? "favors the left side" : "balanced side to side";
-    let s = `<b>${Math.round(t * 100)}% of his shots are threes</b> (${sd} of the arc), ${Math.round(rim * 100)}% come at the rim and ${Math.round((mids / data.length) * 100)}% are long 2s. `;
+    let s = `<b>${Math.round(t * 100)}% of ${PR.his} shots are threes</b> (${sd} of the arc), ${Math.round(rim * 100)}% come at the rim and ${Math.round((mids / data.length) * 100)}% are long 2s. `;
     if (best.length >= 2) { const hot = best[0], cold = best[best.length - 1]; s += `Best zone: <b style="color:${HOT_TXT}">${ZONES[hot].l}</b> (${zs[hot].pps.toFixed(2)} pts/shot, ${zs[hot].diff >= 0 ? "+" : ""}${zs[hot].diff.toFixed(2)} vs D-I). Weakest: <b style="color:${COLD_TXT}">${ZONES[cold].l}</b> (${zs[cold].pps.toFixed(2)}, ${zs[cold].diff >= 0 ? "+" : ""}${zs[cold].diff.toFixed(2)}).`; }
     $("story").innerHTML = s;
   }

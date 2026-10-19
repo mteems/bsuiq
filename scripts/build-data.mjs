@@ -100,6 +100,8 @@ for (const [k, s] of Object.entries(scores)) write(`scores/${k}.json`, s);
 // Rankings tables (built by scripts/build-rankings.mjs from the RStudio exports).
 if (existsSync(src("rankings"))) cpSync(src("rankings"), join(out, "rankings"), { recursive: true });
 // Position shares by player-season (scripts/build-positions.mjs), for depth charts.
+// Team scouting data (scripts/build-teams.mjs).
+if (existsSync(src("teams"))) cpSync(src("teams"), join(out, "teams"), { recursive: true });
 if (existsSync(src("positions.json"))) cpSync(src("positions.json"), join(out, "positions.json"));
 write("roster.json", { team: roster.team, season: roster.season, espnTeamId: roster.espnTeamId, players: rosterRows });
 write("index.json", { players: index });
