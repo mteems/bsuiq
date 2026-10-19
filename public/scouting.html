@@ -733,7 +733,7 @@ async function fillPostseason(o){
   const short=n=>String(n||"").replace(/ Men's Basketball.*$/i,"").replace(/^(.*?) (?:Championship|Tournament)\s*-?\s*/,"$1 · ").replace(/Region - /,"").replace(/\s+/g," ").trim();
   if(!G.length){el.innerHTML=`<span class="label">Postseason</span><div style="font-size:13.5px;margin-top:6px;color:#cfd3d9">No postseason games.${S.record?` Finished ${S.record}.`:""}</div>`;return;}
   const lastG=G[G.length-1],w=lastG.pts>lastG.op;
-  el.innerHTML=`<span class="label">Postseason${S.standing?` · ${esc(S.standing)}`:""}</span><span class="pill" style="background:${w?"var(--good)":"var(--bad)"};margin-top:6px">FINAL GAME · ${w?"W":"L"} ${lastG.pts}-${lastG.op} ${lastG.loc==="A"?"@":"vs"} ${esc(lastG.opp).toUpperCase()}</span>
+  el.innerHTML=`<span class="label">Postseason</span><span class="pill" style="background:${w?"var(--good)":"var(--bad)"};margin-top:6px">FINAL GAME · ${w?"W":"L"} ${lastG.pts}-${lastG.op} ${lastG.loc==="A"?"@":"vs"} ${esc(lastG.opp).toUpperCase()}</span>
    <div style="margin-top:8px;display:grid;gap:3px">${G.map(g=>`<div style="font-size:12.5px;color:#cfd3d9"><b style="color:${g.pts>g.op?"var(--good)":"var(--bad)"}">${g.pts>g.op?"W":"L"} ${g.pts}-${g.op}</b> vs ${esc(g.opp)} <span class="m" style="color:var(--muted)">· ${esc(short(g.note)||"Postseason")}</span></div>`).join("")}</div>`;
  }catch(e){el.innerHTML=`<span class="label">Postseason</span><div class="cap" style="margin-top:6px">ESPN results unavailable right now.</div>`;}
 }
