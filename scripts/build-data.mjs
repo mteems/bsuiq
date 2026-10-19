@@ -95,12 +95,14 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "players"), { recursive: true });
 const write = (p, v) => writeFileSync(join(out, p), JSON.stringify(v));
 
-const index = [], rosterRows = [];
+const index = [], rosterRows = [], ROSTER_CID = new Map();
 for (const p of roster.players) {
   const seasons = p.seasons.map((s) => ({ ...s, d: derive(s), pct: seasonPercentiles(s, pool) }));
   const last = seasons[seasons.length - 1] || null;
   const espnId = p.id.startsWith("espn-") ? p.id.slice(5) : null;
-  const player = { ...p, seasons: undefined, espnId, onRoster: true };
+  const pdr = existsSync(src(`pd/${p.id}.json`)) ? JSON.parse(readFileSync(src(`pd/${p.id}.json`), "utf8")) : null;
+  const player = { ...p, seasons: undefined, espnId, onRoster: true, cid: pdr?.cid || null };
+  if (pdr?.cid) ROSTER_CID.set(pdr.cid, p.id);
   write(`players/${p.id}.json`, {
     player,
     seasons,
@@ -132,6 +134,7 @@ if (existsSync(src("search/players.json")) && existsSync(src("pd-cbb.json.gz")))
         points: v("points"), rebounds: v("rebounds"), assists: v("assists"), steals: v("steals"), blocks: v("blocks"), turnovers: v("turnovers") };
       return { ...s, d: derive(s), pct: seasonPercentiles(s, pool) }; });
     const p = { id: cid, first_name: g("first"), last_name: g("last"), school: g("team"), conference: g("conf"), position: g("pos"), height: g("ht"), weight: g("wt"), class_year: g("cls"), hometown: g("home"), high_school: g("hs"), jersey_number: g("jersey"), seasons: raw.map((x) => ({ school: x[sc.school] })) };
+    if (ROSTER_CID.has(cid)) { write(`players/${cid}.json`, { redirect: ROSTER_CID.get(cid) }); return; }
     const pd = PD[cid];
     write(`players/${cid}.json`, {
       player: { ...p, seasons: undefined, espnId: g("espn") || null, espnTeamId: g("tid") || null, onRoster: false, source: "pipeline" },
