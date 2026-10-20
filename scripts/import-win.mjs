@@ -1,4 +1,4 @@
-// Adds the Win score (Win model v0.3) to the 2025-26 national rankings file.
+// Adds the Win score (Win model v0.4) to the 2025-26 national rankings file.
 //   node scripts/import-win.mjs <folder with win_v3_players.csv + win_v3_meta.json>  (model/win_v3/export.py)
 // Re-run after scripts/build-rankings.mjs, which rewrites the rankings files.
 // Rows join on our canonical player id. Columns added:
@@ -18,7 +18,7 @@ const file = new URL("../data-src/rankings/national-2025-26.json", import.meta.u
 const R = JSON.parse(readFileSync(file, "utf8"));
 const OLD = ["wcov"]; // v0.2 column no longer produced
 for (const k of OLD) { const i = R.cols.indexOf(k); if (i >= 0) { R.cols.splice(i, 1); for (const r of R.rows) r.splice(i, 1); } }
-const NEW = ["wn", "rk_wn", "wins", "wpts", "imp", "oimp", "dimp", "wteam", "wind", "wbpm", "wbox", "pimp", "pdev", "pimpo", "pimpd"];
+const NEW = ["wn", "rk_wn", "wins", "wpts", "imp", "oimp", "dimp", "wteam", "wind", "wbpm", "wbox", "pimp", "pdev", "pimpo", "pimpd", "wrec", "wpg", "wprk"];
 for (const k of NEW) if (!R.cols.includes(k)) R.cols.push(k);
 const C = Object.fromEntries(R.cols.map((c, i) => [c, i]));
 const n = (v) => (v === "" || v == null || isNaN(+v) ? null : +v);
@@ -36,10 +36,13 @@ for (const row of R.rows) {
   row[C.wins] = rd(n(w.wins_added), 2); row[C.wpts] = rd(n(w.pts_over_repl), 0);
   row[C.imp] = rd(n(w.now)); row[C.oimp] = rd(n(w.now_o)); row[C.dimp] = rd(n(w.now_d));
   row[C.wteam] = rd(n(w.g_team)); row[C.wind] = rd(n(w.g_own)); row[C.wbpm] = rd(n(w.g_bpm)); row[C.wbox] = rd(n(w.g_box));
+  row[C.wrec] = rd(n(w.g_rec)); row[C.wpg] = w.pg || null;
   row[C.pimp] = rd(n(w.proj)); row[C.pdev] = rd(n(w.dev)); row[C.pimpo] = rd(n(w.proj_o)); row[C.pimpd] = rd(n(w.proj_d));
 }
+// rank in Impact / 100 within position group (guards, forwards, bigs), 200+ minutes
+for (const g of ["G", "F", "C"]) R.rows.filter((r) => r[C.wpg] === g && r[C.wn] != null).sort((a, b) => b[C.imp] - a[C.imp]).forEach((r, i) => (r[C.wprk] = i + 1));
 const ranked = R.rows.filter((r) => r[C.wn] != null).sort((a, b) => b[C.wins] - a[C.wins]);
 ranked.forEach((r, i) => (r[C.rk_wn] = i + 1));
-R.win = { version: "v0.3", season: "2025-26", pool: ranked.length, pointsPerWin: rd(M.points_per_win, 1), replacement: rd(M.replacement, 2), test: M.final.test_2026, baselines: M.final.baselines_2026 };
+R.win = { version: "v0.4", replacementByPosition: M.replacement_by_position, season: "2025-26", pool: ranked.length, pointsPerWin: rd(M.points_per_win, 1), replacement: rd(M.replacement, 2), test: M.final.test_2026, baselines: M.final.baselines_2026 };
 writeFileSync(file, JSON.stringify(R));
-console.log(`win v0.3: matched ${hit} of ${R.rows.length}; ranked ${ranked.length}; unmatched 200+ min: ${miss.length}`, miss.slice(0, 10));
+console.log(`win v0.4: matched ${hit} of ${R.rows.length}; ranked ${ranked.length}; unmatched 200+ min: ${miss.length}`, miss.slice(0, 10));

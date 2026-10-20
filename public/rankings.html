@@ -105,7 +105,7 @@ const SKILLS = {
   rb: { title: "Rebounding", def: "rebscore", stats: [["rpg", "RPG", 1, 1], ["reb40", "REB/40", 1, 1], ["oreb40", "OREB/40", 1, 1], ["dreb40", "DREB/40", 1, 1], ["orbp", "OREB%", 1, 1], ["drbp", "DREB%", 1, 1], ["trbp", "REB%", 1, 1], ["pb40", "Putbacks/40", 1, 1]] },
   df: { title: "Defense", def: "defscore", stats: [["dbpm", "DBPM", 1, 1], ["drapm", "DRAPM", 2, 1], ["adrtg", "Adj DRtg", 1, -1], ["stlp", "STL%", 1, 1], ["blkp", "BLK%", 1, 1], ["drbp", "DREB%", 1, 1], ["pf40", "Fouls/40", 1, -1], ["spg", "SPG", 1, 1], ["bpg", "BPG", 1, 1], ["stl40", "STL/40", 1, 1], ["blk40", "BLK/40", 1, 1], ["rapm", "Net RAPM", 2, 1]] },
 };
-SKILLS.wn = { title: "Win", def: "winscore", stats: [["wins", "Wins +", 1, 1], ["wpts", "Pts +", 0, 1], ["imp", "Impact/100", 1, 1], ["oimp", "Off/100", 1, 1], ["dimp", "Def/100", 1, 1], ["wind", "On-court", 1, 1], ["wbox", "Box", 1, 1], ["wbpm", "BPM", 1, 1], ["wteam", "Team", 1, 1], ["pimp", "Proj '27", 1, 1], ["pdev", "Growth", 1, 1]] };
+SKILLS.wn = { title: "Win", def: "winscore", stats: [["wins", "Wins +", 1, 1], ["wpts", "Pts +", 0, 1], ["imp", "Impact/100", 1, 1], ["wprk", "Pos rk", 0, -1], ["oimp", "Off/100", 1, 1], ["dimp", "Def/100", 1, 1], ["wbox", "Box", 1, 1], ["wbpm", "BPM", 1, 1], ["wind", "On-court", 1, 1], ["wteam", "Team", 1, 1], ["wrec", "Recruit", 1, 1], ["pimp", "Proj '27", 1, 1], ["pdev", "Growth", 1, 1]] };
 const PAC12 = ["Boise St.", "Colorado St.", "Fresno St.", "Gonzaga", "Oregon St.", "San Diego St.", "Texas St.", "Utah St.", "Washington St."];
 
 const index = (await getJSON("/data/index.json")).players;
@@ -140,9 +140,11 @@ const VIEWS = {
   pac: { title: "PAC-12", rows: nat.filter((r) => PAC12.includes(r.team)), minDefault: 100, filters: ["yr", "q", "pos", "cls", "team", "min"] },
   bsu10: { title: "BSU Last 10", rows: bsu, minDefault: 100, filters: ["q", "pos", "cls", "season", "min"] },
   bsu27: { title: "BSU '26-27", rows: roster, minDefault: 0, filters: ["q", "pos", "cls"] },
+  fr27: { title: "Freshmen '26-27", rows: [], minDefault: 0, filters: [] },
 };
+const FR = await getJSON("/data/rankings/freshmen-2026-27.json").catch(() => null);
 const TEXT = ["name", "team", "conf", "cls", "pos", "season", "ht"];
-const LOWBEST = new Set(["drk", "tov40", "tovp", "pf40", "adrtg"]);
+const LOWBEST = new Set(["drk", "tov40", "tovp", "pf40", "adrtg", "wprk"]);
 
 const st = { view: "nat", skill: "sc", sort: "score", dir: -1, page: 0, f: {}, yr: IDX.latest };
 async function setSeason() {
@@ -227,7 +229,19 @@ const fmt = (v, d) => (v == null ? "—" : (+v).toFixed(d));
 const dash = `<span class="m" style="color:var(--muted)">—</span>`;
 const mini = (v) => (v == null ? dash : `<span class="mini" style="background:${scol(v)}">${v.toFixed(0)}</span>`);
 
+function drawFreshmen() {
+  $("count").textContent = FR ? `${FR.rows.length} recruits` : "";
+  if (!FR) { $("table").innerHTML = `<div class="m" style="padding:16px">Freshman projections aren't loaded.</div>`; $("pager").innerHTML = ""; return; }
+  const cal = FR.calibration.map((c) => `<tr><td class="l">${c.band}</td><td class="m">${c.n}</td><td>${c.fr_mpg}</td><td>${c.fr_impact > 0 ? "+" : ""}${c.fr_impact}</td><td>${c.fr_impact_p75 > 0 ? "+" : ""}${c.fr_impact_p75}</td><td>${c.drafted}%</td><td>${c.first_round}%</td><td>${c.one_and_done}%</td></tr>`).join("");
+  $("table").innerHTML = `<div class="cap" style="margin:0 0 8px">What each recruit-rank band became, classes of 2016–2025 (RSCI and 247Sports Composite top 100, NBA drafts 2017–2026; draft rates use the 2016–2022 classes so everyone has had a chance).</div>
+    <table><thead><tr><th class="l">Recruit rank</th><th>Players</th><th><span data-def="mpg">Fr. MPG</span></th><th><span data-def="imp">Fr. impact</span></th><th>Top 25%</th><th>Drafted</th><th>1st round</th><th>One and done</th></tr></thead><tbody>${cal}</tbody></table>
+    <div class="cap" style="margin:18px 0 8px">2026-27 freshmen (247Sports Composite top 100): projected impact per 100 possessions vs. an average D-I player, from the Win model's freshman terms (recruit rank and height).</div>
+    <table><thead><tr><th>#</th><th class="l">Player</th><th class="l">School</th><th class="l">Pos</th><th class="l">Ht</th><th>247 score</th><th class="sep"><span data-def="pimp">Proj. impact</span></th><th><span data-def="oimp">Off</span></th><th><span data-def="dimp">Def</span></th></tr></thead><tbody>
+    ${FR.rows.map((r) => `<tr><td class="m">${r.rank}</td><td class="l">${esc(r.name)}</td><td class="l m">${esc(r.school)}</td><td class="l m">${esc(r.pos)}</td><td class="l m">${esc(r.ht)}</td><td class="m">${r.score.toFixed(4)}</td><td class="sep"><span class="chip" style="background:${scol(50 + r.proj * 3)}">${r.proj > 0 ? "+" : ""}${r.proj.toFixed(1)}</span></td><td>${r.proj_o.toFixed(1)}</td><td>${r.proj_d.toFixed(1)}</td></tr>`).join("")}</tbody></table>`;
+  $("pager").innerHTML = "";
+}
 function draw() {
+  if (st.view === "fr27") return drawFreshmen();
   const S = SKILLS[st.skill], k = st.skill;
   const showSeason = st.view === "bsu10", showConf = st.view === "nat";
   const val = (r, key) => (key === "score" ? r[k] : key === "drk" ? r["rk_" + k] : r[key]);
@@ -270,13 +284,14 @@ function draw() {
 
 function render() {
   $("views").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === st.view));
+  $("skills").parentElement.style.display = st.view === "fr27" ? "none" : "";
   $("skills").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.s === st.skill));
   buildFilters();
   const V = st.view;
   $("notes").innerHTML = [
-    `<b style="color:var(--text)">Who's included.</b> ${V === "nat" ? `All ${VIEWS.nat.rows.length.toLocaleString()} D-I players with 50+ minutes in ${st.yr}. The default filter is 200+ minutes, the group every score is ranked against.` : V === "pac" ? `${st.yr} players on the nine 2026-27 Pac-12 teams: Boise St., Colorado St., Fresno St., Gonzaga, Oregon St., San Diego St., Texas St., Utah St., Washington St.` : V === "bsu10" ? `Every Boise St. player-season from ${BSU.seasons[0]} through ${BSU.seasons[BSU.seasons.length - 1]}. Scores and D-I ranks compare each player with D-I players in his own season (200+ minutes needed for a score before 2025-26).` : "Players on Boise St.'s 2026-27 roster, with their 2025-26 season wherever they played. Incoming freshmen have no college stats yet."}`,
+    `<b style="color:var(--text)">Who's included.</b> ${V === "nat" ? `All ${VIEWS.nat.rows.length.toLocaleString()} D-I players with 50+ minutes in ${st.yr}. The default filter is 200+ minutes, the group every score is ranked against.` : V === "pac" ? `${st.yr} players on the nine 2026-27 Pac-12 teams: Boise St., Colorado St., Fresno St., Gonzaga, Oregon St., San Diego St., Texas St., Utah St., Washington St.` : V === "fr27" ? "This year's freshmen, with projections from the Win model's freshman terms. Over 10 seasons, adding recruit rank cut the model's pre-season error by more than any other single addition: a top-10 recruit typically plays starter minutes and is a clear plus right away, while ranks 26-100 look much alike as freshmen and separate later." : V === "bsu10" ? `Every Boise St. player-season from ${BSU.seasons[0]} through ${BSU.seasons[BSU.seasons.length - 1]}. Scores and D-I ranks compare each player with D-I players in his own season (200+ minutes needed for a score before 2025-26).` : "Players on Boise St.'s 2026-27 roster, with their 2025-26 season wherever they played. Incoming freshmen have no college stats yet."}`,
     `<b style="color:var(--text)">Reading the colors.</b> Each stat is colored by where it ranks among the ${poolFor(colorSeason).ref.length.toLocaleString()} D-I players with 200+ minutes in ${colorSeason} (orange = top, blue = bottom, white = middle). For turnovers and fouls lower is better, so low numbers are orange.${V === "bsu10" ? " On this tab stat colors use the 2025-26 pool." : ""}`,
-    `<b style="color:var(--text)">Where it comes from.</b> 2025-26: RStudio skill model v1.1 (Creation = Playmaking). Earlier seasons: the same model rebuilt from each season's stats (tested on 2025-26: rank agreement ${IDX.test.sc.spearman} Scoring, ${IDX.test.pl.spearman} Playmaking, ${IDX.test.rb.spearman} Rebounding; average gap ${IDX.test.sc.meanAbsDiff}, ${IDX.test.pl.meanAbsDiff}, ${IDX.test.rb.meanAbsDiff} points). Defense = DEF score v2 (DBPM, DRAPM, Adj DRtg, STL%, BLK%, DRB%, fouls; compared within role), run for every season on Barttorvik + RAPM data; it matches the published 2025-26 DEF v2 scores (r = 0.997). DEF needs 40%+ of team minutes. Rate stats (USG%, AST%, REB%, STL%, BLK%) use team and opponent totals from the same archive. RAPM is national regularized plus-minus. Win = Win model v0.3 (2025-26 only so far): each player's impact per 100 possessions, built from the stats that best predicted the next season's results over the last 10 seasons, turned into wins added over a replacement-level player${NAT.win ? ` (${NAT.win.pointsPerWin} points of margin = 1 win)` : ""}.`,
+    `<b style="color:var(--text)">Where it comes from.</b> 2025-26: RStudio skill model v1.1 (Creation = Playmaking). Earlier seasons: the same model rebuilt from each season's stats (tested on 2025-26: rank agreement ${IDX.test.sc.spearman} Scoring, ${IDX.test.pl.spearman} Playmaking, ${IDX.test.rb.spearman} Rebounding; average gap ${IDX.test.sc.meanAbsDiff}, ${IDX.test.pl.meanAbsDiff}, ${IDX.test.rb.meanAbsDiff} points). Defense = DEF score v2 (DBPM, DRAPM, Adj DRtg, STL%, BLK%, DRB%, fouls; compared within role), run for every season on Barttorvik + RAPM data; it matches the published 2025-26 DEF v2 scores (r = 0.997). DEF needs 40%+ of team minutes. Rate stats (USG%, AST%, REB%, STL%, BLK%) use team and opponent totals from the same archive. RAPM is national regularized plus-minus. Win = Win model v0.4 (2025-26 only so far): each player's impact per 100 possessions, built from the stats that best predicted the next season's results over the last 10 seasons, turned into wins added over a replacement-level player${NAT.win ? ` (${NAT.win.pointsPerWin} points of margin = 1 win)` : ""}.`,
   ].map((n) => `<div class="cap" style="margin-top:0">${n}</div>`).join("");
   draw();
 }
