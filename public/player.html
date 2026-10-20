@@ -25,6 +25,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 .pshot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 15%}
 .pmain{flex:1;min-width:0}.pteam{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;flex-wrap:wrap}.pteam .m{color:var(--muted)}
 .pfacts{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:10px}.pf{display:flex;flex-direction:column;gap:2px}.pf b{font-size:13.5px;font-weight:600}
+.pbtns{flex:none;align-self:flex-start;display:flex;gap:8px}
 .nbtn{flex:none;align-self:flex-start;background:#26282c;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 14px;font:600 13px var(--ui,inherit);cursor:pointer}
 .nbtn:hover{background:#2f3136}.nbtn b{display:inline-block;min-width:18px;margin-left:6px;padding:1px 6px;border-radius:9px;background:#3a3d42;font-size:11px}
 .ndrawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#1b1c1f;border-left:1px solid var(--line);z-index:50;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.4)}
@@ -36,7 +37,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 .nrow{display:flex;align-items:center;gap:10px}.nrow .m{color:var(--muted);font-size:11.5px;flex:1}
 #nlist{overflow-y:auto;padding:6px 18px 18px;flex:1}.snote{padding:12px 0;border-bottom:1px solid #2a2c30}.snote .who{display:flex;gap:8px;align-items:baseline;font-size:12px}.snote .who b{font-size:13px}.snote .who .m{color:var(--muted)}
 .snote .who button{margin-left:auto;background:none;border:0;color:#6b6e75;font-size:11px;cursor:pointer}.snote .who button:hover{color:var(--bad)}.snote p{margin-top:6px;font-size:13.5px;line-height:1.5;color:#dfe2e6;white-space:pre-wrap}
-@media (max-width:700px){.phead{flex-wrap:wrap;align-items:flex-start}.pshot{width:120px;min-height:110px}.nbtn{position:absolute;top:0;right:0}}
+@media (max-width:700px){.phead{flex-wrap:wrap;align-items:flex-start}.pshot{width:120px;min-height:110px}.pbtns{position:absolute;top:0;right:0}}
 @media (max-width:900px){.pwrap{padding:16px 16px 28px}.two{grid-template-columns:1fr!important}}
 </style>
 </head>
@@ -100,7 +101,7 @@ page.innerHTML = `
     <div class="pfacts">${fact("Pos", P.position)}${fact("Ht", P.height)}${fact("Wt", P.weight ? P.weight + " lb" : "")}${fact("Class", P.class_year)}${fact("Hometown", P.hometown)}${fact("High school", P.high_school)}${pathText && pathBits.length > 1 ? fact("Path", pathText + (P.onRoster ? " → Boise St." : "")) : P.onRoster && pathText ? fact("Path", pathText + " → Boise St.") : ""}</div>
     <div class="cap" style="margin-top:8px">Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
   </div>
-  <button class="nbtn" id="nbtn">Staff notes <b id="ncount"></b></button>
+  <div class="pbtns"><button class="nbtn" id="tbbtn" title="Add to targets or the transfer board"><span id="tbtxt">Targets &amp; board</span></button><button class="nbtn" id="nbtn">Staff notes <b id="ncount"></b></button></div>
 </div>
 <div class="ndrawer" id="ndrawer" hidden><div class="nhead"><b>Staff notes</b><span class="m">${esc(playerName(P))}</span><button id="nclose" aria-label="Close">✕</button></div>
   <div class="nform"><div class="label">Your name</div><div class="nwho" id="nauthor">${STAFF.map((n) => `<button data-who="${esc(n)}">${esc(n)}</button>`).join("")}</div>
@@ -260,6 +261,16 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
   el.querySelectorAll("#glseas button").forEach((b) => (b.onclick = () => { cur = b.dataset.s; load(); }));
   load();
 })();
+// ======================================================= TARGETS & TRANSFER BOARD
+(async function targets() {
+  const { loadTB, openTB, badge } = await import("/assets/tb.js");
+  const btn = document.getElementById("tbbtn"), txt = document.getElementById("tbtxt");
+  const snap = { name: playerName(P), school: teamName, pos: P.position || "", ht: P.height || "", cls: P.class_year || "", photo: photo ? photo.replace("w=400&h=400", "w=150&h=110") : "", logo: teamId ? `https://a.espncdn.com/i/teamlogos/ncaa/500-dark/${teamId}.png` : "" };
+  const show = () => { const B = badge(NKEY), bits = []; for (const [x, w] of [[B.me, "Mine"], [B.staff, "Staff"]]) if (x && (x.target || x.lane)) bits.push(`${w}: ${x.lane ? `${x.lane} · ${x.tier}` : "target"}`); txt.textContent = bits.length ? "✓ " + bits.join(" · ") : "Targets & board"; };
+  await loadTB(); show();
+  addEventListener("biq-tb", show);
+  btn.onclick = () => openTB(btn, [{ id: NKEY, p: snap }]);
+})();
 // ======================================================= STAFF NOTES (shared across staff, KV)
 (function staffNotes() {
   const dr = document.getElementById("ndrawer"), list = document.getElementById("nlist"), add = document.getElementById("nadd"), txt = document.getElementById("ntext"), whoBox = document.getElementById("nauthor"), msg = document.getElementById("nmsg");
@@ -276,6 +287,7 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
   const ready = () => (add.disabled = !(who.value && txt.value.trim()));
   txt.oninput = ready;
   try { const a = localStorage.getItem("biq-note-staff"); if (a && STAFF.includes(a)) setWho(a); } catch {}
+  import("/assets/core.js").then(({ me }) => me()).then((M) => { if (M.user && STAFF.includes(M.user)) setWho(M.user); });
   add.onclick = async () => { add.disabled = true; msg.textContent = "Saving…"; try { draw(await call({ author: who.value, body: txt.value.trim() })); txt.value = ""; msg.textContent = "Saved. Today's date is logged with the note."; } catch (e) { msg.textContent = e.message; } ready(); };
   document.getElementById("nbtn").onclick = () => { dr.hidden = false; if (who.value) txt.focus(); };
   document.getElementById("nclose").onclick = () => (dr.hidden = true);

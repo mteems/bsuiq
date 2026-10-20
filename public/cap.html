@@ -18,12 +18,8 @@
 .ctop h1{margin-top:4px}
 .ctop .sub{font-size:13px;color:var(--muted);margin-top:3px}
 .cact{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.scn{display:inline-flex;border:1px solid var(--edge);border-radius:7px;overflow:hidden;background:var(--card)}
-.scn button{background:none;border:0;color:var(--soft);font:500 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:0 10px;height:32px;cursor:pointer}
-.scn button+button{border-left:1px solid var(--edge);padding:0 8px;color:var(--muted)}
-.scn.on{background:#f2f3f4;border-color:#f2f3f4}.scn.on button{color:#16171a}.scn.on button+button{border-color:#c9ccd2}
 .svst{font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.board{display:grid;grid-template-rows:auto 1fr;gap:10px;height:calc(100vh - 205px);min-height:640px}
+.board{display:grid;gap:10px}
 .kpis5{display:grid;grid-template-columns:minmax(200px,1fr) minmax(220px,1.15fr) repeat(3,minmax(130px,.6fr));gap:8px}
 .kb{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 12px;min-width:0}
 .kb .label{font-size:9.5px}
@@ -34,8 +30,8 @@
 .mrow{display:flex;align-items:baseline;gap:3px}.mrow span{font-size:19px;font-weight:750;color:var(--good)}
 .mrow input{width:100%;min-width:0;border:0;background:none;color:#fff;font:750 23px var(--ui);outline:none;padding:0}
 .minbar{height:4px;background:var(--card);border-radius:2px;margin-top:6px;overflow:hidden}.minbar i{display:block;height:100%;background:var(--good)}
-.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;min-height:0}
-.col{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:start}
+.col{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .ch{flex:none;background:#1a1b1e;border-bottom:1px solid var(--line);padding:9px 10px}
 .cht{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .cht b{font:600 11.5px var(--ui);letter-spacing:.05em;text-transform:uppercase}.cht b span{color:var(--faint)}
@@ -47,8 +43,8 @@
 .cb input,.cmn input{display:block;width:100%;height:24px;margin-top:3px;background:var(--bg);border:1px solid var(--edge);border-radius:5px;color:#fff;font:600 11px var(--ui);padding:0 6px;outline:none}
 .cb .sp{text-align:right}.cb .sp b{display:block;font:700 12px var(--ui);margin-top:3px}
 .cmn{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.cmn input{margin:0;text-align:center}
-.slots{flex:1;min-height:0;display:grid;gap:5px;padding:6px;overflow:hidden;align-content:start}
-.slot{position:relative;display:flex;flex-direction:column;min-height:0;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 9px}
+.slots{display:grid;gap:6px;padding:6px;align-content:start;min-height:60px}
+.slot{position:relative;display:flex;flex-direction:column;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 9px}
 .slot.drag{border-color:var(--good);opacity:.6}
 .slot.dense{padding:6px 8px}
 .sl1{display:flex;gap:8px;align-items:flex-start;min-width:0;padding-right:16px}
@@ -64,28 +60,28 @@
 .snm .hint{font:500 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#4a4d53;margin-top:2px}
 .snm .up{font:500 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);cursor:pointer;margin-top:3px;display:inline-block}.snm .up:hover{color:#fff}
 .grip{position:absolute;right:4px;top:6px;background:none;border:0;color:var(--faint);cursor:grab;font-size:13px;line-height:1}.grip:hover{color:#fff}
-.sb{margin-top:auto;border-top:1px solid var(--line2);padding-top:6px}
+.sb{border-top:1px solid var(--line2);padding-top:7px}
 .sbm{display:flex;justify-content:center;align-items:baseline;gap:2px}.sbm span{font-weight:800;color:var(--good);font-size:12px}
 .sbm input{width:112px;border:0;background:none;color:#fff;text-align:center;font:800 17px var(--ui);outline:none;padding:0}
 .dense .sbm input{width:96px;font-size:15px}
 .sbr{display:flex;align-items:center;gap:6px;margin-top:3px}
 .sbr input[type=range]{flex:1;min-width:0;accent-color:var(--good);height:4px;cursor:pointer}
-.ctr{width:24px;height:24px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--edge);border-radius:5px;color:var(--muted);cursor:pointer;font-size:11px}.ctr:hover{color:#fff;border-color:#8a8e95}
+.ctr{height:24px;display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--panel);border:1px solid var(--edge);border-radius:5px;color:var(--soft);cursor:pointer;font:500 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;flex:none}.ctr.set{color:#fff;border-color:#8a8e95}.ctr:hover{color:#fff;border-color:#8a8e95}
 .dense .ctr.abs{position:absolute;right:6px;bottom:6px}
 .cmodal .cbody{padding:14px 16px;display:grid;gap:12px}
 .cmodal .lab{font:500 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .terms{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cnote{font:500 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
-@media (max-width:1100px){.board{height:auto}.cols{grid-template-columns:1fr 1fr}.slots{overflow:visible}.kpis5{grid-template-columns:1fr 1fr}}
+@media (max-width:1100px){.cols{grid-template-columns:1fr 1fr}.kpis5{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.cols{grid-template-columns:1fr}.cwrap{padding:14px 16px}}
-@media print{.board{height:auto}.slots{overflow:visible}.sbr,.pm,.grip,.hsb .dot,.snm .hint,.snm .up{display:none!important}.cwrap{color:#000}}
+@media print{.sbr,.pm,.grip,.hsb .dot,.snm .hint,.snm .up{display:none!important}.cwrap{color:#000}}
 </style>
 </head>
 <body>
 <main class="cwrap" id="page"><div class="loading">Loading the player pool…</div></main>
 <script type="module">
 import { topBar, esc } from "/assets/core.js";
-import { loadFO, shot, teamMark, money, moneyNum, parseMoney, loadSaved, saveAll, openPicker } from "/assets/fo.js";
+import { loadFO, shot, teamMark, money, moneyNum, parseMoney, loadScenarios, putScenario, delScenario, scenarioBarHTML, saveMenu, openPicker } from "/assets/fo.js";
 topBar("cap");
 
 // ---------------------------------------------------------------- model (same as the hub's board)
@@ -105,15 +101,15 @@ const defaultDraft = () => ({ id: "draft", name: "2 Max", total: 45e5, buckets: 
   slots: [...[12e5, 12e5].map((b) => mkSlot("Max", b)), ...[375e3, 375e3, 375e3, 375e3].map((b) => mkSlot("Starter", b)), ...[2e5, 18e4, 1e5].map((b) => mkSlot("Role", b)), ...[5e4, 5e4].map((b) => mkSlot("Development", b)), ...[1e4, 1e4].map((b) => mkSlot("No Money", b))] });
 const clone = (s) => JSON.parse(JSON.stringify(s));
 
-let FO, draft = defaultDraft(), saved = [], loadedId = null, saveState = "", dragId = null;
-FO = await loadFO();
-saved = await loadSaved("cap");
-// Draft survives reloads in this browser (staff scenarios are shared through Save).
-try { const d = JSON.parse(localStorage.getItem("biq-cap-draft") || "null"); if (d?.slots) { draft = d; loadedId = localStorage.getItem("biq-cap-loaded") || null; } } catch {}
+let FO, draft = defaultDraft(), SV = { user: "", mine: [], staff: [] }, loaded = null, saveState = "", saveErr = "", dragId = null;
+[FO, SV] = await Promise.all([loadFO(), loadScenarios("cap")]);
+addEventListener("biq-me", async () => { SV = await loadScenarios("cap"); if (loaded?.scope === "me") loaded = null; render(); });
+// The working draft survives reloads in this browser; Save puts a copy in my or the staff's list.
+try { const d = JSON.parse(localStorage.getItem("biq-cap-draft") || "null"); if (d?.slots) { draft = d; loaded = JSON.parse(localStorage.getItem("biq-cap-loaded2") || "null"); } } catch {}
 // ?add=<player id> drops a player into the first open spot (from player pages / Search).
 const addId = new URLSearchParams(location.search).get("add");
 if (addId && FO.byId.has(addId)) { const s = draft.slots.find((x) => !x.playerId && x.source !== "Custom"); if (s) { s.playerId = addId; s.source = FO.byId.get(addId).type; } history.replaceState(null, "", "/cap"); }
-const keep = () => { try { localStorage.setItem("biq-cap-draft", JSON.stringify(draft)); localStorage.setItem("biq-cap-loaded", loadedId || ""); } catch {} };
+const keep = () => { try { localStorage.setItem("biq-cap-draft", JSON.stringify(draft)); localStorage.setItem("biq-cap-loaded2", JSON.stringify(loaded)); } catch {} };
 
 // ---------------------------------------------------------------- render
 const page = document.getElementById("page");
@@ -123,22 +119,23 @@ function totals() {
   const min = TIERS.reduce((a, t) => a + (+draft.minutes?.[t] || 0), 0), assigned = draft.slots.filter((s) => s.playerId || s.source === "Custom").length;
   return { spend, g1, max1, y2, min, assigned };
 }
+const y1Line = (T) => `Spending ${money(T.spend)}${T.max1 !== T.spend || T.g1 !== T.spend ? ` · Y1 guaranteed ${money(T.g1)}` : ""}`;
 function render() {
   const T = totals(), total = +draft.total || 0;
   page.innerHTML = `
   <div class="ctop">
-    <div><div class="label">Front office</div><h1>Salary Cap</h1><div class="sub noprint">Work freely in the main board, then lock in snapshots as saved scenarios. Saved scenarios are shared with the staff.</div></div>
+    <div><div class="label">Front office</div><h1>Salary Cap</h1><div class="sub noprint">Work freely in the main board, then save snapshots as scenarios: to your own list, or as a staff scenario everyone can open.</div></div>
     <div class="cact noprint">
-      ${saved.map((s) => `<span class="scn${loadedId === s.id ? " on" : ""}"><button data-load="${esc(s.id)}">${esc(s.name)}</button><button data-del="${esc(s.id)}" aria-label="Delete ${esc(s.name)}">×</button></span>`).join("")}
+      <span class="svst" id="svst" style="color:${saveState === "error" ? "var(--bad)" : "var(--muted)"}">${saveState === "saving" ? "Saving…" : saveState === "saved" ? (loaded?.scope === "staff" ? "Saved to staff scenarios" : "Saved to my scenarios") : saveState === "error" ? esc(saveErr || "Save failed") : ""}</span>
       <button class="fbtn" id="print">Print</button><button class="fbtn" id="reset">Reset</button>
-      <button class="fbtn go" id="save">${loadedId ? "Update scenario" : "Save as scenario"}</button>
-      <span class="svst" id="svst" style="color:${saveState === "error" ? "var(--bad)" : "var(--muted)"}">${saveState === "saving" ? "Saving…" : saveState === "saved" ? "Scenario saved" : saveState === "error" ? "Save failed" : ""}</span>
+      <button class="fbtn go" id="save">Save scenario <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="m6 9 6 6 6-6"/></svg></button>
     </div>
   </div>
+  ${scenarioBarHTML(SV, loaded)}
   <div class="board">
     <div class="kpis5">
       <div class="kb"><div class="label">Draft name</div><input class="foin" id="dname" style="height:30px;margin-top:5px" value="${esc(draft.name)}"></div>
-      <label class="kb spend"><div class="label">Current spend</div><div class="mrow"><span>$</span><input id="total" inputmode="numeric" value="${moneyNum(total)}" aria-label="Spend target"></div><div class="s" id="k-y1">Y1 GTD ${money(T.g1)} · max ${money(T.max1)}</div></label>
+      <label class="kb spend"><div class="label">Total budget</div><div class="mrow"><span>$</span><input id="total" inputmode="numeric" value="${moneyNum(total)}" aria-label="Total budget"></div><div class="s" id="k-y1">${y1Line(T)}</div></label>
       <div class="kb"><div class="label">Remaining</div><b id="k-rem" style="color:${total - T.spend < 0 ? "var(--bad)" : "var(--good)"}">${money(total - T.spend)}</b><div class="s" id="k-y2">Y2 committed ${money(T.y2)}</div></div>
       <div class="kb"><div class="label">Roster</div><b id="k-ros">${T.assigned}<span style="font-size:13px;color:var(--muted)">/${draft.slots.length}</span></b></div>
       <div class="kb"><div class="label">Minutes</div><b id="k-min" style="color:${T.min > 200 ? "var(--bad)" : "#fff"}">${T.min}<span style="font-size:13px;color:var(--muted)">/200</span></b><div class="minbar"><i id="k-minbar" style="width:${Math.min(100, (T.min / 200) * 100)}%;background:${T.min > 200 ? "var(--bad)" : "var(--good)"}"></i></div></div>
@@ -153,10 +150,11 @@ function colHTML(tier) {
       <div class="pm noprint"><button data-add="${tier}" aria-label="Add ${tier} spot">+</button><button data-rm="${tier}" ${S.length ? "" : "disabled"} aria-label="Remove ${tier} spot">−</button></div></div>
       <div class="cb"><label>Column budget<input data-bud="${tier}" inputmode="numeric" value="${moneyNum(bud)}"></label><div class="sp"><span class="label" style="font-size:8.5px">Spend</span><b id="sp-${tier.replace(/ /g, "")}" style="color:${spend > bud ? "var(--bad)" : "var(--good)"}">${money(spend)}</b></div></div>
       <label class="cmn"><span>Minutes</span><input type="number" min="0" max="200" step="1" data-min="${tier}" value="${+draft.minutes?.[tier] || 0}"></label></div>
-    <div class="slots" style="grid-template-rows:repeat(${Math.max(S.length, 1)},minmax(0,136px))">${S.map((s, i) => slotHTML(s, i, S.length)).join("")}</div></section>`;
+    <div class="slots">${S.map((s, i) => slotHTML(s, i, S.length)).join("")}</div></section>`;
 }
 function slotHTML(s, i, n) {
-  const p = s.playerId ? FO.byId.get(s.playerId) : null, dense = n >= 6, m = META[s.bucket];
+  const p = s.playerId ? FO.byId.get(s.playerId) : null, dense = false, m = META[s.bucket];
+  const ctr = (cls = "") => `<button class="ctr${cls}${s.years === 2 || +s.y1i ? " set" : ""} noprint" data-ctr="${s.id}" title="Contract terms">${s.years === 2 ? "2 yrs" : "Terms"}</button>`;
   const head = s.source === "Custom" ? `<span class="fos${s.photo ? "" : " open"}">${s.photo ? `<img alt="" src="${esc(s.photo)}">` : "CUSTOM"}</span>` : p ? shot(p) : `<span class="fos open">OPEN</span>`;
   const body = s.source === "Custom"
     ? `<input data-title="${s.id}" value="${esc(s.title)}" placeholder="Custom player / role"><label class="up noprint">Upload headshot<input type="file" accept="image/*" data-up="${s.id}" hidden></label>`
@@ -166,12 +164,12 @@ function slotHTML(s, i, n) {
     <div class="sl1"><button class="hsb" data-src="${s.id}" title="Add or change player">${head}<span class="dot noprint">▾</span></button><div class="snm">${body}</div>
       <button class="grip noprint" draggable="true" data-grip="${s.id}" title="Drag roster spot" aria-label="Drag roster spot">⋮⋮</button></div>
     <div class="sb"><div class="sbm"><span>$</span><input data-money="${s.id}" inputmode="numeric" value="${moneyNum(s.budget)}" aria-label="Budget"></div>
-      ${dense ? (p ? `<button class="ctr abs noprint" data-ctr="${s.id}" title="Contract details">▤</button>` : "") : `<div class="sbr noprint"><input type="range" min="0" max="${Math.max(m.max, +s.budget || 0)}" step="10000" value="${+s.budget || 0}" data-range="${s.id}" aria-label="Budget for slot ${i + 1}">${p ? `<button class="ctr" data-ctr="${s.id}" title="Contract details">▤</button>` : ""}</div>`}</div></article>`;
+      <div class="sbr noprint"><input type="range" min="0" max="${Math.max(m.max, +s.budget || 0)}" step="10000" value="${+s.budget || 0}" data-range="${s.id}" aria-label="Budget for slot ${i + 1}">${p || s.source === "Custom" ? ctr() : ""}</div></div></article>`;
 }
 // Totals refresh without re-rendering inputs (keeps typing focus).
 function refreshTotals() {
   const T = totals(), total = +draft.total || 0, $ = (id) => document.getElementById(id);
-  $("k-y1").textContent = `Y1 GTD ${money(T.g1)} · max ${money(T.max1)}`;
+  $("k-y1").textContent = y1Line(T);
   $("k-rem").textContent = money(total - T.spend); $("k-rem").style.color = total - T.spend < 0 ? "var(--bad)" : "var(--good)";
   $("k-y2").textContent = `Y2 committed ${money(T.y2)}`;
   $("k-min").innerHTML = `${T.min}<span style="font-size:13px;color:var(--muted)">/200</span>`; $("k-min").style.color = T.min > 200 ? "var(--bad)" : "#fff";
@@ -212,11 +210,11 @@ page.addEventListener("click", (e) => {
   else if (d.rm) { const last = [...draft.slots].reverse().find((s) => s.bucket === d.rm); draft.slots = draft.slots.filter((s) => s !== last); changed(); render(); }
   else if (d.src) sourceMenu(slotOf(d.src), b);
   else if (d.ctr) contract(slotOf(d.ctr));
-  else if (d.load) { const s = saved.find((x) => x.id === d.load); if (s) { draft = { ...clone(s), id: "draft" }; loadedId = s.id; saveState = "saved"; keep(); render(); } }
-  else if (d.del) { const s = saved.find((x) => x.id === d.del); if (!s) return; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } saved = saved.filter((x) => x.id !== d.del); if (loadedId === d.del) loadedId = null; persist(); }
+  else if (d.load) { const [scope, id] = d.load.split(/:(.*)/); const s = (scope === "me" ? SV.mine : SV.staff).find((x) => x.id === id); if (s) { draft = { ...clone(s), id: "draft" }; loaded = { scope, id }; saveState = ""; keep(); render(); } }
+  else if (d.del) { const [scope, id] = d.del.split(/:(.*)/); if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } remove(scope, id); }
   else if (b.id === "print") print();
-  else if (b.id === "reset") { draft = defaultDraft(); loadedId = null; saveState = ""; keep(); render(); }
-  else if (b.id === "save") saveScenario();
+  else if (b.id === "reset") { draft = defaultDraft(); loaded = null; saveState = ""; keep(); render(); }
+  else if (b.id === "save") saveMenu(b, { S: SV, loaded, name: draft.name.trim() || "Scenario", onPick: saveTo });
 });
 page.addEventListener("contextmenu", (e) => {
   const a = e.target.closest("[data-slot]"); if (!a || e.target.closest("input")) return; e.preventDefault();
@@ -278,16 +276,19 @@ function contract(s) {
   function done() { host.remove(); changed(); render(); }
   document.body.appendChild(host);
 }
-async function persist() {
+async function saveTo(scope, asNew) {
+  const id = !asNew && loaded?.scope === scope ? loaded.id : uid();
   saveState = "saving"; render();
-  try { await saveAll("cap", saved); saveState = "saved"; } catch { saveState = "error"; }
+  try {
+    const list = await putScenario("cap", scope, { ...clone(draft), id, name: draft.name.trim() || "Scenario" });
+    SV[scope === "me" ? "mine" : "staff"] = list; loaded = { scope, id }; saveState = "saved";
+  } catch (e) { saveState = "error"; saveErr = e.message; }
   keep(); render();
 }
-async function saveScenario() {
-  const name = draft.name.trim() || `Scenario ${saved.length + 1}`;
-  if (loadedId && saved.some((s) => s.id === loadedId)) saved = saved.map((s) => (s.id === loadedId ? { ...clone(draft), id: loadedId, name } : s));
-  else { const id = uid(); saved = [...saved, { ...clone(draft), id, name }]; loadedId = id; }
-  await persist();
+async function remove(scope, id) {
+  try { SV[scope === "me" ? "mine" : "staff"] = await delScenario("cap", scope, id); if (loaded?.scope === scope && loaded?.id === id) loaded = null; saveState = ""; }
+  catch (e) { saveState = "error"; saveErr = e.message; }
+  keep(); render();
 }
 render();
 </script>

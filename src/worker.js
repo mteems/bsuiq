@@ -38,16 +38,28 @@ function cookieValue(request, name) {
 
 const safeNext = (v) => (!v || !v.startsWith("/") || v.startsWith("//") || v.startsWith("/login") ? "/" : v);
 
-async function validSession(request, env) {
-  const [exp, sig] = cookieValue(request, COOKIE).split(".");
-  if (!exp || !sig || !Number.isFinite(Number(exp)) || Date.now() > Number(exp)) return false;
-  return safeEqual(sig, await hmac(`staff.${exp}`, env.SESSION_SECRET));
-}
+// Boise St. MBB staff (broncosports.com), by last name. Each person signs in under his name so
+// Salary Cap / Roster Builder scenarios and Targets / Transfer Board can be kept per person.
+export const STAFF_NAMES = ["Rice (L.)", "Voigt", "Alston", "Bergersen", "Burns", "Charles", "Few", "Rice (M.)", "Teems", "Yount"];
+const ub64 = (s) => b64u(enc.encode(s)), ubd = (s) => { try { return new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0))); } catch { return ""; } };
 
-async function sessionCookie(request, env) {
+// Cookie: "<expiry>.<sig>" (older sessions, no name) or "<expiry>.<name, base64url>.<sig>".
+// Returns { user } for a valid session (user may be ""), otherwise null.
+async function sessionOf(request, env) {
+  const parts = cookieValue(request, COOKIE).split(".");
+  const [exp] = parts, sig = parts[parts.length - 1], u = parts.length === 3 ? parts[1] : "";
+  if (parts.length < 2 || parts.length > 3 || !exp || !sig || !Number.isFinite(Number(exp)) || Date.now() > Number(exp)) return null;
+  const user = u ? ubd(u) : "";
+  if (!safeEqual(sig, await hmac(u ? `staff.${exp}.${user}` : `staff.${exp}`, env.SESSION_SECRET))) return null;
+  return { user: STAFF_NAMES.includes(user) ? user : "" };
+}
+const validSession = async (request, env) => !!(await sessionOf(request, env));
+
+async function sessionCookie(request, env, user = "") {
   const exp = String(Date.now() + SESSION_DAYS * 86400000);
   const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
-  return `${COOKIE}=${exp}.${await hmac(`staff.${exp}`, env.SESSION_SECRET)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}${secure}`;
+  const val = user ? `${exp}.${ub64(user)}.${await hmac(`staff.${exp}.${user}`, env.SESSION_SECRET)}` : `${exp}.${await hmac(`staff.${exp}`, env.SESSION_SECRET)}`;
+  return `${COOKIE}=${val}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}${secure}`;
 }
 
 const PAGE_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
@@ -56,15 +68,15 @@ const PAGE_HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><m
 .w{width:min(380px,100%)}.b{display:flex;align-items:center;gap:12px;margin-bottom:18px}.b img{width:40px;height:40px}.b strong{font-size:17px;font-weight:750;letter-spacing:.02em}
 .l{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#8a8e95}.c{background:#1e1f22;border:1px solid #2e3034;border-radius:10px;padding:22px}
 h1{font-size:20px;font-weight:700;margin-bottom:4px}p{font-size:13px;color:#8a8e95;margin-bottom:16px;line-height:1.5}code{font-family:'IBM Plex Mono',monospace;color:#d6d8db}label{display:block;margin:12px 0 6px}
-input{width:100%;height:42px;background:#26282c;border:1px solid #3a3d42;border-radius:7px;color:#f2f3f4;padding:0 12px;font:inherit;font-size:15px;outline:none}input:focus{border-color:#8a8e95}
+input,select{width:100%;height:42px;background:#26282c;border:1px solid #3a3d42;border-radius:7px;color:#f2f3f4;padding:0 12px;font:inherit;font-size:15px;outline:none}input:focus,select:focus{border-color:#8a8e95}select{appearance:none;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,#8a8e95 50%),linear-gradient(135deg,#8a8e95 50%,transparent 50%);background-position:calc(100% - 17px) 18px,calc(100% - 12px) 18px;background-size:5px 5px;background-repeat:no-repeat}
 button{width:100%;height:42px;margin-top:18px;border:0;border-radius:7px;background:#f2f3f4;color:#16171a;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
 .e{background:#2a2226;border:1px solid #4a3036;color:#f0b4bd;border-radius:7px;padding:9px 11px;font-size:12.5px;margin-bottom:12px}</style>`;
 const BRAND = `<div class="b"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png"><div><strong>BRONCO IQ</strong><div class="l">Boise State MBB · staff only</div></div></div>`;
 const html = (body, status = 200) => new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
 
-function loginPage(message = "", next = "/") {
-  return html(`${PAGE_HEAD}<title>Sign in · Bronco IQ</title></head><body><main class="w">${BRAND}<section class="c"><h1>Sign in</h1><p>Enter the Bronco IQ staff password.</p>${message ? `<div class="e">${esc(message)}</div>` : ""}
-<form method="post" action="/login"><input type="hidden" name="next" value="${esc(next)}"><label class="l" for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" autofocus required><button type="submit">Sign in</button></form></section></main></body></html>`);
+function loginPage(message = "", next = "/", user = "") {
+  return html(`${PAGE_HEAD}<title>Sign in · Bronco IQ</title></head><body><main class="w">${BRAND}<section class="c"><h1>Sign in</h1><p>Choose your name and enter the Bronco IQ staff password. Your name keeps your saved scenarios and boards under your profile.</p>${message ? `<div class="e">${esc(message)}</div>` : ""}
+<form method="post" action="/login"><input type="hidden" name="next" value="${esc(next)}"><label class="l" for="u">Your name</label><select id="u" name="user" required><option value="">Choose your name</option>${STAFF_NAMES.map((n) => `<option${n === user ? " selected" : ""}>${esc(n)}</option>`).join("")}</select><label class="l" for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" autofocus required><button type="submit">Sign in</button></form></section></main></body></html>`);
 }
 
 function setupPage() {
@@ -200,7 +212,7 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"]];
+const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"], [/^\/targets\/?$/, "/targets"], [/^\/(?:board|transfer-board)\/?$/, "/board"]];
 
 
 // ---------- Player Search: links to the Recruiting Hub (read-only) ----------
@@ -262,20 +274,99 @@ async function searchLinks(request, env) {
   await env.STAFF.put("search:links", JSON.stringify(cur));
   return json({ espn: Object.keys(cur.espn).length, photo: Object.keys(cur.photo).length });
 }
-// Front office: saved Salary Cap scenarios and Roster Builder depth charts, shared by the staff.
-// KV "fo:cap" / "fo:builder" = { scenarios: [...] }. Custom headshots are small JPEG data URLs.
-async function frontOffice(request, env, kind) {
-  if (!env.STAFF) return json({ scenarios: [] });
-  const key = "fo:" + kind;
-  if (request.method === "GET") return json((await env.STAFF.get(key, "json")) || { scenarios: [] });
-  if (request.method !== "PUT") return json({ error: "method" }, 405);
-  const text = await request.text();
-  if (text.length > 4_000_000) return json({ error: "Scenarios are too large to save (remove some custom headshots)." }, 413);
-  let b; try { b = JSON.parse(text); } catch { return json({ error: "bad_json" }, 400); }
-  if (!Array.isArray(b.scenarios) || b.scenarios.length > 60) return json({ error: "bad_scenarios" }, 400);
-  await env.STAFF.put(key, JSON.stringify({ scenarios: b.scenarios, savedAt: new Date().toISOString() }));
-  return json({ ok: true, count: b.scenarios.length });
+// Who is signed in. POST { user } switches profile (same shared password, so it's a label, not a lock).
+async function meApi(request, env, sess) {
+  if (request.method === "GET") return json({ user: sess.user, staff: STAFF_NAMES });
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const user = String(b.user || "");
+  if (!STAFF_NAMES.includes(user)) return json({ error: "Unknown staff name." }, 400);
+  return new Response(JSON.stringify({ ok: true, user }), { headers: { "content-type": "application/json", "cache-control": "no-store", "set-cookie": await sessionCookie(request, env, user) } });
 }
+const scopeKey = (prefix, scope, user) => (scope === "staff" ? prefix : `${prefix}:u:${user}`);
+
+// Front office: saved Salary Cap scenarios and Roster Builder depth charts.
+//   KV "fo:<kind>" = staff scenarios (shared); "fo:<kind>:u:<name>" = one person's own scenarios.
+//   Each is { scenarios: [...] }. Saves and deletes go one scenario at a time, so two people
+//   saving at once don't overwrite each other's lists. Custom headshots are small JPEG data URLs.
+//   GET  /api/fo/<kind>                → { user, mine: [...], staff: [...] }
+//   PUT  /api/fo/<kind>/<me|staff>/<id> { scenario } → saves (adds or replaces) that scenario
+//   DELETE /api/fo/<kind>/<me|staff>/<id>
+async function frontOffice(request, env, sess, kind, scope, id) {
+  const user = sess.user, read = async (sc) => (env.STAFF && (sc === "staff" || user) ? ((await env.STAFF.get(scopeKey("fo:" + kind, sc, user), "json")) || { scenarios: [] }).scenarios : []);
+  if (!scope) {
+    if (request.method !== "GET") return json({ error: "method" }, 405);
+    return json({ user, mine: await read("me"), staff: await read("staff") });
+  }
+  if (!env.STAFF) return json({ error: "Saving isn't set up on this deployment (no KV)." }, 503);
+  if (scope === "me" && !user) return json({ error: "Choose your name first (top right of the page)." }, 400);
+  const key = scopeKey("fo:" + kind, scope, user);
+  let list = await read(scope);
+  if (request.method === "DELETE") list = list.filter((x) => x.id !== id);
+  else if (request.method === "PUT") {
+    const text = await request.text();
+    if (text.length > 1_500_000) return json({ error: "This scenario is too large to save (remove some custom headshots)." }, 413);
+    let b; try { b = JSON.parse(text); } catch { return json({ error: "bad_json" }, 400); }
+    const sc = b && typeof b.scenario === "object" && b.scenario;
+    if (!sc) return json({ error: "bad_scenario" }, 400);
+    const now = new Date().toISOString(), prev = list.find((x) => x.id === id);
+    const row = { ...sc, id, name: String(sc.name || "Scenario").slice(0, 80), createdBy: prev?.createdBy || user || "Staff", createdAt: prev?.createdAt || now, savedBy: user || "Staff", savedAt: now };
+    list = prev ? list.map((x) => (x.id === id ? row : x)) : [...list, row];
+    if (list.length > 60) return json({ error: "That list is full (60 scenarios). Delete a few first." }, 400);
+  } else return json({ error: "method" }, 405);
+  const body = JSON.stringify({ scenarios: list });
+  if (body.length > 20_000_000) return json({ error: "Saved scenarios are too large. Delete a few first." }, 413);
+  await env.STAFF.put(key, body);
+  return json({ ok: true, user, scope, scenarios: list });
+}
+
+// Targets + Transfer Board. KV "tb:staff" (shared) or "tb:u:<name>" (one person's own board):
+//   { players: { <id>: { id, p: {name, school, pos, ht, cls, photo, logo}, target, tOrder, lane, tier, bOrder, by, at } } }
+//   GET  /api/tb               → { user, me: [...], staff: [...] }
+//   POST /api/tb/<me|staff>    { op: "set", id, p, target?, lane?, tier? }   (lane: null takes him off the board)
+//                              { op: "remove", id }  · { op: "order", items: [{ id, tOrder? , lane?, tier?, bOrder? }] }
+const LANES = ["Point Guards", "Combo Guards", "Wings", "Stretch 4/5", "Bigs"], TIERS = ["Max", "Starter", "Role", "Development"];
+async function transferBoard(request, env, sess, scope) {
+  const user = sess.user, read = async (sc) => (env.STAFF && (sc === "staff" || user) ? ((await env.STAFF.get(scopeKey("tb", sc, user), "json")) || { players: {} }).players : {});
+  if (!scope) {
+    if (request.method !== "GET") return json({ error: "method" }, 405);
+    return json({ user, me: Object.values(await read("me")), staff: Object.values(await read("staff")) });
+  }
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  if (!env.STAFF) return json({ error: "Saving isn't set up on this deployment (no KV)." }, 503);
+  if (scope === "me" && !user) return json({ error: "Choose your name first (top right of the page)." }, 400);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const P = await read(scope), now = new Date().toISOString(), okId = (v) => /^[\w:-]{2,80}$/.test(String(v || ""));
+  const max = (f, pred = () => true) => Object.values(P).filter(pred).reduce((m, x) => Math.max(m, +x[f] || 0), 0);
+  const tidy = (id) => { const x = P[id]; if (x && !x.target && !x.lane) delete P[id]; };
+  if (b.op === "set") {
+    if (!okId(b.id)) return json({ error: "bad_id" }, 400);
+    const cur = P[b.id] || { id: b.id, target: false, lane: null, tier: null, by: user || "Staff", at: now };
+    if (b.p && typeof b.p === "object") cur.p = Object.fromEntries(["name", "school", "pos", "ht", "cls", "photo", "logo"].map((k) => [k, String(b.p[k] ?? "").slice(0, 400)]));
+    if (typeof b.target === "boolean") { if (b.target && !cur.target) cur.tOrder = max("tOrder", (x) => x.target) + 1; cur.target = b.target; }
+    if (b.lane === null) { cur.lane = null; cur.tier = null; }
+    else if (b.lane !== undefined) {
+      if (!LANES.includes(b.lane)) return json({ error: "bad_lane" }, 400);
+      const tier = TIERS.includes(b.tier) ? b.tier : cur.tier || "Role";
+      if (cur.lane !== b.lane || cur.tier !== tier) cur.bOrder = max("bOrder", (x) => x.lane === b.lane && x.tier === tier) + 1;
+      cur.lane = b.lane; cur.tier = tier; cur.target = true; if (!cur.tOrder) cur.tOrder = max("tOrder", (x) => x.target) + 1;
+    }
+    cur.updatedBy = user || "Staff"; cur.updatedAt = now; P[b.id] = cur; tidy(b.id);
+  } else if (b.op === "remove") { delete P[b.id]; }
+  else if (b.op === "order" && Array.isArray(b.items)) {
+    for (const it of b.items.slice(0, 500)) {
+      const x = P[it.id]; if (!x) continue;
+      if (Number.isFinite(+it.tOrder)) x.tOrder = +it.tOrder;
+      if (Number.isFinite(+it.bOrder)) x.bOrder = +it.bOrder;
+      if (LANES.includes(it.lane)) x.lane = it.lane;
+      if (TIERS.includes(it.tier)) x.tier = it.tier;
+    }
+  } else return json({ error: "bad_op" }, 400);
+  if (Object.keys(P).length > 600) return json({ error: "That board is full (600 players)." }, 400);
+  await env.STAFF.put(scopeKey("tb", scope, user), JSON.stringify({ players: P }));
+  return json({ ok: true, user, scope, players: Object.values(P) });
+}
+
 // School roster pages (for players ESPN has no headshot for): returns each roster photo with its
 // alt text. Only https pages whose path is a roster page; only image names/URLs come back.
 async function scrapeRoster(url) {
@@ -424,11 +515,13 @@ export default {
       if (request.method === "POST") {
         const form = await request.formData();
         const next = safeNext(String(form.get("next") || "/"));
+        const user = STAFF_NAMES.includes(String(form.get("user") || "")) ? String(form.get("user")) : "";
         if (!safeEqual(String(form.get("password") || ""), env.STAFF_PASSWORD)) {
           await new Promise((r) => setTimeout(r, 700));
-          return loginPage("That password didn't match.", next);
+          return loginPage("That password didn't match.", next, user);
         }
-        return new Response(null, { status: 302, headers: { location: next, "set-cookie": await sessionCookie(request, env) } });
+        if (!user) return loginPage("Choose your name.", next);
+        return new Response(null, { status: 302, headers: { location: next, "set-cookie": await sessionCookie(request, env, user) } });
       }
       if (await validSession(request, env)) return Response.redirect(new URL("/", url), 302);
       return loginPage("", safeNext(url.searchParams.get("next") || "/"));
@@ -446,7 +539,8 @@ export default {
       return new Response(page.body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex", "referrer-policy": "same-origin" } });
     }
     if (/^\/assets\/(core|teampage|shotchart)\.js$|^\/assets\/app\.css$/.test(path)) return env.ASSETS.fetch(request); // page code only, no data
-    if (!(await validSession(request, env))) {
+    const sess = await sessionOf(request, env);
+    if (!sess) {
       if (path.startsWith("/api/") || path.startsWith("/data/")) return json({ error: "unauthorized" }, 401);
       return new Response(null, { status: 302, headers: { location: `/login?next=${encodeURIComponent(path + url.search)}` } });
     }
@@ -468,8 +562,11 @@ export default {
     if (nt) return playerNotes(request, env, nt[1]);
     if (path === "/api/positions") return positionsApi(request, env);
     if (path === "/api/search/links") return searchLinks(request, env);
-    const fo = path.match(/^\/api\/fo\/(cap|builder)$/);
-    if (fo) return frontOffice(request, env, fo[1]);
+    if (path === "/api/me") return meApi(request, env, sess);
+    const fo = path.match(/^\/api\/fo\/(cap|builder)(?:\/(me|staff)\/([\w-]{1,60}))?$/);
+    if (fo) return frontOffice(request, env, sess, fo[1], fo[2], fo[3]);
+    const tb = path.match(/^\/api\/tb(?:\/(me|staff))?$/);
+    if (tb) return transferBoard(request, env, sess, tb[1]);
     if (path === "/api/scrape/roster") return scrapeRoster(url);
     // Raw Torvik team CSVs (barttorvik blocks browsers on this network; the worker can reach it).
     if (path === "/api/torvik/csv") {

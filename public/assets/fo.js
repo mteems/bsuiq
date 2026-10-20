@@ -54,11 +54,43 @@ export const moneyNum = (v) => Math.max(0, Number(v || 0)).toLocaleString("en-US
 export const parseMoney = (s) => { const n = Number(String(s).replace(/[^0-9]/g, "")); return Number.isFinite(n) ? n : 0; };
 export const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
 
-// Shared staff scenarios (KV via the worker).
-export async function loadSaved(kind) { try { return (await getJSON(`/api/fo/${kind}`)).scenarios || []; } catch { return []; } }
-export async function saveAll(kind, scenarios) {
-  const r = await fetch(`/api/fo/${kind}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarios }) });
-  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Save failed");
+// ---------------------------------------------------------------- saved scenarios
+// Each person has his own scenarios ("mine", under the name he signed in with) and the staff share
+// a common list ("staff"). The server saves one scenario at a time, so two people saving at once
+// don't overwrite each other.
+const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "");
+export async function loadScenarios(kind) { try { const r = await getJSON(`/api/fo/${kind}`); return { user: r.user || "", mine: r.mine || [], staff: r.staff || [] }; } catch { return { user: "", mine: [], staff: [] }; } }
+async function foCall(kind, scope, id, method, body) {
+  const r = await fetch(`/api/fo/${kind}/${scope}/${encodeURIComponent(id)}`, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || "Save failed");
+  return d.scenarios || [];
+}
+export const putScenario = (kind, scope, scenario) => foCall(kind, scope, scenario.id, "PUT", { scenario });
+export const delScenario = (kind, scope, id) => foCall(kind, scope, id, "DELETE");
+// Saved-scenario strip: "My scenarios" and "Staff scenarios" chips. loaded = { scope, id } or null.
+export function scenarioBarHTML(S, loaded) {
+  const chip = (x, scope) => `<span class="scn${loaded?.scope === scope && loaded?.id === x.id ? " on" : ""}" title="${esc(`Saved by ${x.savedBy || "staff"}${x.savedAt ? " · " + fmtDay(x.savedAt) : ""}`)}"><button data-load="${scope}:${esc(x.id)}">${esc(x.name)}</button><button data-del="${scope}:${esc(x.id)}" aria-label="Delete ${esc(x.name)}">×</button></span>`;
+  const group = (label, list, scope, empty) => `<div class="scg"><span class="label">${label}</span>${list.length ? list.map((x) => chip(x, scope)).join("") : `<span class="scemp">${empty}</span>`}</div>`;
+  return `<div class="scbar noprint">${group(S.user ? `My scenarios · ${esc(S.user)}` : "My scenarios", S.mine, "me", S.user ? "None saved yet" : "Choose your name (top right) to keep your own")}${group("Staff scenarios", S.staff, "staff", "None saved yet")}</div>`;
+}
+// Save menu under the Save button: update the loaded one, or save to my list / the staff list.
+export function saveMenu(anchor, { S, loaded, name, onPick }) {
+  document.querySelector(".fomenu")?.remove();
+  const m = document.createElement("div"); m.className = "fomenu"; m.style.minWidth = "250px";
+  const cur = loaded ? (loaded.scope === "me" ? S.mine : S.staff).find((x) => x.id === loaded.id) : null;
+  const items = [
+    ...(cur ? [[`Update “${cur.name}”`, loaded.scope === "me" ? "in my scenarios" : "in staff scenarios", () => onPick(loaded.scope, false)]] : []),
+    [cur ? "Save a copy to my scenarios" : "Save to my scenarios", S.user ? `under ${S.user}` : "choose your name first (top right)", () => onPick("me", true), !S.user],
+    [cur ? "Save a copy as a staff scenario" : "Save as a staff scenario", "shared with the whole staff", () => onPick("staff", true)],
+  ];
+  m.innerHTML = `<div class="label" style="padding:6px 10px 4px">Save “${esc(name)}”</div>` + items.map(([l, sub, , dis], i) => `<button data-i="${i}"${dis ? " disabled" : ""} style="display:block;text-align:left"><span style="display:block;font:600 13px var(--ui);letter-spacing:0;text-transform:none;color:#fff">${esc(l)}</span><span style="display:block;font:500 9.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:2px">${esc(sub)}</span></button>`).join("");
+  const r = anchor.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(r.right - 250, innerWidth - 260)) + "px"; m.style.top = r.bottom + 6 + "px";
+  document.body.appendChild(m);
+  const off = (ev) => { if (!m.contains(ev.target)) { m.remove(); removeEventListener("mousedown", off, true); } };
+  setTimeout(() => addEventListener("mousedown", off, true));
+  m.onclick = (ev) => { const b = ev.target.closest("button"); if (!b || b.disabled) return; m.remove(); removeEventListener("mousedown", off, true); items[+b.dataset.i][2](); };
 }
 
 // Player picker modal (shared). onPick(player) — candidates filtered by type and search text.

@@ -17,10 +17,6 @@
 .btop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
 .btop h1{margin-top:4px}.btop .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:760px}
 .bact{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.scn{display:inline-flex;border:1px solid var(--edge);border-radius:7px;overflow:hidden;background:var(--card)}
-.scn button{background:none;border:0;color:var(--soft);font:500 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:0 10px;height:32px;cursor:pointer}
-.scn button+button{border-left:1px solid var(--edge);padding:0 8px;color:var(--muted)}
-.scn.on{background:#f2f3f4;border-color:#f2f3f4}.scn.on button{color:#16171a}.scn.on button+button{border-color:#c9ccd2}
 .interim{border:1px dashed var(--edge);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5}
 .interim b{color:#fff}
 .lay{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
@@ -67,7 +63,7 @@
 <main class="bwrap" id="page"><div class="loading">Loading the player pool…</div></main>
 <script type="module">
 import { topBar, esc, pc as pcol } from "/assets/core.js";
-import { loadFO, shot, teamMark, loadSaved, saveAll, openPicker } from "/assets/fo.js";
+import { loadFO, shot, teamMark, loadScenarios, putScenario, delScenario, scenarioBarHTML, saveMenu, openPicker } from "/assets/fo.js";
 topBar("builder");
 
 const POS = [["PG", "Point guard"], ["SG", "Shooting guard"], ["W", "Wing"], ["F", "Forward"], ["C", "Center"]];
@@ -77,9 +73,10 @@ const uid = () => crypto.randomUUID();
 const blank = () => ({ id: "draft", name: "Depth chart", grid: Object.fromEntries(POS.map(([k]) => [k, ["", "", ""]])), min: {} });
 
 const FO = await loadFO();
-let saved = await loadSaved("builder"), d = blank(), loadedId = null, saveState = "", dragFrom = null, sortKey = "min";
-try { const x = JSON.parse(localStorage.getItem("biq-builder-draft") || "null"); if (x?.grid) { d = x; loadedId = localStorage.getItem("biq-builder-loaded") || null; } } catch {}
-const keep = () => { try { localStorage.setItem("biq-builder-draft", JSON.stringify(d)); localStorage.setItem("biq-builder-loaded", loadedId || ""); } catch {} };
+let SV = await loadScenarios("builder"), d = blank(), loaded = null, saveState = "", saveErr = "", dragFrom = null, sortKey = "min";
+addEventListener("biq-me", async () => { SV = await loadScenarios("builder"); if (loaded?.scope === "me") loaded = null; render(); });
+try { const x = JSON.parse(localStorage.getItem("biq-builder-draft") || "null"); if (x?.grid) { d = x; loaded = JSON.parse(localStorage.getItem("biq-builder-loaded2") || "null"); } } catch {}
+const keep = () => { try { localStorage.setItem("biq-builder-draft", JSON.stringify(d)); localStorage.setItem("biq-builder-loaded2", JSON.stringify(loaded)); } catch {} };
 
 // ---------------------------------------------------------------- interim projection
 // The projection model isn't generated yet. Until it is, each player is projected from his last
@@ -131,12 +128,12 @@ function render() {
   <div class="btop">
     <div><div class="label">Front office</div><h1>Roster Builder</h1><div class="sub">Set the depth chart and minutes; the page projects each player's averages and the team's success. Pull players in from a Salary Cap scenario or add them one by one.</div></div>
     <div class="bact noprint">
-      ${saved.map((s) => `<span class="scn${loadedId === s.id ? " on" : ""}"><button data-load="${esc(s.id)}">${esc(s.name)}</button><button data-del="${esc(s.id)}" aria-label="Delete ${esc(s.name)}">×</button></span>`).join("")}
+      <span class="label" style="color:${saveState === "error" ? "var(--bad)" : "var(--muted)"}">${saveState === "saving" ? "Saving…" : saveState === "saved" ? (loaded?.scope === "staff" ? "Saved to staff scenarios" : "Saved to my scenarios") : saveState === "error" ? esc(saveErr || "Save failed") : ""}</span>
       <button class="fbtn" id="fromcap">From Salary Cap</button><button class="fbtn" id="print">Print</button><button class="fbtn" id="reset">Reset</button>
-      <button class="fbtn go" id="save">${loadedId ? "Update scenario" : "Save as scenario"}</button>
-      <span class="label" style="color:${saveState === "error" ? "var(--bad)" : "var(--muted)"}">${saveState === "saving" ? "Saving…" : saveState === "saved" ? "Scenario saved" : saveState === "error" ? "Save failed" : ""}</span>
+      <button class="fbtn go" id="save">Save scenario <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="m6 9 6 6 6-6"/></svg></button>
     </div>
   </div>
+  ${scenarioBarHTML(SV, loaded)}
   <div class="interim"><b>Interim projections.</b> The projection model hasn't been generated yet, so players are projected from their last D-I season (per-40 rates and RAPM) at the minutes set here, and team ratings add up each player's RAPM by minutes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} without a D-I season use a flat freshman estimate.` : ""} The layout stays the same when the model's numbers arrive.</div>
   <div class="lay">
     <div>
@@ -182,11 +179,11 @@ page.addEventListener("click", (e) => {
   if (ds.pick) { const [k, r] = cell(ds.pick); openPicker({ title: `Add ${k} · ${ROWS[r][0]}`, types: ["Returner", "Transfer", "Freshman"], players: FO.players, exclude: inUse(), onPick: (p) => { d.grid[k][r] = p.id; delete d.min[p.id]; changed(); render(); } }); }
   else if (ds.clear) { const [k, r] = cell(ds.clear); d.grid[k][r] = ""; changed(); render(); }
   else if (ds.sort) { sortKey = ds.sort; render(); }
-  else if (ds.load) { const s = saved.find((x) => x.id === ds.load); if (s) { d = { ...JSON.parse(JSON.stringify(s)), id: "draft" }; loadedId = s.id; saveState = "saved"; keep(); render(); } }
-  else if (ds.del) { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } saved = saved.filter((x) => x.id !== ds.del); if (loadedId === ds.del) loadedId = null; persist(); }
-  else if (b.id === "reset") { d = blank(); loadedId = null; saveState = ""; keep(); render(); }
+  else if (ds.load) { const [scope, id] = ds.load.split(/:(.*)/); const s = (scope === "me" ? SV.mine : SV.staff).find((x) => x.id === id); if (s) { d = { ...JSON.parse(JSON.stringify(s)), id: "draft" }; loaded = { scope, id }; saveState = ""; keep(); render(); } }
+  else if (ds.del) { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } const [scope, id] = ds.del.split(/:(.*)/); remove(scope, id); }
+  else if (b.id === "reset") { d = blank(); loaded = null; saveState = ""; keep(); render(); }
   else if (b.id === "print") print();
-  else if (b.id === "save") saveScenario();
+  else if (b.id === "save") saveMenu(b, { S: SV, loaded, name: d.name.trim() || "Depth chart", onPick: saveTo });
   else if (b.id === "fromcap") fromCap(b);
 });
 // drag a card onto another spot to move / swap
@@ -201,9 +198,9 @@ page.addEventListener("drop", (e) => {
 
 // Fill the depth chart from a saved Salary Cap scenario: players go to their position, best first.
 async function fromCap(btn) {
-  const caps = await loadSaved("cap");
+  const caps = await loadScenarios("cap");
   let draft = null; try { draft = JSON.parse(localStorage.getItem("biq-cap-draft") || "null"); } catch {}
-  const opts = [...(draft?.slots ? [{ name: "Current Salary Cap draft", slots: draft.slots }] : []), ...caps];
+  const opts = [...(draft?.slots ? [{ name: "Current Salary Cap draft", slots: draft.slots }] : []), ...caps.mine.map((x) => ({ ...x, name: "Mine · " + x.name })), ...caps.staff.map((x) => ({ ...x, name: "Staff · " + x.name }))];
   if (!opts.length) { alertBox("No Salary Cap scenarios yet. Build one on the Salary Cap page first."); return; }
   document.querySelector(".fomenu")?.remove();
   const m = document.createElement("div"); m.className = "fomenu"; const r = btn.getBoundingClientRect();
@@ -224,12 +221,17 @@ async function fromCap(btn) {
   };
 }
 function alertBox(msg) { const h = document.createElement("div"); h.className = "fomodal"; h.innerHTML = `<div class="fobox" style="width:min(380px,100%)"><div class="fohd"><b>Roster Builder</b><button class="fox">✕</button></div><div style="padding:16px;font-size:13.5px;color:var(--dim)">${esc(msg)}</div></div>`; h.onclick = (e) => { if (e.target === h || e.target.closest(".fox")) h.remove(); }; document.body.appendChild(h); }
-async function persist() { saveState = "saving"; render(); try { await saveAll("builder", saved); saveState = "saved"; } catch { saveState = "error"; } keep(); render(); }
-async function saveScenario() {
-  const name = d.name.trim() || `Depth chart ${saved.length + 1}`;
-  if (loadedId && saved.some((s) => s.id === loadedId)) saved = saved.map((s) => (s.id === loadedId ? { ...JSON.parse(JSON.stringify(d)), id: loadedId, name } : s));
-  else { const id = uid(); saved = [...saved, { ...JSON.parse(JSON.stringify(d)), id, name }]; loadedId = id; }
-  await persist();
+async function saveTo(scope, asNew) {
+  const id = !asNew && loaded?.scope === scope ? loaded.id : uid();
+  saveState = "saving"; render();
+  try { SV[scope === "me" ? "mine" : "staff"] = await putScenario("builder", scope, { ...JSON.parse(JSON.stringify(d)), id, name: d.name.trim() || "Depth chart" }); loaded = { scope, id }; saveState = "saved"; }
+  catch (e) { saveState = "error"; saveErr = e.message; }
+  keep(); render();
+}
+async function remove(scope, id) {
+  try { SV[scope === "me" ? "mine" : "staff"] = await delScenario("builder", scope, id); if (loaded?.scope === scope && loaded?.id === id) loaded = null; saveState = ""; }
+  catch (e) { saveState = "error"; saveErr = e.message; }
+  keep(); render();
 }
 render();
 </script>

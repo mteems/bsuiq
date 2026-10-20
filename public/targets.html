@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Targets · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+/* Targets: the transfer players we've identified, grouped by position, in a staff-set order. */
+.twrap{max-width:1560px;margin:auto;padding:18px 24px 30px}
+.ttop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.ttop h1{margin-top:4px}.ttop .sub{font-size:13px;color:var(--muted);margin-top:3px}
+.tact{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grp{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-top:12px;overflow:hidden}
+.gh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:#1a1b1e}
+.gh h2{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.gh .n{font:500 10.5px var(--mono);color:var(--muted);background:var(--card);border-radius:9px;padding:1px 7px}
+.tt{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;min-width:1380px}
+.tt th{font:500 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:right;padding:8px 6px;white-space:nowrap;border-bottom:1px solid var(--line)}
+.tt th.l,.tt td.l{text-align:left}
+.tt th button{background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;padding:0}.tt th button:hover,.tt th button.on{color:#fff}
+.tt td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line2);white-space:nowrap}
+.tt tr:last-child td{border-bottom:0}
+.tt tr.drag td{opacity:.4}.tt tr.over td{box-shadow:inset 0 2px 0 #f2f3f4}
+.tt .gr{width:26px;color:var(--faint);cursor:grab;text-align:center;font-size:13px}.tt .gr:hover{color:#fff}
+.tt .rk{width:22px;font:500 10.5px var(--mono);color:var(--muted);text-align:center}
+.pc2{display:flex;align-items:center;gap:10px;min-width:0}.pc2>div{min-width:0}.pc2 a{display:block;overflow:hidden;text-overflow:ellipsis}
+.pc2 .hs{width:36px;height:44px;border-radius:6px;background:var(--card);overflow:hidden;flex:none}.pc2 .hs img{width:100%;height:100%;object-fit:cover}
+.pc2 a{font-weight:650;color:#fff}.pc2 a:hover{text-decoration:underline}
+.pc2 .s{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);margin-top:2px}
+.pc2 .s img{width:15px;height:15px;object-fit:contain}
+.bchip{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--edge);border-radius:6px;color:var(--soft);font:500 11px var(--ui);padding:3px 8px;cursor:pointer;white-space:nowrap}
+.bchip:hover{color:#fff;border-color:#8a8e95}.bchip.add{color:var(--muted);border-style:dashed}
+.ib2{width:28px;height:28px;display:inline-grid;place-items:center;background:none;border:1px solid transparent;border-radius:6px;color:var(--muted);cursor:pointer}
+.ib2:hover{color:#fff;border-color:var(--edge);background:var(--card)}
+.by{font-size:11px;color:var(--muted)}
+.gempty{padding:16px 14px;font-size:13px;color:var(--muted)}
+.ord{font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;background:none;border:0;color:var(--muted);cursor:pointer}.ord.on{color:#fff}
+@media (max-width:900px){.grp{overflow-x:auto}.twrap{padding:14px 16px}}
+@media print{.tact,.gr,.ib2,.noprint{display:none!important}}
+</style>
+</head>
+<body>
+<main class="twrap" id="page"><div class="loading">Loading targets…</div></main>
+<script type="module">
+import { topBar, esc, addDefs, pc, me } from "/assets/core.js";
+import { loadPool } from "/assets/pool.js";
+import { loadTB, tbCall, openTB, getScope, setScope, snapPool, tbIcon } from "/assets/tb.js";
+import { openPicker } from "/assets/fo.js";
+topBar("targets");
+addDefs({
+  t_gp: ["Games played", "D-I games, 2025-26."], t_mpg: ["Minutes per game", ""], t_ppg: ["Points per game", ""], t_rpg: ["Rebounds per game", ""], t_apg: ["Assists per game", ""],
+  t_efg: ["Effective FG %", "Field-goal % with threes worth 1.5×."], t_3p: ["3-point %", ""], t_usg: ["Usage %", "Share of his team's possessions he used while on the floor (Barttorvik)."],
+  t_sc: ["Scoring score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%."], t_pl: ["Playmaking score", "Bronco IQ skill score, 2025-26. 50 = D-I average."],
+  t_rb: ["Rebounding score", "Bronco IQ skill score, 2025-26. 50 = D-I average."], t_df: ["Defense score", "Bronco IQ defensive score (DEF v2), 2025-26."],
+  t_board: ["Transfer board", "Where he sits on this Transfer Board (lane · tier). Click to add or move him."],
+});
+
+const GROUPS = [["G", "Guards"], ["W", "Wings"], ["F", "Forwards"], ["B", "Bigs"]];
+const grpOf = (pos) => { const s = String(pos || "").toUpperCase(); return /^(B|C)/.test(s) ? "B" : /W/.test(s) ? "W" : /F/.test(s) ? "F" : "G"; };
+const COLS = [["gp", "GP", "t_gp", 0], ["mpg", "MPG", "t_mpg", 1], ["ppg", "PTS", "t_ppg", 1], ["rpg", "REB", "t_rpg", 1], ["apg", "AST", "t_apg", 1], ["efg_pct", "eFG%", "t_efg", 1], ["three_pct", "3P%", "t_3p", 1], ["usage_pct", "USG%", "t_usg", 1]];
+const SK = [["sk_sc", "SC", "t_sc"], ["sk_pl", "PL", "t_pl"], ["sk_rb", "RB", "t_rb"], ["sk_df", "DF", "t_df"]];
+const scol = (v) => pc(50 + Math.max(-45, Math.min(45, (v - 50) * 1.5)));
+const page = document.getElementById("page");
+const [pool, T0, M0] = await Promise.all([loadPool(), loadTB(), me()]);
+let TBD = T0;
+let M = M0, scope = getScope(); if (scope === "me" && !M.user) scope = "staff";
+let sortKey = null, sortDir = "desc", dragId = null;
+const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "");
+
+const view = (e) => { const p = pool.byId.get(e.id); const s = p?.seasons?.[0]; return { e, p, s, snap: p ? snapPool(p) : e.p || { name: e.id }, g: grpOf(p?.position || e.p?.pos) }; };
+function render() {
+  const list = (TBD[scope] || []).filter((e) => e.target).map(view);
+  const val = (x, k) => (k === "name" ? x.snap.name : k === "ht" ? +String(x.snap.ht).replace(/(\d)'(\d+).*/, (m, a, b) => a * 12 + +b) || 0 : x.s?.[k]);
+  const ordered = (g) => {
+    const L = list.filter((x) => x.g === g);
+    if (!sortKey) return L.sort((a, b) => (a.e.tOrder || 0) - (b.e.tOrder || 0));
+    return L.sort((a, b) => { const x = val(a, sortKey), y = val(b, sortKey); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; const c = typeof x === "string" ? x.localeCompare(y) : x - y; return sortDir === "asc" ? c : -c; });
+  };
+  const hdr = (k, l, def, cls = "") => `<th class="${cls}"><button data-sort="${k}" class="${sortKey === k ? "on" : ""}"><span${def ? ` data-def="${def}"` : ""}>${l}</span>${sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : ""}</button></th>`;
+  const head = `<tr><th class="noprint"></th><th>#</th>${hdr("name", "Player", "", "l")}<th class="l">Pos</th>${hdr("ht", "Ht", "", "l")}<th class="l">Class</th>${COLS.map(([k, l, d]) => hdr(k, l, d)).join("")}${SK.map(([k, l, d]) => hdr(k, l, d)).join("")}<th class="l"><span data-def="t_board">Board</span></th><th class="l">Added</th><th class="noprint"></th></tr>`;
+  const row = (x, i) => {
+    const { e, p, s, snap } = x, href = `/player/${encodeURIComponent(e.id)}`;
+    const num = (k, d) => { const v = s?.[k]; return `<td>${v == null ? `<span style="color:var(--faint)">—</span>` : d ? (+v).toFixed(1) : v}</td>`; };
+    return `<tr data-id="${esc(e.id)}"${!sortKey ? ` draggable="true"` : ""}><td class="gr noprint" title="${sortKey ? "Switch to manual order to drag" : "Drag to reorder"}">${sortKey ? "" : "⋮⋮"}</td><td class="rk">${i + 1}</td>
+      <td class="l"><div class="pc2"><span class="hs">${snap.photo ? `<img alt="" loading="lazy" src="${esc(snap.photo)}" onerror="this.remove()">` : ""}</span><div><a href="${href}">${esc(snap.name)}</a><div class="s">${snap.logo ? `<img alt="" src="${esc(snap.logo)}" onerror="this.remove()">` : ""}${esc(snap.school)}</div></div></div></td>
+      <td class="l">${esc(snap.pos || "—")}</td><td class="l">${esc(snap.ht || "—")}</td><td class="l" style="color:var(--soft)">${esc(snap.cls || "—")}</td>
+      ${COLS.map(([k, , , d]) => num(k, d)).join("")}
+      ${SK.map(([k]) => { const v = s?.[k]; return `<td>${v == null ? `<span style="color:var(--faint)">—</span>` : `<span class="chip" style="background:${scol(v)}">${Math.round(v)}</span>`}</td>`; }).join("")}
+      <td class="l"><button class="bchip${e.lane ? "" : " add"}" data-tb="${esc(e.id)}">${e.lane ? `${esc(e.lane)} · ${esc(e.tier)}` : "＋ Add to board"}</button></td>
+      <td class="l by">${esc(e.by || "")}${e.at ? ` · ${fmtDay(e.at)}` : ""}</td>
+      <td class="noprint"><button class="ib2" data-tb="${esc(e.id)}" title="Targets & board">${tbIcon(true)}</button><button class="ib2" data-rm="${esc(e.id)}" title="Remove from targets" aria-label="Remove from targets">✕</button></td></tr>`;
+  };
+  const n = (sc) => (TBD[sc] || []).filter((e) => e.target).length;
+  page.innerHTML = `
+  <div class="ttop">
+    <div><div class="label">Transfer</div><h1>Targets</h1><div class="sub">The players we've identified, by position. Drag rows to set the order, or click a column to sort. Add players from Search or any player page.</div></div>
+    <div class="tact">
+      <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My targets${M.user ? ` · ${esc(M.user)}` : ""}<i>${n("me")}</i></button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff targets<i>${n("staff")}</i></button></div>
+      <button class="fbtn" id="add">＋ Add player</button><button class="fbtn" id="csv">Export CSV</button><button class="fbtn" id="print">Print</button>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="m" style="font-size:12px;color:var(--muted)">${list.length} target${list.length === 1 ? "" : "s"} on ${scope === "me" ? "your list" : "the staff list"}${TBD.error ? ` · <span style="color:var(--bad)">couldn't load saved lists</span>` : ""}</span>
+    <button class="ord noprint${sortKey ? "" : " on"}" id="manual">${sortKey ? "Back to manual order" : "Manual order"}</button></div>
+  ${GROUPS.map(([g, label]) => { const L = ordered(g); return `<section class="grp"><div class="gh"><h2>${label}</h2><span class="n">${L.length}</span></div>${L.length ? `<table class="tt" data-g="${g}"><colgroup><col style="width:30px"><col style="width:28px"><col><col style="width:48px"><col style="width:56px"><col style="width:96px">${COLS.map(() => `<col style="width:58px">`).join("")}${SK.map(() => `<col style="width:52px">`).join("")}<col style="width:188px"><col style="width:120px"><col style="width:74px"></colgroup><thead>${head}</thead><tbody>${L.map(row).join("")}</tbody></table>` : `<div class="gempty">No ${label.toLowerCase()} on ${scope === "me" ? "your" : "the staff"} targets yet.</div>`}</section>`; }).join("")}`;
+}
+const refresh = async () => { TBD = await loadTB(true); render(); };
+addEventListener("biq-tb", () => render());
+addEventListener("biq-me", async () => { M = await me(); if (scope === "me" && !M.user) scope = "staff"; await refresh(); });
+
+page.addEventListener("click", async (e) => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return; const d = b.dataset;
+  if (d.scope) { scope = d.scope; setScope(scope); render(); }
+  else if (d.sort) { if (sortKey === d.sort) sortDir = sortDir === "desc" ? "asc" : "desc"; else { sortKey = d.sort; sortDir = d.sort === "name" ? "asc" : "desc"; } render(); }
+  else if (b.id === "manual") { sortKey = null; render(); }
+  else if (d.tb) { const x = view((TBD[scope] || []).find((y) => y.id === d.tb)); openTB(b, [{ id: x.e.id, p: x.snap }]); }
+  else if (d.rm) { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "?"; b.title = "Click again to remove"; return; } try { await tbCall(scope, { op: "set", id: d.rm, target: false }); } catch (err) { alert(err.message); } }
+  else if (b.id === "print") print();
+  else if (b.id === "csv") exportCsv();
+  else if (b.id === "add") {
+    const players = pool.P.map((p) => ({ id: p.id, type: "Transfer", name: `${p.first_name} ${p.last_name}`, school: p.school, pos: p.position, ht: p.height, photo: p.photoUrl, logo: p.logo, rates: { min: p.seasons[0]?.min || 0, ppg: p.seasons[0]?.ppg ?? null } }));
+    const on = new Set((TBD[scope] || []).filter((x) => x.target).map((x) => x.id));
+    openPicker({ title: "Add a target", types: ["Transfer"], players, exclude: on, onPick: async (p) => { try { await tbCall(scope, { op: "set", id: p.id, p: snapPool(pool.byId.get(p.id)), target: true }); } catch (err) { alert(err.message); } } });
+  }
+});
+// drag rows (manual order, within a position group)
+page.addEventListener("dragstart", (e) => { const tr = e.target.closest("tr[data-id]"); if (!tr) return; dragId = tr.dataset.id; tr.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId); });
+page.addEventListener("dragend", () => { dragId = null; page.querySelectorAll("tr.drag,tr.over").forEach((x) => x.classList.remove("drag", "over")); });
+page.addEventListener("dragover", (e) => { const tr = e.target.closest("tr[data-id]"); if (!dragId || !tr || tr.closest("table") !== page.querySelector(`tr[data-id="${CSS.escape(dragId)}"]`)?.closest("table")) return; e.preventDefault(); page.querySelectorAll("tr.over").forEach((x) => x.classList.remove("over")); tr.classList.add("over"); });
+page.addEventListener("drop", async (e) => {
+  const tr = e.target.closest("tr[data-id]"); if (!dragId || !tr) return; e.preventDefault();
+  const ids = [...tr.closest("tbody").querySelectorAll("tr[data-id]")].map((r) => r.dataset.id);
+  if (!ids.includes(dragId) || tr.dataset.id === dragId) return;
+  const next = ids.filter((x) => x !== dragId); next.splice(next.indexOf(tr.dataset.id), 0, dragId);
+  // keep the group's existing order numbers, reassigned in the new order
+  const slots = ids.map((id) => (TBD[scope] || []).find((x) => x.id === id)?.tOrder || 0).sort((a, b) => a - b);
+  const items = next.map((id, i) => ({ id, tOrder: slots[i] || i + 1 }));
+  for (const it of items) { const x = (TBD[scope] || []).find((y) => y.id === it.id); if (x) x.tOrder = it.tOrder; }
+  dragId = null; render();
+  try { await tbCall(scope, { op: "order", items }); } catch (err) { alert(err.message); refresh(); }
+});
+function exportCsv() {
+  const list = (TBD[scope] || []).filter((e) => e.target).map(view).sort((a, b) => GROUPS.findIndex(([g]) => g === a.g) - GROUPS.findIndex(([g]) => g === b.g) || (a.e.tOrder || 0) - (b.e.tOrder || 0));
+  const head = ["Group", "Player", "School", "Pos", "Ht", "Class", ...COLS.map((c) => c[1]), ...SK.map((c) => c[1]), "Board lane", "Board tier", "Added by"];
+  const rowsOut = list.map((x) => [GROUPS.find(([g]) => g === x.g)[1], x.snap.name, x.snap.school, x.snap.pos, x.snap.ht, x.snap.cls, ...COLS.map(([k]) => x.s?.[k] ?? ""), ...SK.map(([k]) => (x.s?.[k] == null ? "" : Math.round(x.s[k]))), x.e.lane || "", x.e.tier || "", x.e.by || ""]);
+  const csv = [head, ...rowsOut].map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); const a = document.createElement("a"); a.href = url; a.download = "bronco-iq-targets.csv"; a.click(); URL.revokeObjectURL(url);
+}
+render();
+</script>
+</body>
+</html>

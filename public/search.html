@@ -136,6 +136,7 @@
 .ib{width:32px;height:32px;border:1px solid var(--edge);border-radius:6px;background:none;color:var(--dim);display:grid;place-items:center;cursor:pointer}
 .ib:hover{color:#fff;border-color:#8a8e95}
 .ib.ghost{border-color:transparent}
+.ib.tbon{color:#fff}
 .more{padding:18px;text-align:center;color:var(--muted);font:11px var(--mono)}
 .empty{padding:40px 18px;text-align:center;color:var(--muted);font-size:13px}
 /* expanded */
@@ -232,6 +233,7 @@ import { topBar, esc, getJSON, addDefs, pc, confImg } from "/assets/core.js";
 const scol = (v) => pc(50 + Math.max(-45, Math.min(45, (v - 50) * 1.5)));
 import * as H from "/assets/search-logic.js";
 import { loadPool, espnGames } from "/assets/pool.js";
+import { loadTB, openTB, badge, tbIcon, snapPool } from "/assets/tb.js";
 topBar("search");
 
 addDefs({
@@ -265,6 +267,8 @@ const selected = new Set(), expanded = new Set();
 let P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
 let visible = [], shown = 0;
 const remember = () => ss.set(VIEW, S);
+loadTB().then(() => { if (P.length) renderResults(); });
+addEventListener("biq-tb", () => { if (P.length) renderResults(); });
 
 // ---------------------------------------------------------------- data (shared pool: /assets/pool.js)
 async function load(refresh = false) {
@@ -534,12 +538,13 @@ function exportCsv() {
 
 // ---------------------------------------------------------------- selection bar + compare
 function renderSelbar() {
-  document.getElementById("selbar").innerHTML = selected.size ? `<div class="selbar"><span class="pill">${selected.size} selected</span><button class="btn pri" id="cmpb"${selected.size < 2 ? " disabled" : ""}>Compare</button><button class="btn ghost" id="selclr">Clear</button></div>` : "";
+  document.getElementById("selbar").innerHTML = selected.size ? `<div class="selbar"><span class="pill">${selected.size} selected</span><button class="btn pri" id="cmpb"${selected.size < 2 ? " disabled" : ""}>Compare</button><button class="btn" id="seltb">${tbIcon(false)}Targets / board</button><button class="btn ghost" id="selclr">Clear</button></div>` : "";
 }
 document.getElementById("selbar").addEventListener("click", (e) => {
   const t = e.target.closest("button"); if (!t) return;
   if (t.id === "selclr") { selected.clear(); renderSelbar(); renderResults(); }
   if (t.id === "cmpb") compareDialog();
+  if (t.id === "seltb") openTB(t, [...selected].map((id) => byId.get(id)).filter(Boolean).map((p) => ({ id: p.id, p: snapPool(p) })));
 });
 function compareDialog() {
   const ps = [...selected].map((id) => byId.get(id)).filter(Boolean);
@@ -560,7 +565,7 @@ function compareDialog() {
 
 // ---------------------------------------------------------------- results
 const visCols = () => order.filter((k) => H.baseSearchColumns.has(k) || visibleStats.includes(k));
-const gridStyle = (cols) => `grid-template-columns:${cols.map((k) => H.searchColumnWidths[k]).join(" ")} 80px`;
+const gridStyle = (cols) => `grid-template-columns:${cols.map((k) => H.searchColumnWidths[k]).join(" ")} 112px`;
 const labelOf = (k) => H.cols.find((c) => c.key === k)?.label ?? k;
 const defKey = { position: "s_pos", height: "s_ht", class: "s_class", season: "s_season" };
 const headshot = (p) => p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="${esc(p.photoUrl)}" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
@@ -572,6 +577,7 @@ function headerHTML() {
     return `<div class="hc${k === "name" ? " name" : ""}${st ? " st" : ""}" draggable="true" data-col="${k}" title="Drag ${esc(labelOf(k))} left or right"><button data-sort="${k}" class="${i >= 0 ? "on" : ""}" title="Click to sort. Shift-click to add a secondary sort."><span${defKey[k] || st ? ` data-def="${defKey[k] || k}"` : ""}>${esc(labelOf(k))}</span>${i >= 0 ? (active.length > 1 ? `<sup>${i + 1}</sup>` : "") + (active[i].direction === "asc" ? " ▲" : " ▼") : ""}</button></div>`;
   }).join("")}<div></div></div>`;
 }
+const tbTitle = (id) => { const B = badge(id), d = (x, w) => (x ? `${w}: ${[x.target ? "target" : "", x.lane ? `${x.lane} · ${x.tier}` : ""].filter(Boolean).join(", ")}` : ""); return [d(B.me, "Mine"), d(B.staff, "Staff")].filter(Boolean).join(" | ") || "Add to targets or transfer board"; };
 function rowHTML(p) {
   const cols = visCols(), s = H.current(p), open = expanded.has(p.id), on = selected.has(p.id);
   const j = String(p.jersey_number ?? "").trim(), showJ = j !== "" && !/^0+(?:\.0+)?$/.test(j) && j !== "NA";
@@ -586,7 +592,7 @@ function rowHTML(p) {
     if (k.startsWith("sk_")) return `<div class="cell st">${v == null ? `<span class="m">—</span>` : `<span class="chip" style="background:${scol(v)}">${Math.round(v)}</span>`}</div>`;
     return `<div class="cell st${v == null ? " na" : ""}">${fmt(v, k)}</div>`;
   };
-  return `<div class="row${open ? " open" : ""}" data-id="${esc(p.id)}"><div class="rgrid rmain" style="${gridStyle(cols)}" data-act="toggle" role="button" tabindex="0">${cols.map(cell).join("")}<div class="acts"><a class="ib ghost" href="${href}" data-act="link" title="Player page" aria-label="Player page"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a><button class="ib ghost" data-act="toggle" title="${open ? "Collapse player" : "Expand player"}" aria-label="${open ? "Collapse player" : "Expand player"}">${open ? "▴" : "▾"}</button></div></div>${open ? expandedHTML(p) : ""}</div>`;
+  return `<div class="row${open ? " open" : ""}" data-id="${esc(p.id)}"><div class="rgrid rmain" style="${gridStyle(cols)}" data-act="toggle" role="button" tabindex="0">${cols.map(cell).join("")}<div class="acts"><button class="ib ghost${badge(p.id).on ? " tbon" : ""}" data-act="tb" title="${tbTitle(p.id)}" aria-label="Add to targets or transfer board">${tbIcon(badge(p.id).on)}</button><a class="ib ghost" href="${href}" data-act="link" title="Player page" aria-label="Player page"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a><button class="ib ghost" data-act="toggle" title="${open ? "Collapse player" : "Expand player"}" aria-label="${open ? "Collapse player" : "Expand player"}">${open ? "▴" : "▾"}</button></div></div>${open ? expandedHTML(p) : ""}</div>`;
 }
 const rin = document.getElementById("rin");
 const PAGE = 80;
@@ -622,6 +628,7 @@ rin.addEventListener("click", (e) => {
   const row = e.target.closest(".row"); if (!row) return;
   const id = row.dataset.id, act = e.target.closest("[data-act]")?.dataset.act;
   if (act === "link") return;
+  if (act === "tb") { openTB(e.target.closest("button"), [{ id, p: snapPool(byId.get(id)) }]); return; }
   if (e.target.closest(".xp")) {
     const t = e.target.closest("button[data-full]");
     if (t) { full.has(id) ? full.delete(id) : full.add(id); replaceRow(id); }

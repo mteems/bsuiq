@@ -49,7 +49,7 @@ tr.total td{border-top:1px solid var(--edge);font-weight:600}
 
 /* top bar */
 .top{position:sticky;top:0;z-index:20;background:rgba(22,23,26,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-.bar{display:flex;align-items:center;gap:18px;padding:10px 24px;max-width:1280px;margin:auto}
+.bar{display:flex;align-items:center;gap:16px;padding:10px 24px;max-width:1560px;margin:auto}
 .brand{display:flex;align-items:center;gap:9px;flex:none}
 .brand img{width:24px;height:24px}
 .brand b{font-weight:750;letter-spacing:.02em;font-size:14.5px}
@@ -57,7 +57,7 @@ tr.total td{border-top:1px solid var(--edge);font-weight:600}
 .nav a{font-size:13px;color:var(--muted);padding:6px 10px;border-radius:6px}
 .nav a:hover{color:var(--soft)}
 .nav a.on{color:#fff;background:var(--card)}
-.search{position:relative;margin-left:auto;width:min(320px,40vw)}
+.search{position:relative;margin-left:auto;width:min(280px,24vw)}
 .search input{width:100%;height:32px;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:var(--text);font:inherit;font-size:13px;padding:0 10px 0 30px;outline:none}
 .search input:focus{border-color:var(--muted)}
 .search svg{position:absolute;left:9px;top:9px;color:var(--muted)}
@@ -244,3 +244,45 @@ thead tr:last-child th{padding-top:7px;padding-bottom:8px;vertical-align:bottom}
 .fomenu button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:5px;color:var(--soft);font:500 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;cursor:pointer}
 .fomenu button:hover{background:var(--card);color:#fff}.fomenu button.on{background:#f2f3f4;color:#16171a}.fomenu button.bad{color:var(--bad)}
 @media print{header.top,.noprint{display:none!important}body{background:#fff}}
+
+/* profile (staff name) menu in the top bar */
+.pmenu{position:relative}
+.pbtn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px 0 5px;background:var(--panel);border:1px solid var(--line);border-radius:16px;color:var(--text);font:500 12.5px var(--ui);cursor:pointer;white-space:nowrap}
+.pbtn:hover{border-color:#5a5d63}.pbtn.none{padding:0 12px;color:#fff;border-color:#8a8e95}
+.pbtn .av{width:22px;height:22px;border-radius:50%;background:#3a3d42;display:grid;place-items:center;font:700 11px var(--ui)}
+.pdrop{position:absolute;right:0;top:38px;z-index:40;min-width:190px;background:#202125;border:1px solid #3a3d42;border-radius:9px;padding:4px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.pdrop button,.pdrop a{display:flex;width:100%;justify-content:space-between;align-items:center;background:none;border:0;color:var(--soft);font:500 13px var(--ui);padding:7px 10px;border-radius:6px;cursor:pointer;text-align:left}
+.pdrop button:hover,.pdrop a:hover{background:#2a2c30;color:#fff}.pdrop button.on{color:#fff;background:#2a2c30}
+.pdrop a{margin-left:0;border-top:1px solid var(--line);border-radius:0 0 6px 6px;margin-top:4px;color:var(--muted)}
+.fomenu button:disabled{opacity:.4;cursor:default}.fomenu button:disabled:hover{background:none}
+/* saved scenarios strip (Salary Cap, Roster Builder) */
+.scbar{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 12px;margin-bottom:10px}
+.scg{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.scg>.label{font-size:9.5px;margin-right:4px}
+.scemp{font-size:12px;color:var(--faint)}
+.scn{display:inline-flex;border:1px solid var(--edge);border-radius:7px;overflow:hidden;background:var(--card)}
+.scn button{background:none;border:0;color:var(--soft);font:600 12px var(--ui);padding:0 10px;height:28px;cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scn button+button{border-left:1px solid var(--edge);padding:0 8px;color:var(--muted);font-size:11px}
+.scn button:hover{color:#fff}
+.scn.on{background:#f2f3f4;border-color:#f2f3f4}.scn.on button{color:#16171a}.scn.on button+button{border-color:#c9ccd2}
+/* Targets & board popover (Search, player pages, Targets, Transfer Board) */
+.tbpop{position:fixed;z-index:140;width:340px;max-width:calc(100vw - 16px);background:#1c1d20;border:1px solid #3a3d42;border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.55);padding:12px;display:grid;gap:10px}
+.tbh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.tbh b{font-size:15px;font-weight:700}.tbh .m{font-size:11.5px;color:var(--muted);margin-top:2px}
+.tbx{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px}.tbx:hover{color:#fff}
+.tbseg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--edge);border-radius:7px;padding:2px}
+.tbseg button{background:none;border:0;border-radius:5px;color:var(--muted);font:600 12px var(--ui);height:28px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+.tbseg button.on{background:#f2f3f4;color:#16171a}.tbseg button:disabled{opacity:.4;cursor:default}
+.tbnote{font-size:11.5px;color:var(--muted)}
+.tbsec{border-top:1px solid var(--line);padding-top:9px;display:grid;gap:7px}
+.tbl{display:flex;justify-content:space-between;align-items:baseline}.tbst{font-size:12px;color:var(--soft)}
+.tbch{display:flex;flex-wrap:wrap;gap:4px}
+.tbch button{background:var(--bg);border:1px solid var(--edge);border-radius:6px;color:var(--soft);font:500 11.5px var(--ui);padding:4px 8px;cursor:pointer}
+.tbch button:hover{color:#fff;border-color:#8a8e95}.tbch button.on{background:#f2f3f4;border-color:#f2f3f4;color:#16171a}
+.tbch.t button{font:500 10px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.tbrow{display:flex;gap:6px;flex-wrap:wrap}
+.tbf{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:8px;font-size:11.5px}
+.tbf a{color:var(--soft);margin-left:10px;font-weight:600}.tbf a:hover{color:#fff}
+/* segmented scope switch on Targets / Board */
+.seg2{display:inline-flex;background:var(--panel);border:1px solid var(--edge);border-radius:8px;padding:2px}
+.seg2 button{background:none;border:0;border-radius:6px;color:var(--muted);font:600 12.5px var(--ui);height:30px;padding:0 12px;cursor:pointer;white-space:nowrap}
+.seg2 button.on{background:#f2f3f4;color:#16171a}.seg2 button:disabled{opacity:.4;cursor:default}
+.seg2 button i{font-style:normal;font:500 10px var(--mono);margin-left:6px;opacity:.75}

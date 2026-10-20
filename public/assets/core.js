@@ -137,17 +137,46 @@ export async function searchPlayers(q) {
 }
 
 // ---------- top bar ----------
+const NAV = [
+  [["home", "/", "Roster"], ["scouting", "/scouting", "Scouting"], ["rankings", "/rankings", "Rankings"]],
+  [["search", "/search", "Search"], ["targets", "/targets", "Targets"], ["board", "/board", "Transfer Board"], ["international", "/international", "International"]],
+  [["cap", "/cap", "Salary Cap"], ["builder", "/builder", "Roster Builder"]],
+];
+// ---------- who is signed in (staff name; keeps saved scenarios and boards per person) ----------
+let meP = null;
+export const me = (fresh = false) => (meP && !fresh ? meP : (meP = getJSON("/api/me").catch(() => ({ user: "", staff: [] }))));
+export async function setMe(user) {
+  const r = await fetch("/api/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ user }) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Couldn't switch profile");
+  meP = null; dispatchEvent(new CustomEvent("biq-me", { detail: { user } }));
+  return user;
+}
+async function profileMenu(box) {
+  const draw = (M, open) => {
+    box.innerHTML = `<div class="pmenu"><button class="pbtn${M.user ? "" : " none"}" id="pbtn" aria-expanded="${open}">${M.user ? `<span class="av">${esc(M.user[0])}</span>${esc(M.user)}` : "Choose your name"}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m6 9 6 6 6-6"/></svg></button>
+      ${open ? `<div class="pdrop"><div class="label" style="padding:6px 10px 4px">Signed in as</div>${M.staff.map((n) => `<button data-u="${esc(n)}" class="${n === M.user ? "on" : ""}">${esc(n)}${n === M.user ? `<span>✓</span>` : ""}</button>`).join("")}<a href="/logout">Sign out</a></div>` : ""}</div>`;
+  };
+  let M = await me(), open = false;
+  draw(M, open);
+  box.addEventListener("click", async (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "pbtn") { open = !open; draw(M, open); return; }
+    if (b.dataset.u) { try { await setMe(b.dataset.u); M = await me(true); } catch {} open = false; draw(M, open); }
+  });
+  document.addEventListener("click", (e) => { if (open && e.target.isConnected && !box.contains(e.target)) { open = false; draw(M, open); } });
+  addEventListener("biq-me", async () => { M = await me(); draw(M, open); });
+}
 export function topBar(active) {
   const el = document.createElement("header");
   el.className = "top";
   el.innerHTML = `<div class="bar">
     <a class="brand" href="/"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png"><b>BRONCO IQ</b></a>
-    <nav class="nav"><a href="/" class="${active === "home" ? "on" : ""}">Roster</a><a href="/scouting" class="${active === "scouting" ? "on" : ""}">Scouting</a><a href="/rankings" class="${active === "rankings" ? "on" : ""}">Rankings</a><a href="/search" class="${active === "search" ? "on" : ""}">Search</a><a href="/international" class="${active === "international" ? "on" : ""}">International</a><span class="navsep" aria-hidden="true"></span><a href="/cap" class="${active === "cap" ? "on" : ""}">Salary Cap</a><a href="/builder" class="${active === "builder" ? "on" : ""}">Roster Builder</a></nav>
+    <nav class="nav">${NAV.map((g, i) => (i ? `<span class="navsep" aria-hidden="true"></span>` : "") + g.map(([k, href, l]) => `<a href="${href}" class="${active === k ? "on" : ""}">${l}</a>`).join("")).join("")}</nav>
     <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" placeholder="Search players or schools" autocomplete="off" aria-label="Search players"><div class="results" id="qr"></div></div>
     <div class="user" id="who"></div></div>`;
   document.body.prepend(el);
-  document.getElementById("who").innerHTML = `<a href="/logout">Sign out</a>`;
+  profileMenu(document.getElementById("who"));
 
   const q = el.querySelector("#q"), box = el.querySelector("#qr");
   let t = 0, sel = -1, items = [];

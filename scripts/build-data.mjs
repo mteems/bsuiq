@@ -96,10 +96,13 @@ mkdirSync(join(out, "players"), { recursive: true });
 const write = (p, v) => writeFileSync(join(out, p), JSON.stringify(v));
 
 const index = [], rosterRows = [], ROSTER_CID = new Map();
+// ESPN ids for incoming freshmen (no college season yet) from ESPN's 2026-27 Boise St. roster, by name.
+const nk = (s) => String(s || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+const ESPN27 = new Map(((existsSync(src("rosters-2027.json")) ? JSON.parse(readFileSync(src("rosters-2027.json"), "utf8")) : { teams: {} }).teams["68"]?.players || []).map((r) => [nk(r.name), r.id]));
 for (const p of roster.players) {
   const seasons = p.seasons.map((s) => ({ ...s, d: derive(s), pct: seasonPercentiles(s, pool) }));
   const last = seasons[seasons.length - 1] || null;
-  const espnId = p.id.startsWith("espn-") ? p.id.slice(5) : null;
+  const espnId = p.id.startsWith("espn-") ? p.id.slice(5) : ESPN27.get(nk(p.first_name + p.last_name)) || null;
   const pdr = existsSync(src(`pd/${p.id}.json`)) ? JSON.parse(readFileSync(src(`pd/${p.id}.json`), "utf8")) : null;
   const player = { ...p, seasons: undefined, espnId, onRoster: true, cid: pdr?.cid || null };
   if (pdr?.cid) ROSTER_CID.set(pdr.cid, p.id);

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Transfer Board · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+/* Transfer Board: five position lanes, each split into money tiers; drag cards to rank. */
+.bwrap{max-width:1800px;margin:auto;padding:18px 24px 30px}
+.btop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.btop h1{margin-top:4px}.btop .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:760px}
+.bact{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:start}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.lh{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:#1a1b1e;border-bottom:1px solid var(--line)}
+.lh b{font:650 12px var(--ui);letter-spacing:.06em;text-transform:uppercase}.lh span{font:500 10.5px var(--mono);color:var(--muted)}
+.tier{margin:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:46px}
+.tier.over{border-color:#8a8e95}
+.th2{display:flex;justify-content:space-between;padding:5px 8px;font:500 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line2)}
+.bcards{display:grid;gap:5px;padding:5px}
+.bcard{position:relative;background:var(--card);border:1px solid var(--edge);border-radius:7px;padding:7px 8px;cursor:grab}
+.bcard:hover{border-color:#55595f}.bcard.drag{opacity:.35}.bcard.before::before{content:"";position:absolute;left:0;right:0;top:-4px;height:2px;background:#f2f3f4;border-radius:2px}
+.ct{display:flex;gap:8px;align-items:flex-start;min-width:0}
+.ct .hs{width:34px;height:42px;border-radius:5px;background:var(--bg);overflow:hidden;flex:none}.ct .hs img{width:100%;height:100%;object-fit:cover}
+.ct .nm{min-width:0;flex:1}
+.ct .nm a{display:block;font-size:13px;font-weight:700;line-height:1.15;color:#fff}.ct .nm a:hover{text-decoration:underline}
+.ct .nm .s{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct .nm .s img{width:13px;height:13px;object-fit:contain;flex:none}
+.ct .nm .f{font:500 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.cx{background:none;border:0;color:var(--faint);cursor:pointer;font-size:11px;padding:0 2px}.cx:hover{color:#fff}
+.cs{display:grid;grid-template-columns:repeat(5,1fr);margin-top:6px;border-top:1px solid var(--line2);padding-top:5px}
+.cs div{text-align:center}.cs span{display:block;font:500 8px var(--mono);letter-spacing:.06em;color:var(--muted)}.cs b{font-size:11.5px;font-weight:700}
+.tempty{padding:8px;font:500 9px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:#4a4d53;text-align:center}
+@media (max-width:1250px){.lanes{grid-template-columns:repeat(5,minmax(220px,1fr));overflow-x:auto}}
+@media (max-width:700px){.bwrap{padding:14px 16px}}
+@media print{.bact,.cx{display:none!important}.bcard{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main class="bwrap" id="page"><div class="loading">Loading the board…</div></main>
+<script type="module">
+import { topBar, esc, me } from "/assets/core.js";
+import { loadPool } from "/assets/pool.js";
+import { LANES, TIERS, loadTB, tbCall, openTB, getScope, setScope, snapPool } from "/assets/tb.js";
+import { openPicker } from "/assets/fo.js";
+topBar("board");
+
+// Five numbers per card, picked for the lane (same as the Recruiting Hub's board).
+const v = (s, k, suf = "") => (s?.[k] == null ? "—" : `${s[k]}${suf}`);
+const LANE_STATS = {
+  "Point Guards": [["PTS", "ppg"], ["AST", "apg"], ["TO", "topg"], ["3P%", "three_pct"], ["eFG%", "efg_pct"]],
+  "Combo Guards": [["PTS", "ppg"], ["AST", "apg"], ["3P%", "three_pct"], ["eFG%", "efg_pct"], ["USG%", "usage_pct"]],
+  Wings: [["PTS", "ppg"], ["REB", "rpg"], ["3P%", "three_pct"], ["eFG%", "efg_pct"], ["STL", "spg"]],
+  "Stretch 4/5": [["PTS", "ppg"], ["REB", "rpg"], ["2P%", "two_pct"], ["3P%", "three_pct"], ["eFG%", "efg_pct"]],
+  Bigs: [["PTS", "ppg"], ["REB", "rpg"], ["2P%", "two_pct"], ["BLK", "bpg"], ["eFG%", "efg_pct"]],
+};
+const page = document.getElementById("page");
+const [pool, T0, M0] = await Promise.all([loadPool(), loadTB(), me()]);
+let TBD = T0, M = M0, scope = getScope(), drag = null;
+if (scope === "me" && !M.user) scope = "staff";
+const view = (e) => { const p = pool.byId.get(e.id); return { e, s: p?.seasons?.[0], snap: p ? snapPool(p) : e.p || { name: e.id } }; };
+const group = (lane, tier) => (TBD[scope] || []).filter((e) => e.lane === lane && e.tier === tier).sort((a, b) => (a.bOrder || 0) - (b.bOrder || 0));
+
+function card(e, lane) {
+  const { s, snap } = view(e), href = `/player/${encodeURIComponent(e.id)}`;
+  return `<article class="bcard${drag === e.id ? " drag" : ""}" draggable="true" data-id="${esc(e.id)}">
+    <div class="ct"><span class="hs">${snap.photo ? `<img alt="" loading="lazy" src="${esc(snap.photo)}" onerror="this.remove()">` : ""}</span>
+      <div class="nm"><a href="${href}" draggable="false">${esc(snap.name)}</a><div class="s">${snap.logo ? `<img alt="" src="${esc(snap.logo)}" onerror="this.remove()">` : ""}${esc(snap.school)}</div><div class="f">${[snap.ht, snap.cls].filter(Boolean).map(esc).join(" · ") || "—"}${e.by ? ` · ${esc(e.by)}` : ""}</div></div>
+      <button class="cx" data-tb="${esc(e.id)}" title="Move, or change targets" aria-label="Board options">⋯</button><button class="cx" data-rm="${esc(e.id)}" title="Remove from board" aria-label="Remove from board">✕</button></div>
+    <div class="cs">${LANE_STATS[lane].map(([l, k]) => `<div><span>${l}</span><b>${v(s, k)}</b></div>`).join("")}</div></article>`;
+}
+function render() {
+  const n = (sc) => (TBD[sc] || []).filter((e) => e.lane).length;
+  page.innerHTML = `
+  <div class="btop">
+    <div><div class="label">Transfer</div><h1>Transfer Board</h1><div class="sub">Rank transfer targets by position and money tier. Drag a card to move it; drop it on another card to put it in front of him. Add players from Search, any player page, or Targets.</div></div>
+    <div class="bact">
+      <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My board${M.user ? ` · ${esc(M.user)}` : ""}<i>${n("me")}</i></button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff board<i>${n("staff")}</i></button></div>
+      <button class="fbtn" id="add">＋ Add player</button><button class="fbtn" id="print">Print board</button>
+    </div>
+  </div>
+  ${TBD.error ? `<div class="note" style="margin-bottom:10px">Couldn't load the saved boards. Reload the page to try again.</div>` : ""}
+  <div class="lanes">${LANES.map((lane) => { const all = (TBD[scope] || []).filter((e) => e.lane === lane); return `<section class="lane"><div class="lh"><b>${esc(lane)}</b><span>${all.length}</span></div>
+    ${TIERS.map((tier) => { const G = group(lane, tier); return `<div class="tier" data-lane="${esc(lane)}" data-tier="${tier}"><div class="th2"><span>${tier}</span><span>${G.length}</span></div><div class="bcards">${G.map((e) => card(e, lane)).join("") || `<div class="tempty">Drop players here</div>`}</div></div>`; }).join("")}</section>`; }).join("")}</div>`;
+}
+const refresh = async () => { TBD = await loadTB(true); render(); };
+addEventListener("biq-tb", () => render());
+addEventListener("biq-me", async () => { M = await me(); if (scope === "me" && !M.user) scope = "staff"; await refresh(); });
+
+page.addEventListener("click", async (e) => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return; const d = b.dataset;
+  if (d.scope) { scope = d.scope; setScope(scope); render(); }
+  else if (d.tb) { const x = view((TBD[scope] || []).find((y) => y.id === d.tb)); openTB(b, [{ id: x.e.id, p: x.snap }]); }
+  else if (d.rm) { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "?"; b.title = "Click again to remove"; return; } try { await tbCall(scope, { op: "set", id: d.rm, lane: null }); } catch (err) { alert(err.message); } }
+  else if (b.id === "print") print();
+  else if (b.id === "add") {
+    const players = pool.P.map((p) => ({ id: p.id, type: "Transfer", name: `${p.first_name} ${p.last_name}`, school: p.school, pos: p.position, ht: p.height, photo: p.photoUrl, logo: p.logo, rates: { min: p.seasons[0]?.min || 0, ppg: p.seasons[0]?.ppg ?? null } }));
+    const on = new Set((TBD[scope] || []).filter((x) => x.lane).map((x) => x.id));
+    openPicker({ title: "Add to the board", types: ["Transfer"], players, exclude: on, onPick: (p) => openTB(b, [{ id: p.id, p: snapPool(pool.byId.get(p.id)) }]) });
+  }
+});
+// drag and drop: onto a card = in front of him; onto a tier = to the bottom of that tier
+page.addEventListener("dragstart", (e) => { const c = e.target.closest(".bcard"); if (!c) return; drag = c.dataset.id; c.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", drag); });
+page.addEventListener("dragend", () => { drag = null; page.querySelectorAll(".drag,.over,.before").forEach((x) => x.classList.remove("drag", "over", "before")); });
+page.addEventListener("dragover", (e) => {
+  const t = e.target.closest(".tier"); if (!drag || !t) return; e.preventDefault();
+  page.querySelectorAll(".over,.before").forEach((x) => x.classList.remove("over", "before"));
+  const c = e.target.closest(".bcard"); if (c && c.dataset.id !== drag) c.classList.add("before"); else t.classList.add("over");
+});
+page.addEventListener("drop", async (e) => {
+  const t = e.target.closest(".tier"); if (!drag || !t) return; e.preventDefault();
+  const c = e.target.closest(".bcard"), lane = t.dataset.lane, tier = t.dataset.tier, id = drag;
+  const L = TBD[scope] || [], moving = L.find((x) => x.id === id); if (!moving) return;
+  const from = [moving.lane, moving.tier];
+  const dest = group(lane, tier).filter((x) => x.id !== id);
+  const at = c && c.dataset.id !== id ? dest.findIndex((x) => x.id === c.dataset.id) : dest.length;
+  dest.splice(at < 0 ? dest.length : at, 0, moving);
+  moving.lane = lane; moving.tier = tier;
+  const items = dest.map((x, i) => ({ id: x.id, lane, tier, bOrder: i + 1 }));
+  if (from[0] !== lane || from[1] !== tier) group(from[0], from[1]).forEach((x, i) => items.push({ id: x.id, lane: from[0], tier: from[1], bOrder: i + 1 }));
+  for (const it of items) { const x = L.find((y) => y.id === it.id); if (x) x.bOrder = it.bOrder; }
+  drag = null; render();
+  try { await tbCall(scope, { op: "order", items }); } catch (err) { alert(err.message); refresh(); }
+});
+render();
+</script>
+</body>
+</html>
