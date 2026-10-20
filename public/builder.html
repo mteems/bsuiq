@@ -78,12 +78,13 @@ addEventListener("biq-me", async () => { SV = await loadScenarios("builder"); if
 try { const x = JSON.parse(localStorage.getItem("biq-builder-draft") || "null"); if (x?.grid) { d = x; loaded = JSON.parse(localStorage.getItem("biq-builder-loaded2") || "null"); } } catch {}
 const keep = () => { try { localStorage.setItem("biq-builder-draft", JSON.stringify(d)); localStorage.setItem("biq-builder-loaded2", JSON.stringify(loaded)); } catch {} };
 
-// ---------------------------------------------------------------- interim projection
-// The projection model isn't generated yet. Until it is, each player is projected from his last
-// D-I season (per-40 rates and RAPM, our pipeline) at the minutes set here; players without a D-I
-// season (freshmen, international, custom) get a flat freshman prior. Team ratings add up each
-// player's RAPM weighted by his share of the 200 minutes, on top of a D-I average team.
-const PRIOR = { pts40: 10, reb40: 6, ast40: 2, ts: 52, usg: 17, orapm: -1.5, drapm: -0.5 };
+// ---------------------------------------------------------------- projection (Win model v0.3)
+// Each player's projected 2026-27 impact per 100 possessions (offense and defense) from the Win
+// model: the measures that best predicted next-season results over 10 seasons, plus a year of
+// growth for his class and age. Players without a D-I season (freshmen, international, custom)
+// get the model's average for a freshman with no D-I history. Team ratings add up each player's
+// projected impact weighted by his share of the 200 minutes, on top of a D-I average team.
+const PRIOR = { pts40: 10, reb40: 6, ast40: 2, ts: 52, usg: 17, po: -1.9, pd: -0.7 };
 function project() {
   const placed = [];
   POS.forEach(([k], c) => d.grid[k].forEach((id, r) => { if (id) placed.push({ id, pos: k, row: r, p: FO.byId.get(id) }); }));
@@ -93,8 +94,9 @@ function project() {
   let oImp = 0, dImp = 0;
   const rows = live.map((x) => {
     const R = x.p.rates, src = R && R.min >= 100 ? R : null, m = minOf(x);
-    const r = src ? { pts40: src.pts40, reb40: src.reb40, ast40: src.ast40, ts: src.ts, usg: src.usg, orapm: src.orapm ?? 0, drapm: src.drapm ?? 0 } : PRIOR;
-    oImp += (r.orapm || 0) * (m * wScale) / 40; dImp += (r.drapm || 0) * (m * wScale) / 40;
+    const po = src?.pimpo ?? PRIOR.po, pd = src?.pimpd ?? PRIOR.pd;
+    const r = src ? { pts40: src.pts40, reb40: src.reb40, ast40: src.ast40, ts: src.ts, usg: src.usg, po, pd } : { ...PRIOR };
+    oImp += po * (m * wScale) / 40; dImp += pd * (m * wScale) / 40;
     return { ...x, m, r, prior: !src, ppg: (r.pts40 || 0) * m / 40, rpg: (r.reb40 || 0) * m / 40, apg: (r.ast40 || 0) * m / 40 };
   });
   const O = AVG + oImp, D = AVG - dImp, net = O - D;
@@ -134,7 +136,7 @@ function render() {
     </div>
   </div>
   ${scenarioBarHTML(SV, loaded)}
-  <div class="interim"><b>Interim projections.</b> The projection model hasn't been generated yet, so players are projected from their last D-I season (per-40 rates and RAPM) at the minutes set here, and team ratings add up each player's RAPM by minutes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} without a D-I season use a flat freshman estimate.` : ""} The layout stays the same when the model's numbers arrive.</div>
+  <div class="interim"><b>Projections: Win model v0.3.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} without a D-I season use the model's average for a freshman with no D-I history.` : ""}</div>
   <div class="lay">
     <div>
       <div class="dc"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="label">Depth chart name</span><input class="foin" id="dname" value="${esc(d.name)}" aria-label="Depth chart name" style="height:32px;max-width:320px;margin:0"></div><div class="dgrid">
@@ -142,8 +144,8 @@ function render() {
         ${ROWS.map(([lab, m], r) => `<div class="dr"><b>${lab}</b>${r === 0 ? "≈ 30+ min" : r === 1 ? "≈ 10–20 min" : "spot minutes"}</div>${POS.map(([k]) => card(k, r)).join("")}`).join("")}
       </div></div>
       <section><div class="shead"><h2>Projected averages</h2><span class="label">click a header to sort</span></div>
-        <div class="panel" style="margin-top:12px;overflow-x:auto">${J.rows.length ? `<table class="tbl"><thead><tr><th class="l"><button class="sortb" data-sort="name">Player</button></th><th class="l">Spot</th><th><button class="sortb" data-sort="min">MPG</button></th><th><button class="sortb" data-sort="ppg">PTS</button></th><th><button class="sortb" data-sort="rpg">REB</button></th><th><button class="sortb" data-sort="apg">AST</button></th><th>TS%</th><th>USG%</th><th><span data-def="rapm">Net impact</span></th><th class="l">Basis</th></tr></thead><tbody>
-        ${sorted.map((x) => { const net = (x.r.orapm || 0) + (x.r.drapm || 0); return `<tr><td class="l nm">${shot(x.p)}<span><b style="font-weight:600">${esc(x.p.name)}</b><br><span class="m" style="font-size:11px">${esc(x.p.school)}</span></span></td><td class="l m">${x.pos} · ${ROWS[x.row][0]}</td><td>${x.m}</td><td style="font-weight:700">${f1(x.ppg)}</td><td>${f1(x.rpg)}</td><td>${f1(x.apg)}</td><td>${x.r.ts != null ? f1(x.r.ts) : "—"}</td><td>${x.r.usg != null ? f1(x.r.usg) : "—"}</td><td><span class="chip" style="background:${pcol(50 + Math.max(-45, Math.min(45, net * 9)))}">${sg(net)}</span></td><td class="l m" style="font-size:11px">${x.prior ? "freshman estimate" : `${x.p.rates?.team || ""} '26`}</td></tr>`; }).join("")}
+        <div class="panel" style="margin-top:12px;overflow-x:auto">${J.rows.length ? `<table class="tbl"><thead><tr><th class="l"><button class="sortb" data-sort="name">Player</button></th><th class="l">Spot</th><th><button class="sortb" data-sort="min">MPG</button></th><th><button class="sortb" data-sort="ppg">PTS</button></th><th><button class="sortb" data-sort="rpg">REB</button></th><th><button class="sortb" data-sort="apg">AST</button></th><th>TS%</th><th>USG%</th><th><span data-def="pimp">Proj. impact</span></th><th class="l">Basis</th></tr></thead><tbody>
+        ${sorted.map((x) => { const net = (x.r.po || 0) + (x.r.pd || 0); return `<tr><td class="l nm">${shot(x.p)}<span><b style="font-weight:600">${esc(x.p.name)}</b><br><span class="m" style="font-size:11px">${esc(x.p.school)}</span></span></td><td class="l m">${x.pos} · ${ROWS[x.row][0]}</td><td>${x.m}</td><td style="font-weight:700">${f1(x.ppg)}</td><td>${f1(x.rpg)}</td><td>${f1(x.apg)}</td><td>${x.r.ts != null ? f1(x.r.ts) : "—"}</td><td>${x.r.usg != null ? f1(x.r.usg) : "—"}</td><td><span class="chip" style="background:${pcol(50 + Math.max(-45, Math.min(45, net * 9)))}">${sg(net)}</span></td><td class="l m" style="font-size:11px">${x.prior ? "freshman estimate" : `${x.p.rates?.team || ""} '26`}</td></tr>`; }).join("")}
         </tbody></table>` : `<div class="m" style="color:var(--muted)">Add players to the depth chart to see projected averages.</div>`}</div></section>
     </div>
     <aside class="side">

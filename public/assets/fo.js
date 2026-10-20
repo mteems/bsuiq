@@ -22,7 +22,7 @@ export async function loadFO() {
       getJSON("/data/teams/_dist.json").catch(() => null),
     ]);
     const C = Object.fromEntries(nat.cols.map((c, i) => [c, i]));
-    const RATES = new Map(nat.rows.map((r) => [r[C.id], Object.fromEntries(["gp", "min", "mpg", "ppg", "rpg", "apg", "pts40", "reb40", "ast40", "ts", "usg", "p3", "rapm", "orapm", "drapm", "dbpm", "sc", "pl", "rb", "df", "team", "role"].map((k) => [k, r[C[k]] ?? null]))]));
+    const RATES = new Map(nat.rows.map((r) => [r[C.id], Object.fromEntries(["gp", "min", "mpg", "ppg", "rpg", "apg", "pts40", "reb40", "ast40", "ts", "usg", "p3", "rapm", "orapm", "drapm", "dbpm", "sc", "pl", "rb", "df", "team", "role", "imp", "pimp", "pimpo", "pimpd", "wn"].map((k) => [k, r[C[k]] ?? null]))]));
     const out = [];
     const rosterCids = new Set();
     for (const p of roster.players || []) {

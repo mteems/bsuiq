@@ -1,0 +1,122 @@
+{
+ "2021": {
+  "model": {
+   "poss_rmse": 1.1517826709197463,
+   "game_mae": 10.003290675491089,
+   "margin_r": 0.4955134827218052,
+   "games": 2372
+  },
+  "team_continuity": {
+   "poss_rmse": 1.1533564938230105,
+   "game_mae": 11.049779087168847,
+   "margin_r": 0.38219490019138175,
+   "games": 2372
+  },
+  "constant": {
+   "poss_rmse": 1.153940428085961,
+   "game_mae": 11.993036489832924,
+   "margin_r": null,
+   "games": 2372
+  }
+ },
+ "2022": {
+  "model": {
+   "poss_rmse": 1.1549720052394934,
+   "game_mae": 9.327147911912073,
+   "margin_r": 0.5087636319133948,
+   "games": 3519
+  },
+  "team_continuity": {
+   "poss_rmse": 1.1570515497207037,
+   "game_mae": 11.190354754711734,
+   "margin_r": 0.347447631659782,
+   "games": 3519
+  },
+  "constant": {
+   "poss_rmse": 1.1571383743152004,
+   "game_mae": 11.542285462328312,
+   "margin_r": null,
+   "games": 3519
+  }
+ },
+ "2023": {
+  "model": {
+   "poss_rmse": 1.1546026815222377,
+   "game_mae": 9.721362935577861,
+   "margin_r": 0.45746264282659516,
+   "games": 3501
+  },
+  "team_continuity": {
+   "poss_rmse": 1.1557923173885436,
+   "game_mae": 10.591600213876493,
+   "margin_r": 0.40277187630200495,
+   "games": 3501
+  },
+  "constant": {
+   "poss_rmse": 1.1566237322540682,
+   "game_mae": 11.61875927492953,
+   "margin_r": null,
+   "games": 3501
+  }
+ },
+ "2024": {
+  "model": {
+   "poss_rmse": 1.1564287079660491,
+   "game_mae": 9.728647086290788,
+   "margin_r": 0.5137528789660888,
+   "games": 3779
+  },
+  "team_continuity": {
+   "poss_rmse": 1.15820282368042,
+   "game_mae": 11.183947589279043,
+   "margin_r": 0.38127443841838926,
+   "games": 3779
+  },
+  "constant": {
+   "poss_rmse": 1.1589861305125728,
+   "game_mae": 12.138378830081821,
+   "margin_r": null,
+   "games": 3779
+  }
+ },
+ "2025": {
+  "model": {
+   "poss_rmse": 1.1609513945822911,
+   "game_mae": 9.860116486552258,
+   "margin_r": 0.5166481535336668,
+   "games": 4034
+  },
+  "team_continuity": {
+   "poss_rmse": 1.1629151871557697,
+   "game_mae": 11.603511773793866,
+   "margin_r": 0.35543222383813916,
+   "games": 4034
+  },
+  "constant": {
+   "poss_rmse": 1.1633063324082562,
+   "game_mae": 12.17039625933681,
+   "margin_r": null,
+   "games": 4034
+  }
+ },
+ "2026": {
+  "model": {
+   "poss_rmse": 1.1624540359841242,
+   "game_mae": 10.209391714036416,
+   "margin_r": 0.5312564511354474,
+   "games": 4752
+  },
+  "team_continuity": {
+   "poss_rmse": 1.1637150988007614,
+   "game_mae": 11.197926226358195,
+   "margin_r": 0.45345163889534523,
+   "games": 4752
+  },
+  "constant": {
+   "poss_rmse": 1.1650412946487672,
+   "game_mae": 12.638736520079506,
+   "margin_r": null,
+   "games": 4752
+  }
+ }
+}
