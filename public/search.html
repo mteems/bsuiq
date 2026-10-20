@@ -649,7 +649,7 @@ rin.addEventListener("dragend", () => { dragCol = ""; rin.querySelectorAll(".hc.
 // ---------------------------------------------------------------- expanded row: history + games
 function histRow(s, kind) {
   const k = kind === "career" ? "Career Average" : kind === "current" ? "Latest Season" : "Previous Season";
-  const sub = kind === "career" ? `${s.gp} total games` : esc(s.school);
+  const sub = kind === "career" ? `${s.gp} total games` : `<span style="display:inline-flex;align-items:center;gap:6px">${teamLogo(s.school, 16)}${esc(s.school)}</span>`;
   const v = (x, key) => `<div class="v">${x == null || x === "" ? "—" : PCT.has(key) ? Math.round(+x) + "%" : x}</div>`;
   return `<div class="hrow ${kind === "current" ? "cur" : kind === "career" ? "car" : ""}"><div><div class="k">${k}</div><div class="sch">${sub}</div></div><div class="yr">${esc(s.season)}</div>${v(s.gp)}${v(s.mpg)}${v(s.ppg)}${v(s.rpg)}${v(s.apg)}${v(s.spg)}${v(s.topg)}${v(s.fg_pct, "fg_pct")}${v(s.two_pct, "two_pct")}${v(s.three_pct, "three_pct")}${v(s.ft_pct, "ft_pct")}${v(s.efg_pct, "efg_pct")}${v(s.usage_pct || null, "usage_pct")}</div>`;
 }
@@ -669,6 +669,10 @@ async function loadGames(p) {
   } catch (e) { GAMES.set(p.id, { games: [], error: String(e.message || e) }); }
   if (expanded.has(p.id)) replaceRow(p.id);
 }
+// Opponent: our short school name (no nickname) from the ESPN team id, plus the ESPN logo.
+let TID2NAME = null;
+const oppName = (g) => { if (!TID2NAME) { TID2NAME = new Map(); for (const q of P) if (q.tid && q.school && !TID2NAME.has(String(q.tid))) TID2NAME.set(String(q.tid), q.school); } return (g.oppId && TID2NAME.get(String(g.oppId))) || g.opp; };
+const oppLogo = (g, s = 16) => (g.oppId ? `<img alt="" loading="lazy" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/${g.oppId}.png" style="width:${s}px;height:${s}px;object-fit:contain;flex:none" onerror="this.remove()">` : "");
 const gdate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" }) : "—");
 const isD1 = (g) => !D1 || !g.oppId || D1.has(String(g.oppId));
 function gamesHTML(p) {
@@ -686,8 +690,8 @@ function gamesHTML(p) {
   const nd = games.length - d1.length;
   return `<div class="gxh"><span class="label">${loading ? "Loading career game logs…" : `${d1.length} career D-I games${nd ? ` <span style="color:var(--faint)">· ${nd} non-D-I left out</span>` : ""}`}</span><span class="label" data-def="s_best" style="color:var(--faint)">How games are ranked</span></div>
     ${st.error ? `<div class="err">Game logs unavailable: ${esc(st.error)}</div>` : ""}
-    <div class="gxg">${groups.map(([l, rows]) => `<section class="gbox"><h3>${l}${reduced && rows.length ? `<span>Reduced sample</span>` : ""}</h3>${rows.length ? rows.map((g) => `<div class="gl"><div class="o">${g.atVs === "@" ? "@" : "vs"} ${esc(g.opp)}<span>${gdate(g.date)}</span></div>${res(g)}<div class="ln">${g.pts} PTS · ${g.reb} REB · ${g.ast} AST · ${g.stl} STL · ${g.blk} BLK · ${g.to} TO · ${g.min} MIN</div></div>`).join("") : `<div class="gnone">${loading ? "Loading games…" : "No qualifying games"}</div>`}</section>`).join("")}</div>
-    ${games.length ? `<section class="full"><button data-full="1">Full game log <span>${full.has(p.id) ? "▴" : "▾"}</span></button>${full.has(p.id) ? `<div class="tw"><table><thead><tr>${["Date", "Opponent", "Result", "MIN", "PTS", "REB", "AST", "STL", "BLK", "TO", "FG", "3P", "FT"].map((h, i) => `<th class="${i < 2 ? "l" : ""}">${h}</th>`).join("")}</tr></thead><tbody>${games.map((g) => `<tr class="${isD1(g) ? "" : "ndr"}"><td class="l">${gdate(g.date)}</td><td class="l">${g.atVs === "@" ? "@" : "vs"} ${esc(g.opp)}${isD1(g) ? "" : `<span class="nd">NON-D-I</span>`}</td><td>${res(g)}</td>${[g.min, g.pts, g.reb, g.ast, g.stl, g.blk, g.to].map((v) => `<td>${v}</td>`).join("")}<td>${g.fgm}-${g.fga}</td><td>${g.tpm}-${g.tpa}</td><td>${g.ftm}-${g.fta}</td></tr>`).join("")}</tbody></table></div>` : ""}</section>` : ""}`;
+    <div class="gxg">${groups.map(([l, rows]) => `<section class="gbox"><h3>${l}${reduced && rows.length ? `<span>Reduced sample</span>` : ""}</h3>${rows.length ? rows.map((g) => `<div class="gl"><div class="o" style="display:flex;align-items:center;gap:6px">${g.atVs === "@" ? "@" : "vs"} ${oppLogo(g)}${esc(oppName(g))}<span>${gdate(g.date)}</span></div>${res(g)}<div class="ln">${g.pts} PTS · ${g.reb} REB · ${g.ast} AST · ${g.stl} STL · ${g.blk} BLK · ${g.to} TO · ${g.min} MIN</div></div>`).join("") : `<div class="gnone">${loading ? "Loading games…" : "No qualifying games"}</div>`}</section>`).join("")}</div>
+    ${games.length ? `<section class="full"><button data-full="1">Full game log <span>${full.has(p.id) ? "▴" : "▾"}</span></button>${full.has(p.id) ? `<div class="tw"><table><thead><tr>${["Date", "Opponent", "Result", "MIN", "PTS", "REB", "AST", "STL", "BLK", "TO", "FG", "3P", "FT"].map((h, i) => `<th class="${i < 2 ? "l" : ""}">${h}</th>`).join("")}</tr></thead><tbody>${games.map((g) => `<tr class="${isD1(g) ? "" : "ndr"}"><td class="l">${gdate(g.date)}</td><td class="l"><span style="display:inline-flex;align-items:center;gap:6px">${g.atVs === "@" ? "@" : "vs"} ${oppLogo(g, 14)}${esc(oppName(g))}</span>${isD1(g) ? "" : `<span class="nd">NON-D-I</span>`}</td><td>${res(g)}</td>${[g.min, g.pts, g.reb, g.ast, g.stl, g.blk, g.to].map((v) => `<td>${v}</td>`).join("")}<td>${g.fgm}-${g.fga}</td><td>${g.tpm}-${g.tpa}</td><td>${g.ftm}-${g.fta}</td></tr>`).join("")}</tbody></table></div>` : ""}</section>` : ""}`;
 }
 
 // ---------------------------------------------------------------- render
