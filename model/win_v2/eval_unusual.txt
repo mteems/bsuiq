@@ -1,28 +1,27 @@
-Traceback (most recent call last):
-  File "/tmp/claude-0/-home-claude/34e93f02-e144-5268-b424-4c5e64b3c620/scratchpad/pi/eval_unusual.py", line 18, in <module>
-    r = pd.read_csv(C / 'rosters.csv', dtype={'player_id': str}).sort_values('player_id').reset_index(drop=True)
-        ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.13/dist-packages/pandas/io/parsers/readers.py", line 873, in read_csv
-    return _read(filepath_or_buffer, kwds)
-  File "/usr/local/lib/python3.13/dist-packages/pandas/io/parsers/readers.py", line 300, in _read
-    parser = TextFileReader(filepath_or_buffer, **kwds)
-  File "/usr/local/lib/python3.13/dist-packages/pandas/io/parsers/readers.py", line 1645, in __init__
-    self._engine = self._make_engine(f, self.engine)
-                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.13/dist-packages/pandas/io/parsers/readers.py", line 1904, in _make_engine
-    self.handles = get_handle(
-                   ~~~~~~~~~~^
-        f,
-        ^^
-    ...<6 lines>...
-        storage_options=self.options.get("storage_options", None),
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/usr/local/lib/python3.13/dist-packages/pandas/io/common.py", line 930, in get_handle
-    handle = open(
-        handle,
-    ...<3 lines>...
-        newline="",
-    )
-FileNotFoundError: [Errno 2] No such file or directory: 'csv/rosters.csv'
+retained 655330 4752
+split 2026-02-17 2026-03-11 509347 117231 28752
+test possessions 28752 unusual 6477
+rapm_v01                 all      mse 1.35512  vs team-only +0.00043 (se 0.00046)
+rapm_v01                 unusual  mse 1.36656  vs team-only -0.00242 (se 0.00127)
+rapm_v01                 usual    mse 1.35180  vs team-only +0.00126 (se 0.00047)
+team_only                all      mse 1.35469  vs team-only +0.00000 (se 0.00000)
+team_only                unusual  mse 1.36898  vs team-only +0.00000 (se 0.00000)
+team_only                usual    mse 1.35053  vs team-only +0.00000 (se 0.00000)
+team+players_640         all      mse 1.35616  vs team-only +0.00148 (se 0.00068)
+team+players_640         unusual  mse 1.36855  vs team-only -0.00042 (se 0.00165)
+team+players_640         usual    mse 1.35256  vs team-only +0.00203 (se 0.00073)
+team+players+box_640     all      mse 1.35663  vs team-only +0.00194 (se 0.00096)
+team+players+box_640     unusual  mse 1.36924  vs team-only +0.00027 (se 0.00254)
+team+players+box_640     usual    mse 1.35296  vs team-only +0.00243 (se 0.00100)
+team+players_2560        all      mse 1.35471  vs team-only +0.00002 (se 0.00027)
+team+players_2560        unusual  mse 1.36793  vs team-only -0.00105 (se 0.00066)
+team+players_2560        usual    mse 1.35087  vs team-only +0.00034 (se 0.00029)
+team+players+box_2560    all      mse 1.35501  vs team-only +0.00032 (se 0.00079)
+team+players+box_2560    unusual  mse 1.36776  vs team-only -0.00121 (se 0.00217)
+team+players+box_2560    usual    mse 1.35130  vs team-only +0.00077 (se 0.00080)
+team+players_10240       all      mse 1.35461  vs team-only -0.00008 (se 0.00008)
+team+players_10240       unusual  mse 1.36851  vs team-only -0.00047 (se 0.00020)
+team+players_10240       usual    mse 1.35057  vs team-only +0.00003 (se 0.00009)
+team+players+box_10240   all      mse 1.35477  vs team-only +0.00008 (se 0.00076)
+team+players+box_10240   unusual  mse 1.36782  vs team-only -0.00115 (se 0.00211)
+team+players+box_10240   usual    mse 1.35097  vs team-only +0.00044 (se 0.00077)
