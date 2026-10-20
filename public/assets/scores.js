@@ -55,5 +55,5 @@ export function skillCards(sk) {
   return `<div class="panel"><div class="label ptitle"><span>Skill scores · ${esc(sk.season)}</span><span class="m" style="color:var(--muted)">${esc(sk.team)} · ${sk.min.toLocaleString()} min</span></div>
     <div class="skcards">${cards.join("")}</div>
     ${tierStrip(-1)}
-    <div class="cap">Scoring, Playmaking and Rebounding: RStudio skill model v1.1, ranked against ${sk.pool.toLocaleString()} D-I players with 200+ minutes. Defense: DEF score v2, ranked against D-I rotation players (40%+ of team minutes). Win: Win model v0.3, wins added over replacement, ranked against D-I players with 200+ minutes.</div></div>`;
+    <div class="cap">Scoring, Playmaking and Rebounding: RStudio skill model v1.1, ranked against ${sk.pool.toLocaleString()} D-I players with 200+ minutes. Defense: DEF score v2, ranked against D-I rotation players (40%+ of team minutes). Win: Win model v0.5, wins his own play added over a replacement player at his position, ranked against D-I players with 200+ minutes. The Overall score is at the top of the page.</div></div>`;
 }

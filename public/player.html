@@ -26,6 +26,9 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 .pmain{flex:1;min-width:0}.pteam{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;flex-wrap:wrap}.pteam .m{color:var(--muted)}
 .pfacts{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:10px}.pf{display:flex;flex-direction:column;gap:2px}.pf b{font-size:13.5px;font-weight:600}
 .pbtns{flex:none;align-self:flex-start;display:flex;gap:8px}
+.povr{flex:none;align-self:flex-start;border:1px solid var(--line,#2c2f34);border-radius:10px;padding:12px 16px 10px;background:#1b1d20}
+.povr-in{display:flex;gap:14px;align-items:center;margin:6px 0 4px}.povr .sring{width:118px;height:118px}
+.povr-k{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--muted)}.povr-k>span{display:flex;flex-direction:column;gap:2px}.povr-k b{font-size:14px;color:var(--text);font-family:var(--mono)}
 .nbtn{flex:none;align-self:flex-start;background:#26282c;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 14px;font:600 13px var(--ui,inherit);cursor:pointer}
 .nbtn:hover{background:#2f3136}.nbtn b{display:inline-block;min-width:18px;margin-left:6px;padding:1px 6px;border-radius:9px;background:#3a3d42;font-size:11px}
 .ndrawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#1b1c1f;border-left:1px solid var(--line);z-index:50;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.4)}
@@ -37,7 +40,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 .nrow{display:flex;align-items:center;gap:10px}.nrow .m{color:var(--muted);font-size:11.5px;flex:1}
 #nlist{overflow-y:auto;padding:6px 18px 18px;flex:1}.snote{padding:12px 0;border-bottom:1px solid #2a2c30}.snote .who{display:flex;gap:8px;align-items:baseline;font-size:12px}.snote .who b{font-size:13px}.snote .who .m{color:var(--muted)}
 .snote .who button{margin-left:auto;background:none;border:0;color:#6b6e75;font-size:11px;cursor:pointer}.snote .who button:hover{color:var(--bad)}.snote p{margin-top:6px;font-size:13.5px;line-height:1.5;color:#dfe2e6;white-space:pre-wrap}
-@media (max-width:700px){.phead{flex-wrap:wrap;align-items:flex-start}.pshot{width:120px;min-height:110px}.pbtns{position:absolute;top:0;right:0}}
+@media (max-width:700px){.phead{flex-wrap:wrap;align-items:flex-start}.pshot{width:120px;min-height:110px}.pbtns{position:absolute;top:0;right:0}.povr{width:100%}}
 @media (max-width:900px){.pwrap{padding:16px 16px 28px}.two{grid-template-columns:1fr!important}}
 </style>
 </head>
@@ -46,7 +49,7 @@ iframe.mod{width:100%;border:0;display:block;min-height:400px;background:var(--b
 <script type="module">
 import { d3, pc, chip, tc, f1, f0, esc, tipOn, tipOff, LG, getJSON, playerName, shortSchool, topBar } from "/assets/core.js";
 import { renderShotChart } from "/assets/shotchart.js";
-import { skillCards } from "/assets/scores.js";
+import { skillCards, ring, scol, tierOf, ord } from "/assets/scores.js";
 import { pdPBP, shotProfile } from "/assets/pd-pbp.js";
 import { espnGames } from "/assets/pool.js";
 topBar("player");
@@ -90,6 +93,17 @@ const photo = LINKS?.photo?.[NKEY] || (P.espnId ? `https://a.espncdn.com/combine
 const teamName = P.onRoster ? "Boise St." : shortSchool(P.school || last?.school || ""), teamId = P.onRoster ? 68 : P.espnTeamId;
 const conf = P.onRoster ? "Pac-12" : P.conference;
 const fact = (l, v) => (v ? `<div class="pf"><span class="label">${l}</span><b>${esc(v)}</b></div>` : "");
+// Overall score: the headline rating, shown in the header.
+const OV = D.scores?.skills?.s?.overall;
+const PGN = { G: "guards", F: "forwards", C: "bigs" };
+const sgn = (v, d = 1) => (v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(d));
+const ovrBlock = OV ? `<div class="povr"><div class="label"><span data-def="overall">Overall</span> · ${esc(D.scores.skills.season)}</div>
+  <div class="povr-in">${ring(OV.score)}<div>
+    <span class="stag" style="background:${scol(OV.score)};margin-top:0">${tierOf(OV.score).toUpperCase()}</span>
+    <div class="srank" style="font-size:14px;margin-top:6px">${OV.rank ? `${ord(OV.rank)} of ${OV.pool.toLocaleString()}` : "—"}</div>
+    ${OV.wprk && OV.wpg ? `<div class="m" style="font-size:12px;margin-top:2px">${ord(OV.wprk)} among ${PGN[OV.wpg] || "his position"}</div>` : ""}
+    <div class="povr-k"><span><span data-def="ind">Ind/100</span><b>${sgn(OV.ind)}</b></span><span><span data-def="winscore">Win</span><b>${OV.wn == null ? "—" : OV.wn.toFixed(0)}</b></span><span><span data-def="pimp">Proj '27</span><b>${sgn(OV.pimp)}</b></span></div>
+  </div></div><a class="cap" href="/rankings#nat/ovr" style="color:var(--soft)">Overall rankings →</a></div>` : "";
 const ini = (playerName(P).match(/\b\w/g) || []).slice(0, 2).join("");
 page.innerHTML = `
 <div class="phead">
@@ -101,6 +115,7 @@ page.innerHTML = `
     <div class="pfacts">${fact("Pos", P.position)}${fact("Ht", P.height)}${fact("Wt", P.weight ? P.weight + " lb" : "")}${fact("Class", P.class_year)}${fact("Hometown", P.hometown)}${fact("High school", P.high_school)}${pathText && pathBits.length > 1 ? fact("Path", pathText + (P.onRoster ? " → Boise St." : "")) : P.onRoster && pathText ? fact("Path", pathText + " → Boise St.") : ""}</div>
     <div class="cap" style="margin-top:8px">Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
   </div>
+  ${ovrBlock}
   <div class="pbtns"><button class="nbtn" id="tbbtn" title="Add to targets or the transfer board"><span id="tbtxt">Targets &amp; board</span></button><button class="nbtn" id="nbtn">Staff notes <b id="ncount"></b></button></div>
 </div>
 <div class="ndrawer" id="ndrawer" hidden><div class="nhead"><b>Staff notes</b><span class="m">${esc(playerName(P))}</span><button id="nclose" aria-label="Close">✕</button></div>

@@ -73,7 +73,7 @@ export async function loadPool({ refresh = false } = {}) {
     P[s.p].seasons.push(s);
   }
   // Skill scores (2025-26) ride on the current season so Search can show and sort them like stats.
-  data.players.forEach((r, i) => { const cur = P[i].seasons[0]; if (!cur) return; for (const k of ["sk_sc", "sk_pl", "sk_rb", "sk_df", "sk_wn"]) { const j = pc.indexOf(k); if (j >= 0) cur[k] = r[j]; } });
+  data.players.forEach((r, i) => { const cur = P[i].seasons[0]; if (!cur) return; for (const k of ["sk_sc", "sk_pl", "sk_rb", "sk_df", "sk_wn", "sk_ov"]) { const j = pc.indexOf(k); if (j >= 0) cur[k] = r[j]; } });
   const pool = { P, byId: new Map(P.map((p) => [p.id, p])), teamInfo: new Map(), confLogo: new Map(), D1: rosters.d1 ? new Set(rosters.d1.map(String)) : null, links, conf27: c27.conf || {},
     meta: { built: data.built, note: data.note, hubError: hub.error, season: data.season } };
   link(pool, hub, links);

@@ -56,14 +56,18 @@ export const DEF = {
   playscore: ["Playmaking score (v1.1)", "Creating offense for others, from the RStudio skill model (the Creation component). Bell-curve scale: 50 = D-I average, 70 = top ~7%, 80+ = top ~1%. Ranked against D-I players with 200+ minutes that season."],
   scorescore: ["Scoring score (v1.1)", "Scoring volume and efficiency, from the RStudio skill model. Bell-curve scale: 50 = D-I average, 70 = top ~7%, 80+ = top ~1%. Ranked against D-I players with 200+ minutes that season."],
   rebscore: ["Rebounding score (v1.1)", "Rebounding, from the RStudio skill model. Bell-curve scale: 50 = D-I average, 70 = top ~7%, 80+ = top ~1%. Ranked against D-I players with 200+ minutes that season."],
-  winscore: ["Win score (v0.4)", "How much a player moves the needle on winning, 2025-26. His impact per 100 possessions comes from the measures that best predicted next-season results over 10 seasons of D-I play-by-play: his box-score profile (compared with players at his position), BPM-type ratings, his own on-court plus-minus, his recruiting rank and, to the extent it carries over, his team's level. Turned into wins added over a replacement-level player at his position (guard, forward or big) across his minutes, then put on the skill-score scale: 50 = D-I average, 70 = top ~7%, 80+ = top ~1%. Needs 200+ minutes."],
-  wins: ["Wins added", "Wins his play added over a replacement-level D-I player at his position (15th percentile impact among guards, forwards or bigs) across his 2025-26 possessions. Points over replacement ÷ points per win (40, measured from the 2025-26 D-I schedule)."],
+  winscore: ["Win score (v0.5)", "How much winning a player created himself in 2025-26. Built from his individual impact per 100 possessions (the Win model's rating with his team's own context taken out, so playing for a great team doesn't lift it) over a replacement-level player at his position (guard, forward or big), across his playing time scaled to a standard 31-game schedule (a long tournament run doesn't add volume). Put on the skill-score scale: 50 = D-I average, 70 = top ~7%, 80+ = top ~1%. Needs 200+ minutes."],
+  overall: ["Overall score", "The headline player rating, 2025-26. Half how good he is per possession compared with D-I players at his position (individual impact, steadied toward average when minutes are few), half how much winning he created (Win score). Same scale as the skill scores: 50 = D-I average, 70 = top ~7%, 80+ = top ~1%. Needs 200+ minutes."],
+  frproj: ["Projected freshman impact", "What the Win model expects in his freshman season: points per 100 possessions vs. an average D-I player, from his 247Sports rank and height (the model's freshman terms, learned from 10 recruiting classes). Top-10 recruits are typically a clear plus right away; ranks 26-100 look much alike as freshmen and separate later."],
+  r247: ["247Sports rank", "247Sports national ranking for his class. The Win model's freshman projection uses it."],
+  ind: ["Individual impact / 100", "Points per 100 possessions he adds vs. an average D-I player from his own play: Impact / 100 with the team-context part removed and half of his team's shared BPM level taken out. What the Win and Overall scores use."],
+  wins: ["Wins added", "Wins his own play added over a replacement-level D-I player at his position (15th percentile individual impact among guards, forwards or bigs) across his 2025-26 possessions, scaled to a standard 31-game schedule. Points over replacement ÷ points per win (40, measured from the 2025-26 D-I schedule)."],
   wpts: ["Points added", "Scoring margin added over a replacement-level player across his 2025-26 possessions."],
-  imp: ["Impact / 100", "Points per 100 possessions his team gains with him on the floor vs. an average D-I player (offense + defense). Win model v0.3: the parts below, weighted by how well each predicted the next season over 10 seasons."],
+  imp: ["Impact / 100", "Points per 100 possessions his team gains with him on the floor vs. an average D-I player (offense + defense). The predictive rating used for projections; it includes some team context because team level carries over. Win model: the parts below, weighted by how well each predicted the next season over 10 seasons."],
   oimp: ["Offense / 100", "The offensive half of Impact."],
   dimp: ["Defense / 100", "The defensive half of Impact: points per 100 possessions saved. Positive = better."],
   wind: ["On-court", "Part of Impact from his own on-court plus-minus: how his lineups did beyond his team's level, adjusted for the other nine players (this season and last)."],
-  wprk: ["Position rank", "Rank in Impact / 100 among D-I guards, forwards or bigs (his position group) with 200+ minutes."],
+  wprk: ["Position rank", "Rank in individual impact / 100 among D-I guards, forwards or bigs (his position group) with 200+ minutes."],
   wrec: ["Recruit", "Part of Impact from his high-school recruiting rank (RSCI / 247Sports Composite top 100). Matters most for freshmen and sophomores and fades after that."],
   wbox: ["Box", "Part of Impact from his box-score profile: scoring, shooting, playmaking, turnovers, rebounding, steals, blocks, fouls, minutes share."],
   wbpm: ["BPM", "Part of Impact from Barttorvik's opponent-adjusted box plus-minus (overall, offense, defense; this season and last)."],
@@ -153,7 +157,7 @@ export async function searchPlayers(q) {
 // ---------- top bar ----------
 const NAV = [
   [["home", "/", "Roster"], ["scouting", "/scouting", "Scouting"], ["rankings", "/rankings", "Rankings"]],
-  [["search", "/search", "Search"], ["targets", "/targets", "Targets"], ["board", "/board", "Transfer Board"], ["international", "/international", "International"]],
+  [["search", "/search", "Search"], ["targets", "/targets", "Targets"], ["board", "/board", "Transfer Board"], ["highschool", "/highschool", "High School"], ["international", "/international", "Recruit Map"]],
   [["cap", "/cap", "Salary Cap"], ["builder", "/builder", "Roster Builder"]],
 ];
 // ---------- who is signed in (staff name; keeps saved scenarios and boards per person) ----------

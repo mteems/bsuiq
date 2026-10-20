@@ -28,15 +28,24 @@
 .dr b{color:#fff;font:600 12px var(--ui);letter-spacing:.04em}
 .pc{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px;min-height:178px;display:flex;flex-direction:column;gap:7px;min-width:0}
 .pc.st{border-color:#3d3f44;background:#1b1c1f}
-.pc.drag{opacity:.5;border-color:var(--good)}
-.pc.over{border-color:#8a8e95}
-.pc .top{display:flex;gap:9px;align-items:flex-start;min-width:0}
+.pc[data-filled]{cursor:grab;touch-action:none;transition:border-color .12s,background .12s}
+.pc.lifted{opacity:.3}
+.pc.over{border-color:#fff;background:#232529}
+.pc .mins,.pc a,.pc button{cursor:auto}.pc a{cursor:pointer;color:inherit;text-decoration:none}.pc a:hover b{text-decoration:underline}
+.pc img{-webkit-user-drag:none;user-select:none}
+.ghost{position:fixed;z-index:1000;pointer-events:none;margin:0;cursor:grabbing;box-shadow:0 18px 40px rgba(0,0,0,.55);transform-origin:center;transition:transform .12s ease;border-color:#8a8e95!important}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!important}
+.rmzone{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);opacity:0;pointer-events:none;z-index:999;background:#1b1c1f;border:1px dashed #8a8e95;border-radius:10px;padding:14px 26px;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);transition:opacity .15s,transform .15s}
+body.dragging .rmzone{opacity:1;transform:translate(-50%,0)}
+.rmzone.over{border-color:#fff;color:#fff;background:#2a2c30}
+.pc .ptop{display:flex;gap:9px;align-items:flex-start;min-width:0}
 .pc .fos{width:56px;height:70px}
 .pc .nm{min-width:0;flex:1}
 .pc .nm b{display:block;font-size:14px;font-weight:700;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .pc .nm .t{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc .nm .tg{font:500 8.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-top:3px}
-.pc .x{position:absolute;top:5px;right:6px;background:none;border:0;color:var(--faint);cursor:pointer;font-size:12px}.pc .x:hover{color:#fff}
+.pc .x{position:absolute;z-index:3;top:6px;right:6px;width:22px;height:22px;display:grid;place-items:center;border-radius:6px;background:#26282c;border:1px solid var(--line);color:var(--dim);cursor:pointer!important;font-size:11px;line-height:1}.pc .x:hover{color:#fff;border-color:#8a8e95;background:#303237}
+.pc .ptop{padding-right:22px}
 .mins{display:flex;align-items:center;gap:6px}
 .mins input[type=range]{flex:1;min-width:0;accent-color:var(--good);height:4px}
 .mins b{font:600 12px var(--ui);min-width:44px;text-align:right}.mins b span{font:500 9px var(--mono);color:var(--muted);margin-left:2px}
@@ -73,18 +82,19 @@ const uid = () => crypto.randomUUID();
 const blank = () => ({ id: "draft", name: "Depth chart", grid: Object.fromEntries(POS.map(([k]) => [k, ["", "", ""]])), min: {} });
 
 const FO = await loadFO();
-let SV = await loadScenarios("builder"), d = blank(), loaded = null, saveState = "", saveErr = "", dragFrom = null, sortKey = "min";
+let SV = await loadScenarios("builder"), d = blank(), loaded = null, saveState = "", saveErr = "", sortKey = "min";
 addEventListener("biq-me", async () => { SV = await loadScenarios("builder"); if (loaded?.scope === "me") loaded = null; render(); });
 try { const x = JSON.parse(localStorage.getItem("biq-builder-draft") || "null"); if (x?.grid) { d = x; loaded = JSON.parse(localStorage.getItem("biq-builder-loaded2") || "null"); } } catch {}
 const keep = () => { try { localStorage.setItem("biq-builder-draft", JSON.stringify(d)); localStorage.setItem("biq-builder-loaded2", JSON.stringify(loaded)); } catch {} };
 
-// ---------------------------------------------------------------- projection (Win model v0.3)
+// ---------------------------------------------------------------- projection (Win model v0.5)
 // Each player's projected 2026-27 impact per 100 possessions (offense and defense) from the Win
 // model: the measures that best predicted next-season results over 10 seasons, plus a year of
 // growth for his class and age. Players without a D-I season (freshmen, international, custom)
 // get the model's average for a freshman with no D-I history. Team ratings add up each player's
 // projected impact weighted by his share of the 200 minutes, on top of a D-I average team.
 const PRIOR = { pts40: 10, reb40: 6, ast40: 2, ts: 52, usg: 17, po: -1.9, pd: -0.7 };
+// Freshmen with a 247 Composite rank use the model's freshman terms (rank + height) instead of the prior.
 function project() {
   const placed = [];
   POS.forEach(([k], c) => d.grid[k].forEach((id, r) => { if (id) placed.push({ id, pos: k, row: r, p: FO.byId.get(id) }); }));
@@ -94,10 +104,11 @@ function project() {
   let oImp = 0, dImp = 0;
   const rows = live.map((x) => {
     const R = x.p.rates, src = R && R.min >= 100 ? R : null, m = minOf(x);
-    const po = src?.pimpo ?? PRIOR.po, pd = src?.pimpd ?? PRIOR.pd;
+    const fr = !src ? x.p.fr : null;
+    const po = src?.pimpo ?? fr?.po ?? PRIOR.po, pd = src?.pimpd ?? fr?.pd ?? PRIOR.pd;
     const r = src ? { pts40: src.pts40, reb40: src.reb40, ast40: src.ast40, ts: src.ts, usg: src.usg, po, pd } : { ...PRIOR };
     oImp += po * (m * wScale) / 40; dImp += pd * (m * wScale) / 40;
-    return { ...x, m, r, prior: !src, ppg: (r.pts40 || 0) * m / 40, rpg: (r.reb40 || 0) * m / 40, apg: (r.ast40 || 0) * m / 40 };
+    return { ...x, m, r, prior: !src && !fr, fr, ppg: (r.pts40 || 0) * m / 40, rpg: (r.reb40 || 0) * m / 40, apg: (r.ast40 || 0) * m / 40 };
   });
   const O = AVG + oImp, D = AVG - dImp, net = O - D;
   // Points are shared: scale everyone so the team scores what its offense rating says it should.
@@ -118,9 +129,9 @@ function render() {
     const id = d.grid[k][r], p = id ? FO.byId.get(id) : null, x = byId.get(id);
     if (!p) return `<div class="pc${r === 0 ? " st" : ""}" data-cell="${k}:${r}"><button class="empty" data-pick="${k}:${r}">＋ Add player</button></div>`;
     const m = x.m;
-    return `<div class="pc${r === 0 ? " st" : ""}" data-cell="${k}:${r}" draggable="true">
-      <button class="x" data-clear="${k}:${r}" aria-label="Remove">✕</button>
-      <div class="top">${shot(p)}<div class="nm"><a href="${p.type === "Freshman" ? "/international" : "/player/" + encodeURIComponent(p.id)}"><b>${esc(p.name)}</b></a><div class="t">${teamMark(p, 15)}<span>${esc(p.school)}</span></div><div class="tg">${esc(p.type)}${p.pos ? " · " + esc(p.pos) : ""}${p.ht ? " · " + esc(p.ht) : ""}</div></div></div>
+    return `<div class="pc${r === 0 ? " st" : ""}" data-cell="${k}:${r}" data-filled="1" title="Drag to move or swap">
+      <button class="x" data-clear="${k}:${r}" aria-label="Remove ${esc(p.name)}" title="Remove from depth chart">✕</button>
+      <div class="ptop">${shot(p)}<div class="nm"><a href="${esc(p.href)}" draggable="false"><b>${esc(p.name)}</b></a><div class="t">${teamMark(p, 15)}<span>${esc(p.school)}</span></div><div class="tg">${esc(p.type)}${p.pos ? " · " + esc(p.pos) : ""}${p.ht ? " · " + esc(p.ht) : ""}</div></div></div>
       <div class="mins"><input type="range" min="0" max="40" step="1" value="${m}" data-min="${esc(id)}" aria-label="Projected minutes"><b><span id="mv-${esc(id)}">${m}</span><span>MPG</span></b></div>
       <div class="line"><div><b id="pp-${esc(id)}">${f1(x.ppg)}</b><span>PTS</span></div><div><b>${f1(x.rpg)}</b><span>REB</span></div><div><b>${f1(x.apg)}</b><span>AST</span></div><div><b>${x.r.ts != null ? Math.round(x.r.ts) : "—"}</b><span>TS%</span></div></div></div>`;
   };
@@ -136,7 +147,7 @@ function render() {
     </div>
   </div>
   ${scenarioBarHTML(SV, loaded)}
-  <div class="interim"><b>Projections: Win model v0.3.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} without a D-I season use the model's average for a freshman with no D-I history.` : ""}</div>
+  <div class="interim"><b>Projections: Win model v0.5.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. Freshmen are projected from the model's freshman terms (247 Composite rank and height), learned from 10 recruiting classes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} with no D-I season and no ranking use the model's average freshman.` : ""} Drag a card to move or swap it; drag it to the bottom of the screen or click ✕ to remove it.</div>
   <div class="lay">
     <div>
       <div class="dc"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="label">Depth chart name</span><input class="foin" id="dname" value="${esc(d.name)}" aria-label="Depth chart name" style="height:32px;max-width:320px;margin:0"></div><div class="dgrid">
@@ -145,7 +156,7 @@ function render() {
       </div></div>
       <section><div class="shead"><h2>Projected averages</h2><span class="label">click a header to sort</span></div>
         <div class="panel" style="margin-top:12px;overflow-x:auto">${J.rows.length ? `<table class="tbl"><thead><tr><th class="l"><button class="sortb" data-sort="name">Player</button></th><th class="l">Spot</th><th><button class="sortb" data-sort="min">MPG</button></th><th><button class="sortb" data-sort="ppg">PTS</button></th><th><button class="sortb" data-sort="rpg">REB</button></th><th><button class="sortb" data-sort="apg">AST</button></th><th>TS%</th><th>USG%</th><th><span data-def="pimp">Proj. impact</span></th><th class="l">Basis</th></tr></thead><tbody>
-        ${sorted.map((x) => { const net = (x.r.po || 0) + (x.r.pd || 0); return `<tr><td class="l nm">${shot(x.p)}<span><b style="font-weight:600">${esc(x.p.name)}</b><br><span class="m" style="font-size:11px">${esc(x.p.school)}</span></span></td><td class="l m">${x.pos} · ${ROWS[x.row][0]}</td><td>${x.m}</td><td style="font-weight:700">${f1(x.ppg)}</td><td>${f1(x.rpg)}</td><td>${f1(x.apg)}</td><td>${x.r.ts != null ? f1(x.r.ts) : "—"}</td><td>${x.r.usg != null ? f1(x.r.usg) : "—"}</td><td><span class="chip" style="background:${pcol(50 + Math.max(-45, Math.min(45, net * 9)))}">${sg(net)}</span></td><td class="l m" style="font-size:11px">${x.prior ? "freshman estimate" : `${x.p.rates?.team || ""} '26`}</td></tr>`; }).join("")}
+        ${sorted.map((x) => { const net = (x.r.po || 0) + (x.r.pd || 0); return `<tr><td class="l nm">${shot(x.p)}<span><a href="${esc(x.p.href)}" style="color:inherit"><b style="font-weight:600">${esc(x.p.name)}</b></a><br><span class="m" style="font-size:11px">${esc(x.p.school)}</span></span></td><td class="l m">${x.pos} · ${ROWS[x.row][0]}</td><td>${x.m}</td><td style="font-weight:700">${f1(x.ppg)}</td><td>${f1(x.rpg)}</td><td>${f1(x.apg)}</td><td>${x.r.ts != null ? f1(x.r.ts) : "—"}</td><td>${x.r.usg != null ? f1(x.r.usg) : "—"}</td><td><span class="chip" style="background:${pcol(50 + Math.max(-45, Math.min(45, net * 9)))}">${sg(net)}</span></td><td class="l m" style="font-size:11px">${x.fr ? esc(x.fr.basis) : x.prior ? "average freshman (no ranking)" : `${x.p.rates?.team || ""} '26`}</td></tr>`; }).join("")}
         </tbody></table>` : `<div class="m" style="color:var(--muted)">Add players to the depth chart to see projected averages.</div>`}</div></section>
     </div>
     <aside class="side">
@@ -161,7 +172,7 @@ function render() {
         <div class="cap" style="margin-top:6px">${J.totalMin > 200 ? "Over 200: everyone's share of the minutes is scaled down." : J.totalMin < 200 ? `${200 - J.totalMin} minutes unassigned.` : "All 200 minutes assigned."}</div></div>
       </div>
       <div class="ts"><div class="label">Projected leaders</div>
-        ${[["Points", "ppg"], ["Rebounds", "rpg"], ["Assists", "apg"]].map(([l, k]) => { const top = [...J.rows].sort((a, b) => b[k] - a[k]).slice(0, 3); return `<div style="margin-top:10px"><div class="label" style="font-size:9.5px;margin-bottom:4px">${l}</div>${top.map((x) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span>${esc(x.p.name)}</span><b>${f1(x[k])}</b></div>`).join("") || `<div class="m" style="color:var(--muted);font-size:12px">—</div>`}</div>`; }).join("")}
+        ${[["Points", "ppg"], ["Rebounds", "rpg"], ["Assists", "apg"]].map(([l, k]) => { const top = [...J.rows].sort((a, b) => b[k] - a[k]).slice(0, 3); return `<div style="margin-top:10px"><div class="label" style="font-size:9.5px;margin-bottom:4px">${l}</div>${top.map((x) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><a href="${esc(x.p.href)}" style="color:inherit">${esc(x.p.name)}</a><b>${f1(x[k])}</b></div>`).join("") || `<div class="m" style="color:var(--muted);font-size:12px">—</div>`}</div>`; }).join("")}
       </div>
     </aside>
   </div>`;
@@ -174,12 +185,14 @@ const changed = () => { saveState = ""; keep(); };
 page.addEventListener("input", (e) => {
   const t = e.target;
   if (t.id === "dname") { d.name = t.value; changed(); return; }
-  if (t.dataset.min) { d.min[t.dataset.min] = +t.value; changed(); const s = document.getElementById("mv-" + t.dataset.min); if (s) s.textContent = t.value; clearTimeout(t._t); t._t = setTimeout(render, 160); }
+  // Minutes slider: update the number live; re-draw the projections when the slider is let go.
+  if (t.dataset.min) { d.min[t.dataset.min] = +t.value; changed(); const s = document.getElementById("mv-" + t.dataset.min); if (s) s.textContent = t.value; }
 });
+page.addEventListener("change", (e) => { if (e.target.dataset.min) render(); });
 page.addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return; const ds = b.dataset;
   if (ds.pick) { const [k, r] = cell(ds.pick); openPicker({ title: `Add ${k} · ${ROWS[r][0]}`, types: ["Returner", "Transfer", "Freshman"], players: FO.players, exclude: inUse(), onPick: (p) => { d.grid[k][r] = p.id; delete d.min[p.id]; changed(); render(); } }); }
-  else if (ds.clear) { const [k, r] = cell(ds.clear); d.grid[k][r] = ""; changed(); render(); }
+  else if (ds.clear) { const [k, r] = cell(ds.clear); const id = d.grid[k][r]; d.grid[k][r] = ""; if (id) delete d.min[id]; changed(); render(); }
   else if (ds.sort) { sortKey = ds.sort; render(); }
   else if (ds.load) { const [scope, id] = ds.load.split(/:(.*)/); const s = (scope === "me" ? SV.mine : SV.staff).find((x) => x.id === id); if (s) { d = { ...JSON.parse(JSON.stringify(s)), id: "draft" }; loaded = { scope, id }; saveState = ""; keep(); render(); } }
   else if (ds.del) { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } const [scope, id] = ds.del.split(/:(.*)/); remove(scope, id); }
@@ -188,15 +201,50 @@ page.addEventListener("click", (e) => {
   else if (b.id === "save") saveMenu(b, { S: SV, loaded, name: d.name.trim() || "Depth chart", onPick: saveTo });
   else if (b.id === "fromcap") fromCap(b);
 });
-// drag a card onto another spot to move / swap
-page.addEventListener("dragstart", (e) => { const c = e.target.closest(".pc[draggable]"); if (!c) return; dragFrom = c.dataset.cell; c.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragFrom); });
-page.addEventListener("dragend", () => { dragFrom = null; page.querySelectorAll(".pc.drag,.pc.over").forEach((x) => x.classList.remove("drag", "over")); });
-page.addEventListener("dragover", (e) => { const c = e.target.closest(".pc"); if (dragFrom && c) { e.preventDefault(); page.querySelectorAll(".pc.over").forEach((x) => x.classList.remove("over")); c.classList.add("over"); } });
-page.addEventListener("drop", (e) => {
-  const c = e.target.closest(".pc"); if (!dragFrom || !c) return; e.preventDefault();
-  const [k1, r1] = cell(dragFrom), [k2, r2] = cell(c.dataset.cell);
-  [d.grid[k1][r1], d.grid[k2][r2]] = [d.grid[k2][r2], d.grid[k1][r1]]; dragFrom = null; changed(); render();
+
+// Drag and drop with the pointer (mouse, pen or touch): press on a card and move it; it lifts
+// out under the pointer. Drop on another spot to move there (or swap with the player there),
+// or on the bar at the bottom of the screen to take him off the depth chart. The minutes
+// slider, the name link and the ✕ button never start a drag.
+const rmzone = document.createElement("div"); rmzone.className = "rmzone"; rmzone.textContent = "Drop here to remove from the depth chart"; document.body.appendChild(rmzone);
+let drag = null;
+page.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0 || e.target.closest("input,button,a,select,textarea")) return;
+  const c = e.target.closest(".pc[data-filled]"); if (!c) return;
+  e.preventDefault();
+  drag = { from: c.dataset.cell, el: c, x0: e.clientX, y0: e.clientY, on: false, target: null };
 });
+function liftCard(e) {
+  const r = drag.el.getBoundingClientRect();
+  const g = drag.el.cloneNode(true); g.classList.add("ghost"); g.removeAttribute("data-cell");
+  Object.assign(g.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+  document.body.appendChild(g); requestAnimationFrame(() => (g.style.transform = "scale(1.04) rotate(-1deg)"));
+  drag.ghost = g; drag.dx = e.clientX - r.left; drag.dy = e.clientY - r.top; drag.on = true;
+  drag.el.classList.add("lifted"); document.body.classList.add("dragging");
+}
+addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  if (!drag.on) { if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return; liftCard(e); }
+  drag.ghost.style.left = e.clientX - drag.dx + "px"; drag.ghost.style.top = e.clientY - drag.dy + "px";
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const t = under?.closest(".rmzone") || under?.closest(".pc[data-cell]");
+  if (t !== drag.target) { drag.target?.classList.remove("over"); drag.target = t && t !== drag.el ? t : null; drag.target?.classList.add("over"); }
+  // scroll the page when the card nears the top or bottom edge
+  if (e.clientY < 70) scrollBy(0, -14); else if (e.clientY > innerHeight - 70 && !drag.target?.classList.contains("rmzone")) scrollBy(0, 14);
+});
+function endDrag(drop) {
+  if (!drag) return;
+  const D = drag; drag = null;
+  D.target?.classList.remove("over"); D.ghost?.remove(); D.el.classList.remove("lifted"); document.body.classList.remove("dragging");
+  if (!drop || !D.on || !D.target) return;
+  const [k1, r1] = cell(D.from);
+  if (D.target.classList.contains("rmzone")) { const id = d.grid[k1][r1]; d.grid[k1][r1] = ""; if (id) delete d.min[id]; }
+  else { const [k2, r2] = cell(D.target.dataset.cell); [d.grid[k1][r1], d.grid[k2][r2]] = [d.grid[k2][r2], d.grid[k1][r1]]; }
+  changed(); render();
+}
+addEventListener("pointerup", () => endDrag(true));
+addEventListener("pointercancel", () => endDrag(false));
+addEventListener("keydown", (e) => { if (e.key === "Escape") endDrag(false); });
 
 // Fill the depth chart from a saved Salary Cap scenario: players go to their position, best first.
 async function fromCap(btn) {

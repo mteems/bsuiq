@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>International · Bronco IQ</title>
+<title>Recruit Map · Bronco IQ</title>
 <link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
@@ -139,10 +139,11 @@
 <body>
 <main class="iwrap">
   <div class="ihead">
-    <div><div class="label">Recruiting · International · Class of 2027</div><h1>International board</h1></div>
+    <div><div class="label">Recruiting · International + High school · Class of 2027</div><h1>Recruit map</h1></div>
     <div class="ikpis" id="kpis"></div>
   </div>
   <div class="ibar">
+    <div class="seg2" id="kinds" style="margin-left:0"><button data-k="all">All</button><button data-k="intl">International</button><button data-k="hs">High school</button></div>
     <div class="conts" id="conts"></div>
     <div class="fgrp" id="fpos"><span class="ddl">Pos</span></div>
   </div>
@@ -154,7 +155,7 @@
     </div>
     <aside class="side"><div id="card" class="slist" hidden></div><div id="listview" style="display:contents"><div class="shd" id="shd"></div><div class="slist" id="list"></div></div></aside>
   </div>
-  <div class="cap">Each dot sits in the city where the player plays now. Scroll or pinch to zoom, drag to pan, or pick a region above. To add a player, ask Claude to add him by name.</div>
+  <div class="cap">Each photo sits in the city where the player plays now: international prospects and high school prospects together (use All / International / High school above). Scroll or pinch to zoom, drag to pan, or pick a region. The full high school list is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School</a> page. To add a player, ask Claude to add him by name.</div>
 </main>
 <script type="module">
 import { d3, topBar, tipOn, tipOff, esc } from "/assets/core.js";
@@ -164,7 +165,8 @@ const DOT = "#e2622a";
 const POSG = (p) => (/C|PF/.test(p) && !/SF\/PF/.test(p) ? "B" : /SF|SG\/SF/.test(p) || p === "SF/PF" ? "W" : "G");
 const POSL = { G: "Guard", W: "Wing", B: "Big" };
 const REGIONS = [["World", null], ["Europe", [-12, 34.5, 50, 61]], ["Africa", [-19, -12, 40, 25]], ["North America", [-128, 9, -58, 58]], ["South America", [-82, -38, -34, 8]], ["Asia", [70, 10, 140, 50]], ["Oceania", [110, -46, 178, -8]]];
-const [geo, board, W110] = await Promise.all([fetch("/data/intl/geo.json").then((r) => r.json()), fetch("/data/intl/board.json").then((r) => r.json()), fetch("/assets/geo/world-110m.json").then((r) => r.json())]);
+const [geo, board, W110, HSB] = await Promise.all([fetch("/data/intl/geo.json").then((r) => r.json()), fetch("/data/intl/board.json").then((r) => r.json()), fetch("/assets/geo/world-110m.json").then((r) => r.json()), fetch("/data/hs/board.json").then((r) => r.json()).catch(() => ({ players: [] }))]);
+const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
 let W50 = null;
 const C = geo.countries;
 const feat110 = new Map(W110.features.map((f) => [f.properties.a, f]));
@@ -172,16 +174,20 @@ const home = (a3) => geo.anchor[a3] || (feat110.get(a3) ? [feat110.get(a3).prope
 const ageOf = (p) => (p.born ? (Date.now() - Date.parse(p.born)) / 3.15576e10 : p.age ?? null);
 // Region = where he plays now (a Spaniard at a Utah prep school shows under North America).
 const regionOfLL = (ll) => { for (const [r, b] of REGIONS) if (b && ll[0] >= b[0] && ll[0] <= b[2] && ll[1] >= b[1] && ll[1] <= b[3]) return r; return "World"; };
-const P = board.players.map((p, i) => { const [a3, a2] = C[p.nat] || ["", ""]; const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos), ll, age: ageOf(p) }; });
-const st = { region: "World", pos: new Set(["G", "W", "B"]), sel: null, hover: null, k: 1 };
-const vis = () => P.filter((p) => st.pos.has(p.pg));
+// International board + High school board on one map. kind: "intl" | "hs".
+const ALL = [...board.players.map((p) => ({ ...p, kind: "intl" })), ...(HSB.players || []).map((p) => ({ ...p, kind: "hs", nat: "United States", aau: p.club, club: p.school, team: p.school }))];
+const P = ALL.map((p, i) => { const [a3, a2] = C[p.nat] || (p.kind === "hs" ? ["USA", "us"] : ["", ""]); const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos), ll, age: ageOf(p), slug: slug(p.name), grp: p.kind === "hs" ? "High school · United States" : p.nat }; });
+const st = { region: "World", pos: new Set(["G", "W", "B"]), sel: null, hover: null, k: 1, kind: "all" };
+const vis = () => P.filter((p) => st.pos.has(p.pg) && (st.kind === "all" || p.kind === st.kind));
 const inRegion = (p, r) => r === "World" || p.reg === r;
 
 // ---------------------------------------------------------------- KPIs + controls
 const kp = (l, v, s) => `<div class="ikpi"><span class="label">${l}</span><b>${v}</b><div class="sub">${s}</div></div>`;
 const cnt = (g) => P.filter((p) => p.pg === g).length;
-document.getElementById("kpis").innerHTML = kp("Players", P.length, "on the board") + kp("Countries", new Set(P.map((p) => p.nat)).size, [...new Set(P.map((p) => p.nat))].join(" · "))
-  + kp("Guards", cnt("G"), "PG / SG") + kp("Wings", cnt("W"), "SF / wing forwards") + kp("Bigs", cnt("B"), "PF / C") + kp("Class", "2027", "high school / club class");
+const nI = P.filter((p) => p.kind === "intl").length, nH = P.length - nI;
+document.getElementById("kpis").innerHTML = kp("Players", P.length, "on the map") + kp("International", nI, [...new Set(P.filter((p) => p.kind === "intl").map((p) => p.nat))].join(" · ") || "—") + kp("High school", nH, [...new Set(P.filter((p) => p.kind === "hs").map((p) => p.state))].join(" · ") || "—")
+  + kp("Guards", cnt("G"), "PG / SG") + kp("Wings", cnt("W"), "SF / wing forwards") + kp("Bigs", cnt("B"), "PF / C");
+document.querySelectorAll("#kinds button").forEach((b) => (b.onclick = () => { st.kind = b.dataset.k; if (st.sel != null && !vis().includes(P[st.sel])) closeCard(); draw(); }));
 document.getElementById("fpos").insertAdjacentHTML("beforeend", ["G", "W", "B"].map((k) => `<button class="fchip" data-k="${k}">${POSL[k]}s</button>`).join(""));
 document.querySelectorAll("#fpos .fchip").forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (st.pos.has(k) && st.pos.size > 1) st.pos.delete(k); else st.pos.add(k); b.classList.toggle("off", !st.pos.has(k)); draw(); }));
 function drawConts() {
@@ -257,7 +263,12 @@ function placePoints() {
   me.filter((d) => d.p.headshot).append("image").attr("href", (d) => d.p.headshot).attr("clip-path", (d) => `url(#hc${d.p.i})`).attr("preserveAspectRatio", "xMidYMin slice");
   me.merge(M).attr("transform", (d) => `translate(${d.x},${d.y})`).each((d) => (d.r = R));
   // labels: name always (only a few players); club + city when zoomed in
-  const labs = pts.map((d) => ({ k: d.p.i, x: d.x + R + 9, y: d.y, name: d.p.name, sub: k >= 1.8 ? `${d.p.club} · ${d.p.city}` : `${d.p.city}, ${d.p.nat}` }));
+  // Labels: skip any that would overlap one already placed (crowded areas show names on hover / zoom).
+  const placed = [], boxOf = (l) => { const w = Math.max(l.name.length * 7.2, l.sub.length * 6.2); return [l.x - 2, l.y - 14, l.x + w, l.y + 16]; };
+  const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const labs = pts.map((d) => ({ k: d.p.i, x: d.x + R + 9, y: d.y, name: d.p.name, sub: k >= 1.8 ? `${d.p.club} · ${d.p.city}` : d.p.kind === "hs" ? d.p.city : `${d.p.city}, ${d.p.nat}` }))
+    .sort((a, b) => (a.k === (st.hover ?? st.sel) ? -1 : b.k === (st.hover ?? st.sel) ? 1 : a.y - b.y))
+    .filter((l) => { const bx = boxOf(l); if (placed.some((q) => hit(q, bx)) || pts.some((d) => d.p.i !== l.k && hit([d.x - R, d.y - R, d.x + R, d.y + R], bx))) return false; placed.push(bx); return true; });
   const L = gLab.selectAll("g.plab").data(labs, (d) => d.k).join((en) => { const g = en.append("g").attr("class", "plab"); g.append("text").attr("class", "pn"); g.append("text").attr("class", "ps"); return g; })
     .attr("transform", (d) => `translate(${d.x},${d.y})`);
   L.select("text.pn").attr("y", -2).text((d) => d.name);
@@ -266,7 +277,7 @@ function placePoints() {
   highlight();
 }
 const fmtAge = (p) => (p.age ? p.age.toFixed(1) : "—");
-function tipHTML(p) { return `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""} · ${fmtAge(p)} yrs<br>${esc(p.team || p.club)} · ${esc(p.city)}, ${p.nat}`; }
+function tipHTML(p) { return p.kind === "hs" ? `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""}${p.r247 ? ` · 247 #${p.r247}` : ""}<br>${esc(p.school)} · ${esc(p.city)}` : `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""} · ${fmtAge(p)} yrs<br>${esc(p.team || p.club)} · ${esc(p.city)}, ${p.nat}`; }
 function highlight() {
   const on = st.hover ?? st.sel;
   gPts.selectAll("g.mk").each(function (d) { const rr = (d.r || 16) + (d.p.i === on ? 3 : 0), g = d3.select(this);
@@ -278,11 +289,11 @@ function highlight() {
 
 // ---------------------------------------------------------------- side panel
 function drawList() {
-  const V = vis().filter((p) => inRegion(p, st.region)), G = d3.group(V, (p) => p.nat);
+  const V = vis().filter((p) => inRegion(p, st.region)), G = d3.group(V, (p) => p.grp);
   const gs = [...G].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-  document.getElementById("shd").innerHTML = `<h2>${st.region === "World" ? "All players" : st.region}</h2><div class="label">${V.length} player${V.length === 1 ? "" : "s"} · ${gs.length} countr${gs.length === 1 ? "y" : "ies"}</div>`;
+  document.getElementById("shd").innerHTML = `<h2>${st.region === "World" ? "All players" : st.region}</h2><div class="label">${V.length} player${V.length === 1 ? "" : "s"} · ${gs.length} group${gs.length === 1 ? "" : "s"}</div>`;
   document.getElementById("list").innerHTML = gs.length ? gs.map(([nat, ps]) => `<div class="cgrp"><div class="ch">${ps[0].a2 ? `<img alt="" src="https://flagcdn.com/w40/${ps[0].a2}.png" onerror="this.remove()">` : ""}<b>${esc(nat)}</b><span>${ps.length}</span></div>
-    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}">` : `<s style="background:${DOT}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
+    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}">` : `<s style="background:${DOT}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${p.kind === "hs" ? (p.r247 ? "247 #" + p.r247 : "HS") : fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
     : `<div class="empty">No players here yet.</div>`;
   document.querySelectorAll(".pr").forEach((r) => { const i = +r.dataset.i; r.onmouseenter = () => { st.hover = i; highlight(); }; r.onmouseleave = () => { st.hover = null; highlight(); }; r.onclick = () => select(i, true); });
   highlight();
@@ -316,22 +327,36 @@ function wireFiba(p) {
     document.querySelector("#card .fbody").innerHTML = fibaEvent(ev[+b.dataset.e]);
   }));
 }
+const rk = (v) => (v ? "#" + v : "—");
+function hsCard(p) {
+  const list = (l, a) => (a?.length ? `<dt>${l}</dt><dd>${a.map(esc).join(" · ")}</dd>` : "");
+  return `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}<div style="min-width:0"><div class="label">High school · ${esc(p.pos)} · Class of ${p.cls}${p.stars ? ` · ${p.stars}★` : ""}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.school)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
+    <div class="cgrid"><div><span class="label">Height</span><b>${esc(p.ht || "—")}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">247</span><b>${rk(p.r247)}</b></div><div><span class="label">On3 Ind.</span><b>${rk(p.rOn3)}</b></div></div>
+    ${p.rEspn || p.rRivals ? `<div class="cgrid" style="margin-top:8px"><div><span class="label">ESPN</span><b>${rk(p.rEspn)}</b></div><div><span class="label">Rivals</span><b>${rk(p.rRivals)}</b></div><div style="grid-column:span 2"><span class="label">Position</span><b style="font-size:12px">${esc(p.pr || "—")}</b></div></div>` : ""}
+    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.school)} <span>${esc(p.city)}</span></dd>${p.home ? `<dt>Home</dt><dd>${esc(p.home)}</dd>` : ""}${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.aau ? `<dt>Club</dt><dd>${esc(p.aau)}</dd>` : ""}<dt>Status</dt><dd>${esc(p.status || "—")}</dd>${list("Finalists", p.finalists)}${list("Offers", p.offers)}${list("Contacts", p.contacts)}</dl>
+    ${p.notes ? `<div class="cnote">${esc(p.notes)}</div>` : ""}
+    <div class="cnote">${Object.entries(p.links || {}).map(([l, u]) => `<a class="flink" style="margin:0 12px 0 0" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join("")}</div>
+    <div class="cnote"><a href="/highschool#${p.slug}" style="color:var(--soft);text-decoration:underline">Open on the High School page</a></div></div>`;
+}
+function closeCard() { const cardEl = document.getElementById("card"); st.sel = null; cardEl.innerHTML = ""; cardEl.hidden = true; document.getElementById("listview").style.display = "contents"; highlight(); }
 function select(i, fly) {
   st.sel = i; const p = P[i];
-  document.getElementById("card").innerHTML = `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
+  document.getElementById("card").innerHTML = p.kind === "hs" ? hsCard(p) : `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
     <div class="cgrid"><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div><div><span class="label">Born</span><b style="font-size:12.5px;white-space:nowrap">${p.born ? new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"}</b></div></div>
     <dl class="cinfo"><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
     ${fibaHTML(p)}</div>`;
   wireFiba(p);
   const cardEl = document.getElementById("card"); cardEl.hidden = false; cardEl.scrollTop = 0; document.getElementById("listview").style.display = "none";
-  document.querySelector("#card .x").onclick = () => { st.sel = null; cardEl.innerHTML = ""; cardEl.hidden = true; document.getElementById("listview").style.display = "contents"; highlight(); };
+  document.querySelector("#card .x").onclick = closeCard;
   if (fly) { if (st.region !== p.reg) { st.region = p.reg; drawConts(); drawList(); } flyTo(p); }
   highlight();
 }
-function draw() { drawConts(); drawList(); placePoints(); shadeLand(); }
+function draw() { document.querySelectorAll("#kinds button").forEach((b) => b.classList.toggle("on", b.dataset.k === st.kind)); drawConts(); drawList(); placePoints(); shadeLand(); }
 draw();
 addEventListener("resize", () => { const t = T; fitWorld(); drawLand(W50 && W50 !== "loading" ? W50.features : land); drawStates(); svg.call(zoom.transform, t); });
-const h = location.hash.slice(1); if (h) { const r = REGIONS.find((q) => q[0].toLowerCase().replace(/ /g, "-") === h); if (r) setTimeout(() => goRegion(r[0]), 200); }
+// #europe → that region; #<player-name> → open his card on the map.
+addEventListener("hashchange", () => { const p = P.find((q) => q.slug === location.hash.slice(1)); if (p) select(p.i, true); });
+const h = location.hash.slice(1); if (h) { const r = REGIONS.find((q) => q[0].toLowerCase().replace(/ /g, "-") === h); const p = P.find((q) => q.slug === h); if (r) setTimeout(() => goRegion(r[0]), 200); else if (p) setTimeout(() => select(p.i, true), 200); }
 </script>
 </body>
 </html>

@@ -212,7 +212,7 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"], [/^\/targets\/?$/, "/targets"], [/^\/(?:board|transfer-board)\/?$/, "/board"]];
+const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:highschool|high-school)\/?$/, "/highschool"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"], [/^\/targets\/?$/, "/targets"], [/^\/(?:board|transfer-board)\/?$/, "/board"]];
 
 
 // ---------- Player Search: links to the Recruiting Hub (read-only) ----------
