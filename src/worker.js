@@ -200,7 +200,7 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"]];
+const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"]];
 
 
 // ---------- Player Search: links to the Recruiting Hub (read-only) ----------
@@ -261,6 +261,20 @@ async function searchLinks(request, env) {
   for (const k of b.remove || []) { delete cur.espn[k]; delete cur.photo[k]; }
   await env.STAFF.put("search:links", JSON.stringify(cur));
   return json({ espn: Object.keys(cur.espn).length, photo: Object.keys(cur.photo).length });
+}
+// Front office: saved Salary Cap scenarios and Roster Builder depth charts, shared by the staff.
+// KV "fo:cap" / "fo:builder" = { scenarios: [...] }. Custom headshots are small JPEG data URLs.
+async function frontOffice(request, env, kind) {
+  if (!env.STAFF) return json({ scenarios: [] });
+  const key = "fo:" + kind;
+  if (request.method === "GET") return json((await env.STAFF.get(key, "json")) || { scenarios: [] });
+  if (request.method !== "PUT") return json({ error: "method" }, 405);
+  const text = await request.text();
+  if (text.length > 4_000_000) return json({ error: "Scenarios are too large to save (remove some custom headshots)." }, 413);
+  let b; try { b = JSON.parse(text); } catch { return json({ error: "bad_json" }, 400); }
+  if (!Array.isArray(b.scenarios) || b.scenarios.length > 60) return json({ error: "bad_scenarios" }, 400);
+  await env.STAFF.put(key, JSON.stringify({ scenarios: b.scenarios, savedAt: new Date().toISOString() }));
+  return json({ ok: true, count: b.scenarios.length });
 }
 // School roster pages (for players ESPN has no headshot for): returns each roster photo with its
 // alt text. Only https pages whose path is a roster page; only image names/URLs come back.
@@ -454,6 +468,8 @@ export default {
     if (nt) return playerNotes(request, env, nt[1]);
     if (path === "/api/positions") return positionsApi(request, env);
     if (path === "/api/search/links") return searchLinks(request, env);
+    const fo = path.match(/^\/api\/fo\/(cap|builder)$/);
+    if (fo) return frontOffice(request, env, fo[1]);
     if (path === "/api/scrape/roster") return scrapeRoster(url);
     // Raw Torvik team CSVs (barttorvik blocks browsers on this network; the worker can reach it).
     if (path === "/api/torvik/csv") {

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Roster Builder · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+/* Roster Builder: a depth chart (5 positions × starter / rotation / depth) with headshots. Each player
+   gets minutes; the page projects individual averages and team success from them. */
+.bwrap{max-width:1800px;margin:auto;padding:18px 24px 30px}
+.btop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.btop h1{margin-top:4px}.btop .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:760px}
+.bact{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.scn{display:inline-flex;border:1px solid var(--edge);border-radius:7px;overflow:hidden;background:var(--card)}
+.scn button{background:none;border:0;color:var(--soft);font:500 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:0 10px;height:32px;cursor:pointer}
+.scn button+button{border-left:1px solid var(--edge);padding:0 8px;color:var(--muted)}
+.scn.on{background:#f2f3f4;border-color:#f2f3f4}.scn.on button{color:#16171a}.scn.on button+button{border-color:#c9ccd2}
+.interim{border:1px dashed var(--edge);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5}
+.interim b{color:#fff}
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+.dc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+.dgrid{display:grid;grid-template-columns:86px repeat(5,minmax(0,1fr));gap:8px}
+.dh{font:600 12px var(--ui);letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:4px 0 2px}
+.dh span{display:block;font:500 9.5px var(--mono);color:var(--muted);letter-spacing:.07em;margin-top:2px}
+.dr{font:500 9.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;justify-content:center;gap:3px}
+.dr b{color:#fff;font:600 12px var(--ui);letter-spacing:.04em}
+.pc{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px;min-height:178px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.pc.st{border-color:#3d3f44;background:#1b1c1f}
+.pc.drag{opacity:.5;border-color:var(--good)}
+.pc.over{border-color:#8a8e95}
+.pc .top{display:flex;gap:9px;align-items:flex-start;min-width:0}
+.pc .fos{width:56px;height:70px}
+.pc .nm{min-width:0;flex:1}
+.pc .nm b{display:block;font-size:14px;font-weight:700;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pc .nm .t{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .nm .tg{font:500 8.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.pc .x{position:absolute;top:5px;right:6px;background:none;border:0;color:var(--faint);cursor:pointer;font-size:12px}.pc .x:hover{color:#fff}
+.mins{display:flex;align-items:center;gap:6px}
+.mins input[type=range]{flex:1;min-width:0;accent-color:var(--good);height:4px}
+.mins b{font:600 12px var(--ui);min-width:44px;text-align:right}.mins b span{font:500 9px var(--mono);color:var(--muted);margin-left:2px}
+.line{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-top:1px solid var(--line2);padding-top:6px}
+.line div{text-align:center}.line div b{display:block;font-size:14px;font-weight:700}.line div span{font:500 8.5px var(--mono);letter-spacing:.07em;color:var(--muted)}
+.empty{flex:1;display:grid;place-items:center;background:none;border:1px dashed var(--edge);border-radius:7px;color:var(--muted);font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;min-height:150px}
+.empty:hover{color:#fff;border-color:#8a8e95}
+.side{position:sticky;top:12px;display:grid;gap:12px}
+.ts{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.big{display:flex;align-items:baseline;gap:8px}.big b{font-size:40px;font-weight:800;letter-spacing:-.02em}
+.tsg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.tsg>div{background:var(--card);border-radius:8px;padding:9px 10px}.tsg b{display:block;font-size:19px;font-weight:750;margin-top:2px}.tsg .s{font-size:10.5px;color:var(--muted);margin-top:2px}
+.mbar{height:6px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:6px}.mbar i{display:block;height:100%}
+.tbl td,.tbl th{padding:6px 6px}
+.sortb{background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;padding:0}.sortb:hover{color:#fff}
+.tbl td.nm{display:flex;align-items:center;gap:8px}
+.tbl .fos{width:28px;height:34px;border-radius:4px}
+@media (max-width:1250px){.lay{grid-template-columns:1fr}.side{position:static;grid-template-columns:1fr 1fr}}
+@media (max-width:900px){.dgrid{grid-template-columns:repeat(5,minmax(150px,1fr));overflow-x:auto}.dgrid .dr,.dgrid .corner{display:none}.dc{overflow-x:auto}.side{grid-template-columns:1fr}}
+@media print{.side{position:static}.mins input,.pc .x,.empty{display:none!important}}
+</style>
+</head>
+<body>
+<main class="bwrap" id="page"><div class="loading">Loading the player pool…</div></main>
+<script type="module">
+import { topBar, esc, pc as pcol } from "/assets/core.js";
+import { loadFO, shot, teamMark, loadSaved, saveAll, openPicker } from "/assets/fo.js";
+topBar("builder");
+
+const POS = [["PG", "Point guard"], ["SG", "Shooting guard"], ["W", "Wing"], ["F", "Forward"], ["C", "Center"]];
+const ROWS = [["Starter", 31], ["Rotation", 9], ["Depth", 0]];
+const AVG = 109.3, PACE = 68, GAMES = 31;
+const uid = () => crypto.randomUUID();
+const blank = () => ({ id: "draft", name: "Depth chart", grid: Object.fromEntries(POS.map(([k]) => [k, ["", "", ""]])), min: {} });
+
+const FO = await loadFO();
+let saved = await loadSaved("builder"), d = blank(), loadedId = null, saveState = "", dragFrom = null, sortKey = "min";
+try { const x = JSON.parse(localStorage.getItem("biq-builder-draft") || "null"); if (x?.grid) { d = x; loadedId = localStorage.getItem("biq-builder-loaded") || null; } } catch {}
+const keep = () => { try { localStorage.setItem("biq-builder-draft", JSON.stringify(d)); localStorage.setItem("biq-builder-loaded", loadedId || ""); } catch {} };
+
+// ---------------------------------------------------------------- interim projection
+// The projection model isn't generated yet. Until it is, each player is projected from his last
+// D-I season (per-40 rates and RAPM, our pipeline) at the minutes set here; players without a D-I
+// season (freshmen, international, custom) get a flat freshman prior. Team ratings add up each
+// player's RAPM weighted by his share of the 200 minutes, on top of a D-I average team.
+const PRIOR = { pts40: 10, reb40: 6, ast40: 2, ts: 52, usg: 17, orapm: -1.5, drapm: -0.5 };
+function project() {
+  const placed = [];
+  POS.forEach(([k], c) => d.grid[k].forEach((id, r) => { if (id) placed.push({ id, pos: k, row: r, p: FO.byId.get(id) }); }));
+  const live = placed.filter((x) => x.p);
+  const minOf = (x) => d.min[x.id] ?? ROWS[x.row][1];
+  const totalMin = live.reduce((a, x) => a + minOf(x), 0), wScale = totalMin > 0 ? 200 / Math.max(200, totalMin) : 0;
+  let oImp = 0, dImp = 0;
+  const rows = live.map((x) => {
+    const R = x.p.rates, src = R && R.min >= 100 ? R : null, m = minOf(x);
+    const r = src ? { pts40: src.pts40, reb40: src.reb40, ast40: src.ast40, ts: src.ts, usg: src.usg, orapm: src.orapm ?? 0, drapm: src.drapm ?? 0 } : PRIOR;
+    oImp += (r.orapm || 0) * (m * wScale) / 40; dImp += (r.drapm || 0) * (m * wScale) / 40;
+    return { ...x, m, r, prior: !src, ppg: (r.pts40 || 0) * m / 40, rpg: (r.reb40 || 0) * m / 40, apg: (r.ast40 || 0) * m / 40 };
+  });
+  const O = AVG + oImp, D = AVG - dImp, net = O - D;
+  // Points are shared: scale everyone so the team scores what its offense rating says it should.
+  const teamPts = (O * PACE) / 100, raw = rows.reduce((a, x) => a + x.ppg, 0), k = raw > 0 && totalMin >= 150 ? teamPts / raw : 1;
+  for (const x of rows) x.ppg *= k;
+  const winP = 1 / (1 + Math.exp(-net / 9.5)), wins = Math.round(winP * GAMES);
+  const dist = FO.dist?.net || [], rank = dist.length ? dist.filter((v) => v > net).length + 1 : null;
+  return { rows, O, D, net, wins, losses: GAMES - wins, rank, nTeams: dist.length, totalMin, priors: rows.filter((x) => x.prior).length };
+}
+
+// ---------------------------------------------------------------- render
+const page = document.getElementById("page");
+const f1 = (v) => (v == null || !isFinite(v) ? "—" : v.toFixed(1)), sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
+const pctOfRank = (r, n) => (r && n ? 100 * (1 - (r - 1) / (n - 1)) : null);
+function render() {
+  const J = project(), byId = new Map(J.rows.map((x) => [x.id, x]));
+  const card = (k, r) => {
+    const id = d.grid[k][r], p = id ? FO.byId.get(id) : null, x = byId.get(id);
+    if (!p) return `<div class="pc${r === 0 ? " st" : ""}" data-cell="${k}:${r}"><button class="empty" data-pick="${k}:${r}">＋ Add player</button></div>`;
+    const m = x.m;
+    return `<div class="pc${r === 0 ? " st" : ""}" data-cell="${k}:${r}" draggable="true">
+      <button class="x" data-clear="${k}:${r}" aria-label="Remove">✕</button>
+      <div class="top">${shot(p)}<div class="nm"><a href="${p.type === "Freshman" ? "/international" : "/player/" + encodeURIComponent(p.id)}"><b>${esc(p.name)}</b></a><div class="t">${teamMark(p, 15)}<span>${esc(p.school)}</span></div><div class="tg">${esc(p.type)}${p.pos ? " · " + esc(p.pos) : ""}${p.ht ? " · " + esc(p.ht) : ""}</div></div></div>
+      <div class="mins"><input type="range" min="0" max="40" step="1" value="${m}" data-min="${esc(id)}" aria-label="Projected minutes"><b><span id="mv-${esc(id)}">${m}</span><span>MPG</span></b></div>
+      <div class="line"><div><b id="pp-${esc(id)}">${f1(x.ppg)}</b><span>PTS</span></div><div><b>${f1(x.rpg)}</b><span>REB</span></div><div><b>${f1(x.apg)}</b><span>AST</span></div><div><b>${x.r.ts != null ? Math.round(x.r.ts) : "—"}</b><span>TS%</span></div></div></div>`;
+  };
+  const tone = J.net >= 3 ? "var(--good)" : J.net <= -3 ? "var(--bad)" : "#fff";
+  const sorted = [...J.rows].sort((a, b) => (sortKey === "name" ? a.p.name.localeCompare(b.p.name) : (b[sortKey === "min" ? "m" : sortKey] ?? 0) - (a[sortKey === "min" ? "m" : sortKey] ?? 0)));
+  page.innerHTML = `
+  <div class="btop">
+    <div><div class="label">Front office</div><h1>Roster Builder</h1><div class="sub">Set the depth chart and minutes; the page projects each player's averages and the team's success. Pull players in from a Salary Cap scenario or add them one by one.</div></div>
+    <div class="bact noprint">
+      ${saved.map((s) => `<span class="scn${loadedId === s.id ? " on" : ""}"><button data-load="${esc(s.id)}">${esc(s.name)}</button><button data-del="${esc(s.id)}" aria-label="Delete ${esc(s.name)}">×</button></span>`).join("")}
+      <button class="fbtn" id="fromcap">From Salary Cap</button><button class="fbtn" id="print">Print</button><button class="fbtn" id="reset">Reset</button>
+      <button class="fbtn go" id="save">${loadedId ? "Update scenario" : "Save as scenario"}</button>
+      <span class="label" style="color:${saveState === "error" ? "var(--bad)" : "var(--muted)"}">${saveState === "saving" ? "Saving…" : saveState === "saved" ? "Scenario saved" : saveState === "error" ? "Save failed" : ""}</span>
+    </div>
+  </div>
+  <div class="interim"><b>Interim projections.</b> The projection model hasn't been generated yet, so players are projected from their last D-I season (per-40 rates and RAPM) at the minutes set here, and team ratings add up each player's RAPM by minutes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} without a D-I season use a flat freshman estimate.` : ""} The layout stays the same when the model's numbers arrive.</div>
+  <div class="lay">
+    <div>
+      <div class="dc"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="label">Depth chart name</span><input class="foin" id="dname" value="${esc(d.name)}" aria-label="Depth chart name" style="height:32px;max-width:320px;margin:0"></div><div class="dgrid">
+        <div class="corner"></div>${POS.map(([k, l]) => `<div class="dh">${k}<span>${l}</span></div>`).join("")}
+        ${ROWS.map(([lab, m], r) => `<div class="dr"><b>${lab}</b>${r === 0 ? "≈ 30+ min" : r === 1 ? "≈ 10–20 min" : "spot minutes"}</div>${POS.map(([k]) => card(k, r)).join("")}`).join("")}
+      </div></div>
+      <section><div class="shead"><h2>Projected averages</h2><span class="label">click a header to sort</span></div>
+        <div class="panel" style="margin-top:12px;overflow-x:auto">${J.rows.length ? `<table class="tbl"><thead><tr><th class="l"><button class="sortb" data-sort="name">Player</button></th><th class="l">Spot</th><th><button class="sortb" data-sort="min">MPG</button></th><th><button class="sortb" data-sort="ppg">PTS</button></th><th><button class="sortb" data-sort="rpg">REB</button></th><th><button class="sortb" data-sort="apg">AST</button></th><th>TS%</th><th>USG%</th><th><span data-def="rapm">Net impact</span></th><th class="l">Basis</th></tr></thead><tbody>
+        ${sorted.map((x) => { const net = (x.r.orapm || 0) + (x.r.drapm || 0); return `<tr><td class="l nm">${shot(x.p)}<span><b style="font-weight:600">${esc(x.p.name)}</b><br><span class="m" style="font-size:11px">${esc(x.p.school)}</span></span></td><td class="l m">${x.pos} · ${ROWS[x.row][0]}</td><td>${x.m}</td><td style="font-weight:700">${f1(x.ppg)}</td><td>${f1(x.rpg)}</td><td>${f1(x.apg)}</td><td>${x.r.ts != null ? f1(x.r.ts) : "—"}</td><td>${x.r.usg != null ? f1(x.r.usg) : "—"}</td><td><span class="chip" style="background:${pcol(50 + Math.max(-45, Math.min(45, net * 9)))}">${sg(net)}</span></td><td class="l m" style="font-size:11px">${x.prior ? "freshman estimate" : `${x.p.rates?.team || ""} '26`}</td></tr>`; }).join("")}
+        </tbody></table>` : `<div class="m" style="color:var(--muted)">Add players to the depth chart to see projected averages.</div>`}</div></section>
+    </div>
+    <aside class="side">
+      <div class="ts"><div class="label">Projected team success</div>
+        <div class="big"><b style="color:${tone}">${J.rows.length ? sg(J.net) : "—"}</b><span class="label">net rating / 100</span></div>
+        <div class="tsg">
+          <div><span class="label">Record</span><b>${J.rows.length ? `${J.wins}-${J.losses}` : "—"}</b><div class="s">over ${GAMES} games</div></div>
+          <div><span class="label">D-I rank</span><b style="color:${J.rank ? (pctOfRank(J.rank, J.nTeams) >= 70 ? "var(--good)" : pctOfRank(J.rank, J.nTeams) <= 30 ? "var(--bad)" : "#fff") : "#fff"}">${J.rows.length && J.rank ? "≈ #" + J.rank : "—"}</b><div class="s">${J.nTeams ? `of ${J.nTeams}, by 2025-26 net` : ""}</div></div>
+          <div><span class="label" data-def="adjo">Offense</span><b>${J.rows.length ? f1(J.O) : "—"}</b><div class="s">pts / 100 · D-I avg ${AVG}</div></div>
+          <div><span class="label" data-def="adjd">Defense</span><b>${J.rows.length ? f1(J.D) : "—"}</b><div class="s">allowed / 100</div></div>
+        </div>
+        <div style="margin-top:12px"><div style="display:flex;justify-content:space-between"><span class="label">Minutes</span><span class="label" style="color:${J.totalMin > 200 ? "var(--bad)" : "#fff"}">${J.totalMin} / 200</span></div><div class="mbar"><i style="width:${Math.min(100, J.totalMin / 2)}%;background:${J.totalMin > 200 ? "var(--bad)" : "var(--good)"}"></i></div>
+        <div class="cap" style="margin-top:6px">${J.totalMin > 200 ? "Over 200: everyone's share of the minutes is scaled down." : J.totalMin < 200 ? `${200 - J.totalMin} minutes unassigned.` : "All 200 minutes assigned."}</div></div>
+      </div>
+      <div class="ts"><div class="label">Projected leaders</div>
+        ${[["Points", "ppg"], ["Rebounds", "rpg"], ["Assists", "apg"]].map(([l, k]) => { const top = [...J.rows].sort((a, b) => b[k] - a[k]).slice(0, 3); return `<div style="margin-top:10px"><div class="label" style="font-size:9.5px;margin-bottom:4px">${l}</div>${top.map((x) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span>${esc(x.p.name)}</span><b>${f1(x[k])}</b></div>`).join("") || `<div class="m" style="color:var(--muted);font-size:12px">—</div>`}</div>`; }).join("")}
+      </div>
+    </aside>
+  </div>`;
+}
+
+// ---------------------------------------------------------------- events
+const cell = (s) => { const [k, r] = s.split(":"); return [k, +r]; };
+const inUse = () => new Set(Object.values(d.grid).flat().filter(Boolean));
+const changed = () => { saveState = ""; keep(); };
+page.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.id === "dname") { d.name = t.value; changed(); return; }
+  if (t.dataset.min) { d.min[t.dataset.min] = +t.value; changed(); const s = document.getElementById("mv-" + t.dataset.min); if (s) s.textContent = t.value; clearTimeout(t._t); t._t = setTimeout(render, 160); }
+});
+page.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; const ds = b.dataset;
+  if (ds.pick) { const [k, r] = cell(ds.pick); openPicker({ title: `Add ${k} · ${ROWS[r][0]}`, types: ["Returner", "Transfer", "Freshman"], players: FO.players, exclude: inUse(), onPick: (p) => { d.grid[k][r] = p.id; delete d.min[p.id]; changed(); render(); } }); }
+  else if (ds.clear) { const [k, r] = cell(ds.clear); d.grid[k][r] = ""; changed(); render(); }
+  else if (ds.sort) { sortKey = ds.sort; render(); }
+  else if (ds.load) { const s = saved.find((x) => x.id === ds.load); if (s) { d = { ...JSON.parse(JSON.stringify(s)), id: "draft" }; loadedId = s.id; saveState = "saved"; keep(); render(); } }
+  else if (ds.del) { if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } saved = saved.filter((x) => x.id !== ds.del); if (loadedId === ds.del) loadedId = null; persist(); }
+  else if (b.id === "reset") { d = blank(); loadedId = null; saveState = ""; keep(); render(); }
+  else if (b.id === "print") print();
+  else if (b.id === "save") saveScenario();
+  else if (b.id === "fromcap") fromCap(b);
+});
+// drag a card onto another spot to move / swap
+page.addEventListener("dragstart", (e) => { const c = e.target.closest(".pc[draggable]"); if (!c) return; dragFrom = c.dataset.cell; c.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragFrom); });
+page.addEventListener("dragend", () => { dragFrom = null; page.querySelectorAll(".pc.drag,.pc.over").forEach((x) => x.classList.remove("drag", "over")); });
+page.addEventListener("dragover", (e) => { const c = e.target.closest(".pc"); if (dragFrom && c) { e.preventDefault(); page.querySelectorAll(".pc.over").forEach((x) => x.classList.remove("over")); c.classList.add("over"); } });
+page.addEventListener("drop", (e) => {
+  const c = e.target.closest(".pc"); if (!dragFrom || !c) return; e.preventDefault();
+  const [k1, r1] = cell(dragFrom), [k2, r2] = cell(c.dataset.cell);
+  [d.grid[k1][r1], d.grid[k2][r2]] = [d.grid[k2][r2], d.grid[k1][r1]]; dragFrom = null; changed(); render();
+});
+
+// Fill the depth chart from a saved Salary Cap scenario: players go to their position, best first.
+async function fromCap(btn) {
+  const caps = await loadSaved("cap");
+  let draft = null; try { draft = JSON.parse(localStorage.getItem("biq-cap-draft") || "null"); } catch {}
+  const opts = [...(draft?.slots ? [{ name: "Current Salary Cap draft", slots: draft.slots }] : []), ...caps];
+  if (!opts.length) { alertBox("No Salary Cap scenarios yet. Build one on the Salary Cap page first."); return; }
+  document.querySelector(".fomenu")?.remove();
+  const m = document.createElement("div"); m.className = "fomenu"; const r = btn.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - 230)) + "px"; m.style.top = r.bottom + 6 + "px";
+  m.innerHTML = opts.map((o, i) => `<button data-i="${i}">${esc(o.name)}</button>`).join("");
+  document.body.appendChild(m);
+  const off = (ev) => { if (!m.contains(ev.target)) { m.remove(); removeEventListener("mousedown", off, true); } }; setTimeout(() => addEventListener("mousedown", off, true));
+  m.onclick = (ev) => {
+    const b = ev.target.closest("button"); if (!b) return; m.remove(); removeEventListener("mousedown", off, true);
+    const ids = opts[+b.dataset.i].slots.map((s) => s.playerId).filter((id) => id && FO.byId.has(id));
+    const P = ids.map((id) => FO.byId.get(id)).sort((a, b) => (b.rates?.ppg || 0) - (a.rates?.ppg || 0));
+    const g = Object.fromEntries(POS.map(([k]) => [k, ["", "", ""]]));
+    const want = (p) => { const s = String(p.pos || "").toUpperCase(); return /^C|^B/.test(s) ? ["C", "F"] : /F/.test(s) ? ["F", "W", "C"] : /W/.test(s) ? ["W", "SG", "F"] : /PG/.test(s) ? ["PG", "SG"] : ["SG", "PG", "W"]; };
+    const left = [];
+    for (const p of P) { let ok = false; for (let r = 0; r < 3 && !ok; r++) for (const k of want(p)) if (!g[k][r]) { g[k][r] = p.id; ok = true; break; } if (!ok) left.push(p); }
+    for (const p of left) outer: for (let r = 0; r < 3; r++) for (const [k] of POS) if (!g[k][r]) { g[k][r] = p.id; break outer; }
+    d.grid = g; d.min = {}; changed(); render();
+  };
+}
+function alertBox(msg) { const h = document.createElement("div"); h.className = "fomodal"; h.innerHTML = `<div class="fobox" style="width:min(380px,100%)"><div class="fohd"><b>Roster Builder</b><button class="fox">✕</button></div><div style="padding:16px;font-size:13.5px;color:var(--dim)">${esc(msg)}</div></div>`; h.onclick = (e) => { if (e.target === h || e.target.closest(".fox")) h.remove(); }; document.body.appendChild(h); }
+async function persist() { saveState = "saving"; render(); try { await saveAll("builder", saved); saveState = "saved"; } catch { saveState = "error"; } keep(); render(); }
+async function saveScenario() {
+  const name = d.name.trim() || `Depth chart ${saved.length + 1}`;
+  if (loadedId && saved.some((s) => s.id === loadedId)) saved = saved.map((s) => (s.id === loadedId ? { ...JSON.parse(JSON.stringify(d)), id: loadedId, name } : s));
+  else { const id = uid(); saved = [...saved, { ...JSON.parse(JSON.stringify(d)), id, name }]; loadedId = id; }
+  await persist();
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Salary Cap · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+/* Salary Cap: the Recruiting Hub's Front Office board, rebuilt in Bronco IQ's look.
+   Five money tiers as columns; each slot is a player (or open / custom spot) with a budget. */
+.cwrap{max-width:1800px;margin:auto;padding:18px 24px 24px}
+.ctop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.ctop h1{margin-top:4px}
+.ctop .sub{font-size:13px;color:var(--muted);margin-top:3px}
+.cact{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.scn{display:inline-flex;border:1px solid var(--edge);border-radius:7px;overflow:hidden;background:var(--card)}
+.scn button{background:none;border:0;color:var(--soft);font:500 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:0 10px;height:32px;cursor:pointer}
+.scn button+button{border-left:1px solid var(--edge);padding:0 8px;color:var(--muted)}
+.scn.on{background:#f2f3f4;border-color:#f2f3f4}.scn.on button{color:#16171a}.scn.on button+button{border-color:#c9ccd2}
+.svst{font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.board{display:grid;grid-template-rows:auto 1fr;gap:10px;height:calc(100vh - 205px);min-height:640px}
+.kpis5{display:grid;grid-template-columns:minmax(200px,1fr) minmax(220px,1.15fr) repeat(3,minmax(130px,.6fr));gap:8px}
+.kb{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 12px;min-width:0}
+.kb .label{font-size:9.5px}
+.kb b{display:block;font-size:22px;font-weight:750;margin-top:3px;letter-spacing:-.01em}
+.kb .s{font:500 9px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.kb.spend{border-color:var(--good);background:rgba(226,98,42,.08)}
+.kb.spend .label{color:var(--good)}
+.mrow{display:flex;align-items:baseline;gap:3px}.mrow span{font-size:19px;font-weight:750;color:var(--good)}
+.mrow input{width:100%;min-width:0;border:0;background:none;color:#fff;font:750 23px var(--ui);outline:none;padding:0}
+.minbar{height:4px;background:var(--card);border-radius:2px;margin-top:6px;overflow:hidden}.minbar i{display:block;height:100%;background:var(--good)}
+.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;min-height:0}
+.col{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.ch{flex:none;background:#1a1b1e;border-bottom:1px solid var(--line);padding:9px 10px}
+.cht{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.cht b{font:600 11.5px var(--ui);letter-spacing:.05em;text-transform:uppercase}.cht b span{color:var(--faint)}
+.cht .r{font:500 9.5px var(--mono);color:var(--muted);margin-top:2px}
+.pm{display:flex;gap:4px}.pm button{width:24px;height:24px;display:grid;place-items:center;background:var(--bg);border:1px solid var(--edge);border-radius:5px;color:var(--muted);cursor:pointer;font-size:14px;line-height:1}
+.pm button:hover{color:#fff;border-color:#8a8e95}.pm button:disabled{opacity:.3;cursor:default}
+.cb{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.cb label,.cmn{font:500 8.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.cb input,.cmn input{display:block;width:100%;height:24px;margin-top:3px;background:var(--bg);border:1px solid var(--edge);border-radius:5px;color:#fff;font:600 11px var(--ui);padding:0 6px;outline:none}
+.cb .sp{text-align:right}.cb .sp b{display:block;font:700 12px var(--ui);margin-top:3px}
+.cmn{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.cmn input{margin:0;text-align:center}
+.slots{flex:1;min-height:0;display:grid;gap:5px;padding:6px;overflow:hidden;align-content:start}
+.slot{position:relative;display:flex;flex-direction:column;min-height:0;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 9px}
+.slot.drag{border-color:var(--good);opacity:.6}
+.slot.dense{padding:6px 8px}
+.sl1{display:flex;gap:8px;align-items:flex-start;min-width:0;padding-right:16px}
+.hsb{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer}
+.hsb .dot{position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;border-radius:50%;background:#f2f3f4;color:#16171a;display:grid;place-items:center;font-size:9px;font-weight:800}
+.dense .fos{width:36px;height:46px}
+.snm{min-width:0;flex:1}
+.snm b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snm .t{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden}
+.snm .src{font:500 8.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.snm input{width:100%;height:24px;background:none;border:0;color:var(--soft);font:700 13px var(--ui);text-transform:uppercase;letter-spacing:.03em;outline:none;padding:0}
+.snm input::placeholder{color:var(--faint)}
+.snm .hint{font:500 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#4a4d53;margin-top:2px}
+.snm .up{font:500 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);cursor:pointer;margin-top:3px;display:inline-block}.snm .up:hover{color:#fff}
+.grip{position:absolute;right:4px;top:6px;background:none;border:0;color:var(--faint);cursor:grab;font-size:13px;line-height:1}.grip:hover{color:#fff}
+.sb{margin-top:auto;border-top:1px solid var(--line2);padding-top:6px}
+.sbm{display:flex;justify-content:center;align-items:baseline;gap:2px}.sbm span{font-weight:800;color:var(--good);font-size:12px}
+.sbm input{width:112px;border:0;background:none;color:#fff;text-align:center;font:800 17px var(--ui);outline:none;padding:0}
+.dense .sbm input{width:96px;font-size:15px}
+.sbr{display:flex;align-items:center;gap:6px;margin-top:3px}
+.sbr input[type=range]{flex:1;min-width:0;accent-color:var(--good);height:4px;cursor:pointer}
+.ctr{width:24px;height:24px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--edge);border-radius:5px;color:var(--muted);cursor:pointer;font-size:11px}.ctr:hover{color:#fff;border-color:#8a8e95}
+.dense .ctr.abs{position:absolute;right:6px;bottom:6px}
+.cmodal .cbody{padding:14px 16px;display:grid;gap:12px}
+.cmodal .lab{font:500 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.terms{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cnote{font:500 9.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+@media (max-width:1100px){.board{height:auto}.cols{grid-template-columns:1fr 1fr}.slots{overflow:visible}.kpis5{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.cols{grid-template-columns:1fr}.cwrap{padding:14px 16px}}
+@media print{.board{height:auto}.slots{overflow:visible}.sbr,.pm,.grip,.hsb .dot,.snm .hint,.snm .up{display:none!important}.cwrap{color:#000}}
+</style>
+</head>
+<body>
+<main class="cwrap" id="page"><div class="loading">Loading the player pool…</div></main>
+<script type="module">
+import { topBar, esc } from "/assets/core.js";
+import { loadFO, shot, teamMark, money, moneyNum, parseMoney, loadSaved, saveAll, openPicker } from "/assets/fo.js";
+topBar("cap");
+
+// ---------------------------------------------------------------- model (same as the hub's board)
+const TIERS = ["Max", "Starter", "Role", "Development", "No Money"];
+const META = {
+  Max: { label: "Max players", range: "$1.2M+", max: 15e5, min: 32, budget: 12e5 },
+  Starter: { label: "Starters / high end", range: "$250K–$500K", max: 65e4, min: 25, budget: 375e3 },
+  Role: { label: "Role players", range: "$100K–$210K", max: 3e5, min: 15, budget: 16e4 },
+  Development: { label: "Development", range: "$30K–$70K", max: 125e3, min: 5, budget: 5e4 },
+  "No Money": { label: "No money guys", range: "<$10K", max: 25e3, min: 0, budget: 1e4 },
+};
+const DEF_BUCKET = { Max: 24e5, Starter: 15e5, Role: 48e4, Development: 1e5, "No Money": 2e4 };
+const DEF_MIN = { Max: 64, Starter: 100, Role: 30, Development: 6, "No Money": 0 };
+const uid = () => crypto.randomUUID();
+const mkSlot = (bucket, budget = META[bucket].budget) => ({ id: `${bucket}-${uid()}`, bucket, source: "Transfer", budget, playerId: "", title: "", photo: "", minutes: META[bucket].min, years: 1, y1g: budget, y1i: 0, y2g: 0 });
+const defaultDraft = () => ({ id: "draft", name: "2 Max", total: 45e5, buckets: { ...DEF_BUCKET }, minutes: { ...DEF_MIN },
+  slots: [...[12e5, 12e5].map((b) => mkSlot("Max", b)), ...[375e3, 375e3, 375e3, 375e3].map((b) => mkSlot("Starter", b)), ...[2e5, 18e4, 1e5].map((b) => mkSlot("Role", b)), ...[5e4, 5e4].map((b) => mkSlot("Development", b)), ...[1e4, 1e4].map((b) => mkSlot("No Money", b))] });
+const clone = (s) => JSON.parse(JSON.stringify(s));
+
+let FO, draft = defaultDraft(), saved = [], loadedId = null, saveState = "", dragId = null;
+FO = await loadFO();
+saved = await loadSaved("cap");
+// Draft survives reloads in this browser (staff scenarios are shared through Save).
+try { const d = JSON.parse(localStorage.getItem("biq-cap-draft") || "null"); if (d?.slots) { draft = d; loadedId = localStorage.getItem("biq-cap-loaded") || null; } } catch {}
+// ?add=<player id> drops a player into the first open spot (from player pages / Search).
+const addId = new URLSearchParams(location.search).get("add");
+if (addId && FO.byId.has(addId)) { const s = draft.slots.find((x) => !x.playerId && x.source !== "Custom"); if (s) { s.playerId = addId; s.source = FO.byId.get(addId).type; } history.replaceState(null, "", "/cap"); }
+const keep = () => { try { localStorage.setItem("biq-cap-draft", JSON.stringify(draft)); localStorage.setItem("biq-cap-loaded", loadedId || ""); } catch {} };
+
+// ---------------------------------------------------------------- render
+const page = document.getElementById("page");
+function totals() {
+  const sum = (f) => draft.slots.reduce((a, s) => a + f(s), 0);
+  const spend = sum((s) => +s.budget || 0), g1 = sum((s) => +(s.y1g ?? s.budget) || 0), max1 = g1 + sum((s) => +s.y1i || 0), y2 = sum((s) => (s.years === 2 ? +s.y2g || 0 : 0));
+  const min = TIERS.reduce((a, t) => a + (+draft.minutes?.[t] || 0), 0), assigned = draft.slots.filter((s) => s.playerId || s.source === "Custom").length;
+  return { spend, g1, max1, y2, min, assigned };
+}
+function render() {
+  const T = totals(), total = +draft.total || 0;
+  page.innerHTML = `
+  <div class="ctop">
+    <div><div class="label">Front office</div><h1>Salary Cap</h1><div class="sub noprint">Work freely in the main board, then lock in snapshots as saved scenarios. Saved scenarios are shared with the staff.</div></div>
+    <div class="cact noprint">
+      ${saved.map((s) => `<span class="scn${loadedId === s.id ? " on" : ""}"><button data-load="${esc(s.id)}">${esc(s.name)}</button><button data-del="${esc(s.id)}" aria-label="Delete ${esc(s.name)}">×</button></span>`).join("")}
+      <button class="fbtn" id="print">Print</button><button class="fbtn" id="reset">Reset</button>
+      <button class="fbtn go" id="save">${loadedId ? "Update scenario" : "Save as scenario"}</button>
+      <span class="svst" id="svst" style="color:${saveState === "error" ? "var(--bad)" : "var(--muted)"}">${saveState === "saving" ? "Saving…" : saveState === "saved" ? "Scenario saved" : saveState === "error" ? "Save failed" : ""}</span>
+    </div>
+  </div>
+  <div class="board">
+    <div class="kpis5">
+      <div class="kb"><div class="label">Draft name</div><input class="foin" id="dname" style="height:30px;margin-top:5px" value="${esc(draft.name)}"></div>
+      <label class="kb spend"><div class="label">Current spend</div><div class="mrow"><span>$</span><input id="total" inputmode="numeric" value="${moneyNum(total)}" aria-label="Spend target"></div><div class="s" id="k-y1">Y1 GTD ${money(T.g1)} · max ${money(T.max1)}</div></label>
+      <div class="kb"><div class="label">Remaining</div><b id="k-rem" style="color:${total - T.spend < 0 ? "var(--bad)" : "var(--good)"}">${money(total - T.spend)}</b><div class="s" id="k-y2">Y2 committed ${money(T.y2)}</div></div>
+      <div class="kb"><div class="label">Roster</div><b id="k-ros">${T.assigned}<span style="font-size:13px;color:var(--muted)">/${draft.slots.length}</span></b></div>
+      <div class="kb"><div class="label">Minutes</div><b id="k-min" style="color:${T.min > 200 ? "var(--bad)" : "#fff"}">${T.min}<span style="font-size:13px;color:var(--muted)">/200</span></b><div class="minbar"><i id="k-minbar" style="width:${Math.min(100, (T.min / 200) * 100)}%;background:${T.min > 200 ? "var(--bad)" : "var(--good)"}"></i></div></div>
+    </div>
+    <div class="cols">${TIERS.map(colHTML).join("")}</div>
+  </div>`;
+}
+function colHTML(tier) {
+  const S = draft.slots.filter((s) => s.bucket === tier), m = META[tier], spend = S.reduce((a, s) => a + (+s.budget || 0), 0), bud = +draft.buckets?.[tier] || 0;
+  return `<section class="col" data-tier="${tier}">
+    <div class="ch"><div class="cht"><div><b>${m.label} <span>(${S.length})</span></b><div class="r">${m.range}</div></div>
+      <div class="pm noprint"><button data-add="${tier}" aria-label="Add ${tier} spot">+</button><button data-rm="${tier}" ${S.length ? "" : "disabled"} aria-label="Remove ${tier} spot">−</button></div></div>
+      <div class="cb"><label>Column budget<input data-bud="${tier}" inputmode="numeric" value="${moneyNum(bud)}"></label><div class="sp"><span class="label" style="font-size:8.5px">Spend</span><b id="sp-${tier.replace(/ /g, "")}" style="color:${spend > bud ? "var(--bad)" : "var(--good)"}">${money(spend)}</b></div></div>
+      <label class="cmn"><span>Minutes</span><input type="number" min="0" max="200" step="1" data-min="${tier}" value="${+draft.minutes?.[tier] || 0}"></label></div>
+    <div class="slots" style="grid-template-rows:repeat(${Math.max(S.length, 1)},minmax(0,136px))">${S.map((s, i) => slotHTML(s, i, S.length)).join("")}</div></section>`;
+}
+function slotHTML(s, i, n) {
+  const p = s.playerId ? FO.byId.get(s.playerId) : null, dense = n >= 6, m = META[s.bucket];
+  const head = s.source === "Custom" ? `<span class="fos${s.photo ? "" : " open"}">${s.photo ? `<img alt="" src="${esc(s.photo)}">` : "CUSTOM"}</span>` : p ? shot(p) : `<span class="fos open">OPEN</span>`;
+  const body = s.source === "Custom"
+    ? `<input data-title="${s.id}" value="${esc(s.title)}" placeholder="Custom player / role"><label class="up noprint">Upload headshot<input type="file" accept="image/*" data-up="${s.id}" hidden></label>`
+    : p ? `<b>${esc(p.name)}</b><div class="t">${teamMark(p, 16)}<span>${esc(p.school)}</span></div><div class="src">${esc(s.source)}${p.pos ? " · " + esc(p.pos) : ""}${p.rates?.ppg != null ? ` · ${p.rates.ppg.toFixed(1)} ppg` : ""}</div>`
+    : `<input data-title="${s.id}" value="${esc(s.title)}" placeholder="Open slot">${dense ? "" : `<div class="hint noprint">Click headshot to add a player</div>`}`;
+  return `<article class="slot${dense ? " dense" : ""}${dragId === s.id ? " drag" : ""}" data-slot="${s.id}" data-tier="${s.bucket}" data-i="${i}">
+    <div class="sl1"><button class="hsb" data-src="${s.id}" title="Add or change player">${head}<span class="dot noprint">▾</span></button><div class="snm">${body}</div>
+      <button class="grip noprint" draggable="true" data-grip="${s.id}" title="Drag roster spot" aria-label="Drag roster spot">⋮⋮</button></div>
+    <div class="sb"><div class="sbm"><span>$</span><input data-money="${s.id}" inputmode="numeric" value="${moneyNum(s.budget)}" aria-label="Budget"></div>
+      ${dense ? (p ? `<button class="ctr abs noprint" data-ctr="${s.id}" title="Contract details">▤</button>` : "") : `<div class="sbr noprint"><input type="range" min="0" max="${Math.max(m.max, +s.budget || 0)}" step="10000" value="${+s.budget || 0}" data-range="${s.id}" aria-label="Budget for slot ${i + 1}">${p ? `<button class="ctr" data-ctr="${s.id}" title="Contract details">▤</button>` : ""}</div>`}</div></article>`;
+}
+// Totals refresh without re-rendering inputs (keeps typing focus).
+function refreshTotals() {
+  const T = totals(), total = +draft.total || 0, $ = (id) => document.getElementById(id);
+  $("k-y1").textContent = `Y1 GTD ${money(T.g1)} · max ${money(T.max1)}`;
+  $("k-rem").textContent = money(total - T.spend); $("k-rem").style.color = total - T.spend < 0 ? "var(--bad)" : "var(--good)";
+  $("k-y2").textContent = `Y2 committed ${money(T.y2)}`;
+  $("k-min").innerHTML = `${T.min}<span style="font-size:13px;color:var(--muted)">/200</span>`; $("k-min").style.color = T.min > 200 ? "var(--bad)" : "#fff";
+  $("k-minbar").style.width = `${Math.min(100, (T.min / 200) * 100)}%`; $("k-minbar").style.background = T.min > 200 ? "var(--bad)" : "var(--good)";
+  for (const t of TIERS) { const S = draft.slots.filter((s) => s.bucket === t), sp = S.reduce((a, s) => a + (+s.budget || 0), 0), el = $("sp-" + t.replace(/ /g, "")); if (el) { el.textContent = money(sp); el.style.color = sp > (+draft.buckets?.[t] || 0) ? "var(--bad)" : "var(--good)"; } }
+  keep();
+}
+const changed = () => { if (saveState) { saveState = ""; const e = document.getElementById("svst"); if (e) e.textContent = ""; } keep(); };
+const slotOf = (id) => draft.slots.find((s) => s.id === id);
+const setBudget = (s, v) => { s.budget = Math.max(0, v); s.y1g = s.budget; s.y1i = 0; };
+
+// ---------------------------------------------------------------- events
+page.addEventListener("input", (e) => {
+  const t = e.target, d = t.dataset;
+  if (t.id === "dname") draft.name = t.value;
+  else if (t.id === "total") { draft.total = parseMoney(t.value); t.value = moneyNum(draft.total); }
+  else if (d.bud) { draft.buckets[d.bud] = parseMoney(t.value); t.value = moneyNum(draft.buckets[d.bud]); }
+  else if (d.min) draft.minutes[d.min] = Math.max(0, Math.min(200, +t.value || 0));
+  else if (d.title) slotOf(d.title).title = t.value;
+  else if (d.money) { const s = slotOf(d.money); setBudget(s, parseMoney(t.value)); t.value = moneyNum(s.budget); const r = page.querySelector(`[data-range="${s.id}"]`); if (r) { r.max = Math.max(META[s.bucket].max, s.budget); r.value = s.budget; } }
+  else if (d.range) { const s = slotOf(d.range); setBudget(s, +t.value); const m = page.querySelector(`[data-money="${s.id}"]`); if (m) m.value = moneyNum(s.budget); }
+  else return;
+  changed(); refreshTotals();
+});
+// Arrow keys step money fields by $10,000.
+page.addEventListener("keydown", (e) => {
+  const t = e.target; if (!(e.key === "ArrowUp" || e.key === "ArrowDown") || !(t.dataset.money || t.dataset.bud || t.id === "total")) return;
+  e.preventDefault(); const step = e.key === "ArrowUp" ? 1e4 : -1e4;
+  t.value = moneyNum(Math.max(0, parseMoney(t.value) + step)); t.dispatchEvent(new Event("input", { bubbles: true }));
+});
+page.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.dataset.up && t.files?.[0]) uploadShot(slotOf(t.dataset.up), t.files[0]);
+});
+page.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return; const d = b.dataset;
+  if (d.add) { draft.slots.push(mkSlot(d.add)); changed(); render(); }
+  else if (d.rm) { const last = [...draft.slots].reverse().find((s) => s.bucket === d.rm); draft.slots = draft.slots.filter((s) => s !== last); changed(); render(); }
+  else if (d.src) sourceMenu(slotOf(d.src), b);
+  else if (d.ctr) contract(slotOf(d.ctr));
+  else if (d.load) { const s = saved.find((x) => x.id === d.load); if (s) { draft = { ...clone(s), id: "draft" }; loadedId = s.id; saveState = "saved"; keep(); render(); } }
+  else if (d.del) { const s = saved.find((x) => x.id === d.del); if (!s) return; if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Delete?"; return; } saved = saved.filter((x) => x.id !== d.del); if (loadedId === d.del) loadedId = null; persist(); }
+  else if (b.id === "print") print();
+  else if (b.id === "reset") { draft = defaultDraft(); loadedId = null; saveState = ""; keep(); render(); }
+  else if (b.id === "save") saveScenario();
+});
+page.addEventListener("contextmenu", (e) => {
+  const a = e.target.closest("[data-slot]"); if (!a || e.target.closest("input")) return; e.preventDefault();
+  menu(e.clientX, e.clientY, [["Duplicate block", () => { const i = draft.slots.findIndex((s) => s.id === a.dataset.slot); draft.slots.splice(i + 1, 0, { ...clone(draft.slots[i]), id: `${draft.slots[i].bucket}-${uid()}` }); changed(); render(); }],
+    ["Delete block", () => { draft.slots = draft.slots.filter((s) => s.id !== a.dataset.slot); changed(); render(); }, "bad"]]);
+});
+// drag & drop between tiers / positions
+page.addEventListener("dragstart", (e) => { const g = e.target.closest("[data-grip]"); if (!g) return; dragId = g.dataset.grip; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId); g.closest(".slot").classList.add("drag"); });
+page.addEventListener("dragend", () => { dragId = null; page.querySelectorAll(".slot.drag").forEach((x) => x.classList.remove("drag")); });
+page.addEventListener("dragover", (e) => { if (dragId && e.target.closest(".col")) e.preventDefault(); });
+page.addEventListener("drop", (e) => {
+  const col = e.target.closest(".col"); if (!dragId || !col) return; e.preventDefault();
+  const slot = e.target.closest("[data-slot]"), tier = col.dataset.tier, moving = slotOf(dragId); if (!moving) return;
+  const rest = draft.slots.filter((s) => s.id !== dragId), inTier = rest.filter((s) => s.bucket === tier);
+  const at = slot ? Math.max(0, inTier.findIndex((s) => s.id === slot.dataset.slot)) : inTier.length;
+  inTier.splice(at, 0, { ...moving, bucket: tier });
+  draft.slots = TIERS.flatMap((t) => (t === tier ? inTier : rest.filter((s) => s.bucket === t)));
+  dragId = null; changed(); render();
+});
+
+// ---------------------------------------------------------------- pieces
+function menu(x, y, items) {
+  document.querySelector(".fomenu")?.remove();
+  const m = document.createElement("div"); m.className = "fomenu";
+  m.innerHTML = items.map(([l, , cls], i) => `<button data-i="${i}" class="${cls || ""}">${esc(l)}</button>`).join("");
+  m.style.left = Math.min(x, innerWidth - 170) + "px"; m.style.top = Math.min(y, innerHeight - 20 - items.length * 34) + "px";
+  document.body.appendChild(m);
+  const off = (ev) => { if (!m.contains(ev.target)) { m.remove(); removeEventListener("mousedown", off, true); } };
+  setTimeout(() => addEventListener("mousedown", off, true));
+  m.onclick = (ev) => { const b = ev.target.closest("button"); if (!b) return; m.remove(); removeEventListener("mousedown", off, true); items[+b.dataset.i][1](); };
+}
+function sourceMenu(s, el) {
+  const r = el.getBoundingClientRect();
+  menu(r.left, r.bottom + 6, ["Returner", "Transfer", "Freshman", "Custom"].map((src) => [src === "Freshman" ? "Freshman / Intl" : src, () => {
+    if (src === "Custom") { Object.assign(s, { source: "Custom", playerId: "" }); changed(); render(); return; }
+    openPicker({ title: "Add player", types: [src], players: FO.players, exclude: new Set(draft.slots.map((x) => x.playerId).filter(Boolean)),
+      onPick: (p) => { Object.assign(s, { source: src, playerId: p.id, title: "", photo: "" }); changed(); render(); } });
+  }, s.source === src ? "on" : ""]));
+}
+async function uploadShot(s, file) {
+  // Crop to a 180×220 portrait like the hub, kept as a small JPEG inside the scenario.
+  const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onerror = rej; fr.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => {
+    const W = 180, H = 220, sc = Math.max(W / im.width, H / im.height), dw = im.width * sc, dh = im.height * sc, c = document.createElement("canvas"); c.width = W; c.height = H;
+    c.getContext("2d").drawImage(im, -(dw - W) / 2, -Math.max(0, (dh - H) * 0.18), dw, dh); res(c.toDataURL("image/jpeg", 0.78)); }; im.src = String(fr.result); }; fr.readAsDataURL(file); });
+  s.photo = url; changed(); render();
+}
+function contract(s) {
+  const host = document.createElement("div"); host.className = "fomodal cmodal";
+  const draw = () => { host.innerHTML = `<div class="fobox" style="width:min(420px,100%)"><div class="fohd"><div><b>Contract structure</b><div class="m">Year 1 max ${money(s.budget)}</div></div><button class="fox" data-x>✕</button></div>
+    <div class="cbody"><div><div class="lab">Term</div><div class="terms">${[1, 2].map((y) => `<button class="fbtn${(s.years || 1) === y ? " on" : ""}" data-y="${y}" style="justify-content:center">${y} year${y > 1 ? "s" : ""}</button>`).join("")}</div></div>
+      <label><div class="lab">Y1 guaranteed</div><input class="foin" data-k="y1g" inputmode="numeric" value="${moneyNum(s.y1g ?? s.budget)}"></label>
+      <label><div class="lab">Y1 incentives</div><input class="foin" data-k="y1i" inputmode="numeric" value="${moneyNum(s.y1i)}"></label>
+      ${(s.years || 1) === 2 ? `<label><div class="lab">Y2 guaranteed</div><input class="foin" data-k="y2g" inputmode="numeric" value="${moneyNum(s.y2g)}"></label>` : ""}
+      <div class="cnote" id="cn">Y1 guaranteed ${money(s.y1g ?? s.budget)} · max ${money(s.budget)}</div></div></div>`; };
+  draw();
+  host.addEventListener("mousedown", (e) => { if (e.target === host) done(); });
+  host.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.x !== undefined) return done(); if (b.dataset.y) { s.years = +b.dataset.y; if (s.years === 1) s.y2g = 0; draw(); } });
+  host.addEventListener("input", (e) => { const k = e.target.dataset.k; if (!k) return; s[k] = parseMoney(e.target.value); e.target.value = moneyNum(s[k]); if (k !== "y2g") s.budget = (+s.y1g || 0) + (+s.y1i || 0); host.querySelector("#cn").textContent = `Y1 guaranteed ${money(s.y1g)} · max ${money(s.budget)}`; });
+  function done() { host.remove(); changed(); render(); }
+  document.body.appendChild(host);
+}
+async function persist() {
+  saveState = "saving"; render();
+  try { await saveAll("cap", saved); saveState = "saved"; } catch { saveState = "error"; }
+  keep(); render();
+}
+async function saveScenario() {
+  const name = draft.name.trim() || `Scenario ${saved.length + 1}`;
+  if (loadedId && saved.some((s) => s.id === loadedId)) saved = saved.map((s) => (s.id === loadedId ? { ...clone(draft), id: loadedId, name } : s));
+  else { const id = uid(); saved = [...saved, { ...clone(draft), id, name }]; loadedId = id; }
+  await persist();
+}
+render();
+</script>
+</body>
+</html>
