@@ -246,7 +246,7 @@ addDefs({
   fg_pct: ["Field goal %", ""], two_pct: ["2-point %", "Made twos ÷ attempted twos."], three_pct: ["3-point %", ""], ft_pct: ["Free throw %", ""],
   efg_pct: ["Effective FG %", "Field-goal % with threes worth 1.5×."], usage_pct: ["Usage %", "Share of his team's possessions he used while on the floor (Barttorvik)."],
   mpg: ["Minutes per game", ""], ppg: ["Points per game", ""], rpg: ["Rebounds per game", ""], apg: ["Assists per game", ""], spg: ["Steals per game", ""], topg: ["Turnovers per game", "Lower is better."],
-  sk_sc: ["Scoring score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_pl: ["Playmaking score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_rb: ["Rebounding score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_df: ["Defense score (DEF v2)", "Bronco IQ defensive score, 2025-26. Ranked among D-I rotation players (40%+ of team minutes)."],
+  sk_sc: ["Scoring score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_pl: ["Playmaking score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_rb: ["Rebounding score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."], sk_df: ["Defense score (DEF v2)", "Bronco IQ defensive score, 2025-26. Ranked among D-I rotation players (40%+ of team minutes)."], sk_wn: ["Win score (v0.2)", "How much he moved the needle on winning, 2025-26: wins added over a replacement-level player, from possession-level plus-minus with a box-score prior. 50 = D-I average, 70 = top 7%, 80+ = top 1%. Needs 200+ minutes."],
   s_best: ["Best / worst games", "Game score = PTS + 0.7·REB + 0.7·AST + 2·STL + 2·BLK − TO. Only games where he played at least 75% of his usual minutes (and 12+) count. Non-D-I games are left out."],
 });
 
@@ -261,7 +261,7 @@ const S = Object.assign(blank(), ss.get(VIEW, {}));
 let order = H.loadColumnOrder(COLS, H.defaultSearchColumnOrder.filter((k) => k !== "objective" && k !== "daor"));
 let visibleStats = ls.get(STATS, H.defaultStatColumns).filter((k) => STAT_KEYS.includes(k));
 // Skill-score columns were added later: show them once for people with a saved column choice.
-if (!ls.get("biq-skill-cols", false)) { for (const k of ["sk_sc", "sk_pl", "sk_rb", "sk_df"]) if (!visibleStats.includes(k)) visibleStats.push(k); ls.set(STATS, visibleStats); ls.set("biq-skill-cols", true); }
+if (!ls.get("biq-skill-cols2", false)) { for (const k of ["sk_sc", "sk_pl", "sk_rb", "sk_df", "sk_wn"]) if (!visibleStats.includes(k)) visibleStats.push(k); ls.set(STATS, visibleStats); ls.set("biq-skill-cols2", true); }
 let saved = ls.get(SAVED, []), recent = ls.get(RECENT, []);
 const selected = new Set(), expanded = new Set();
 let P = [], byId = new Map(), TEAMS = [], CONFS = [], confLogo = new Map(), teamInfo = new Map(), D1 = null, meta = {};
@@ -558,7 +558,7 @@ function compareDialog() {
   let g = `<div></div>` + ps.map((p) => `<div class="top">${headshot(p)}<div class="nm">${esc(p.first_name)} ${esc(p.last_name)}</div></div>`).join("");
   for (const [l, f, n, suf = ""] of rows) {
     const vals = ps.map(f), best = n ? Math.max(...vals.filter((v) => v != null)) : null;
-    g += `<div class="lab">${l}</div>` + vals.map((v) => `<div class="${n && v != null && v === best && ps.length > 1 ? "best" : ""}">${v == null || v === "" ? "—" : esc(v) + (suf && v != null ? suf : "")}</div>`).join("");
+    g += `<div class="lab">${l}</div>` + vals.map((v) => `<div class="${n && v != null && v === best && ps.length > 1 ? "best" : ""}">${v == null || v === "" ? "—" : (suf ? Math.round(+v) + suf : esc(v))}</div>`).join("");
   }
   document.getElementById("modal").innerHTML = `<div class="mbg"><div class="modal"><button class="x" data-close>×</button><h2>Compare Players</h2><div class="sub">Last season's production side by side. Orange marks the best in each row.</div><div style="overflow-x:auto"><div class="cmp" style="grid-template-columns:${cols}">${g}</div></div></div></div>`;
 }
@@ -569,7 +569,7 @@ const gridStyle = (cols) => `grid-template-columns:${cols.map((k) => H.searchCol
 const labelOf = (k) => H.cols.find((c) => c.key === k)?.label ?? k;
 const defKey = { position: "s_pos", height: "s_ht", class: "s_class", season: "s_season" };
 const headshot = (p) => p.photo ? `<span class="hs"><img alt="" loading="lazy" decoding="async" src="${esc(p.photoUrl)}" onerror="this.remove()"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>` : `<span class="hs"><b>${esc((p.first_name[0] || "") + (p.last_name[0] || ""))}</b></span>`;
-const fmt = (v, k) => (v == null || v === "" ? "—" : PCT.has(k) ? `${v}%` : String(v));
+const fmt = (v, k) => (v == null || v === "" ? "—" : PCT.has(k) ? `${Math.round(+v)}%` : String(v));
 function headerHTML() {
   const cols = visCols(), active = [{ key: S.sortKey, direction: S.dir }, ...S.sec];
   return `<div class="rgrid rhead" style="${gridStyle(cols)}">${cols.map((k) => {
@@ -649,7 +649,7 @@ rin.addEventListener("dragend", () => { dragCol = ""; rin.querySelectorAll(".hc.
 function histRow(s, kind) {
   const k = kind === "career" ? "Career Average" : kind === "current" ? "Latest Season" : "Previous Season";
   const sub = kind === "career" ? `${s.gp} total games` : esc(s.school);
-  const v = (x, key) => `<div class="v">${x == null || x === "" ? "—" : PCT.has(key) ? x + "%" : x}</div>`;
+  const v = (x, key) => `<div class="v">${x == null || x === "" ? "—" : PCT.has(key) ? Math.round(+x) + "%" : x}</div>`;
   return `<div class="hrow ${kind === "current" ? "cur" : kind === "career" ? "car" : ""}"><div><div class="k">${k}</div><div class="sch">${sub}</div></div><div class="yr">${esc(s.season)}</div>${v(s.gp)}${v(s.mpg)}${v(s.ppg)}${v(s.rpg)}${v(s.apg)}${v(s.spg)}${v(s.topg)}${v(s.fg_pct, "fg_pct")}${v(s.two_pct, "two_pct")}${v(s.three_pct, "three_pct")}${v(s.ft_pct, "ft_pct")}${v(s.efg_pct, "efg_pct")}${v(s.usage_pct || null, "usage_pct")}</div>`;
 }
 const GAMES = new Map(), full = new Set();

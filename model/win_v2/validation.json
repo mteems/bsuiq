@@ -1,0 +1,180 @@
+{
+ "grid": [
+  {
+   "lam_player": 640,
+   "lam_box": 50,
+   "lam_team": 160,
+   "possession_rmse": 1.1655997282347514,
+   "game_margin_mae": 9.46509698688861,
+   "games": 864
+  },
+  {
+   "lam_player": 2560,
+   "lam_box": 50,
+   "lam_team": 160,
+   "possession_rmse": 1.1650703344181372,
+   "game_margin_mae": 9.299067523434294,
+   "games": 864
+  },
+  {
+   "lam_player": 10240,
+   "lam_box": 50,
+   "lam_team": 160,
+   "possession_rmse": 1.1650285772328395,
+   "game_margin_mae": 9.248479846606292,
+   "games": 864
+  },
+  {
+   "lam_player": 640,
+   "lam_box": 1000000000.0,
+   "lam_team": 160,
+   "possession_rmse": 1.1655068337663674,
+   "game_margin_mae": 9.321940507733624,
+   "games": 864
+  },
+  {
+   "lam_player": 2560,
+   "lam_box": 1000000000.0,
+   "lam_team": 160,
+   "possession_rmse": 1.1651154190718702,
+   "game_margin_mae": 9.132739958079673,
+   "games": 864
+  },
+  {
+   "lam_player": 10240,
+   "lam_box": 1000000000.0,
+   "lam_team": 160,
+   "possession_rmse": 1.1651626124979664,
+   "game_margin_mae": 9.094623278175233,
+   "games": 864
+  },
+  {
+   "lam_player": 640,
+   "lam_box": 50,
+   "lam_team": 1000000000.0,
+   "possession_rmse": 1.165598667090503,
+   "game_margin_mae": 9.507500466275301,
+   "games": 864
+  },
+  {
+   "lam_player": 2560,
+   "lam_box": 50,
+   "lam_team": 1000000000.0,
+   "possession_rmse": 1.1651362245049233,
+   "game_margin_mae": 9.46165182215158,
+   "games": 864
+  },
+  {
+   "lam_player": 10240,
+   "lam_box": 50,
+   "lam_team": 1000000000.0,
+   "possession_rmse": 1.16527591846831,
+   "game_margin_mae": 9.599348708147643,
+   "games": 864
+  },
+  {
+   "lam_player": 640,
+   "lam_box": 1000000000.0,
+   "lam_team": 1000000000.0,
+   "possession_rmse": 1.1654932113504468,
+   "game_margin_mae": 9.37118171569433,
+   "games": 864
+  },
+  {
+   "lam_player": 2560,
+   "lam_box": 1000000000.0,
+   "lam_team": 1000000000.0,
+   "possession_rmse": 1.1652161277425597,
+   "game_margin_mae": 9.348120388437032,
+   "games": 864
+  },
+  {
+   "lam_player": 10240,
+   "lam_box": 1000000000.0,
+   "lam_team": 1000000000.0,
+   "possession_rmse": 1.165873236134619,
+   "game_margin_mae": 9.8579909854468,
+   "games": 864
+  }
+ ],
+ "selected": {
+  "lam_player": 10240,
+  "lam_box": 1000000000.0,
+  "lam_team": 160,
+  "possession_rmse": 1.1651626124979664,
+  "game_margin_mae": 9.094623278175233,
+  "games": 864
+ },
+ "test_box_prior": {
+  "possession_rmse": 1.1638762174912636,
+  "game_margin_mae": 8.784971422634097,
+  "games": 211
+ },
+ "test_box_only": {
+  "possession_rmse": 1.1647013239884723,
+  "game_margin_mae": 9.900842288467347,
+  "games": 211
+ },
+ "test_same_with_box": {
+  "possession_rmse": 1.1639447764830042,
+  "game_margin_mae": 9.121365679905985,
+  "games": 211
+ },
+ "test_rapm_v01": {
+  "possession_rmse": 1.1640967494781715,
+  "game_margin_mae": 9.258428103075092,
+  "games": 211
+ },
+ "test_team_only": {
+  "possession_rmse": 1.1639100125601816,
+  "game_margin_mae": 8.762973552507468,
+  "games": 211
+ },
+ "test_constant": {
+  "possession_rmse": 1.1661151179515337,
+  "game_margin_mae": 11.065691537267371,
+  "games": 211
+ },
+ "team_weight_note": "team effect split evenly across the five on the floor",
+ "box_weights": {
+  "offense": {
+   "pts": 0.004,
+   "fga": 0.002,
+   "fta": 0.002,
+   "tpa": 0.001,
+   "ast": 0.002,
+   "tov": -0.001,
+   "orb": 0.0,
+   "drb": 0.001,
+   "stl": 0.001,
+   "blk": -0.0,
+   "pf": -0.002,
+   "rima": 0.001,
+   "share": 0.003,
+   "ht": -0.0,
+   "share2": 0.003
+  },
+  "defense": {
+   "pts": -0.0,
+   "fga": -0.001,
+   "fta": 0.0,
+   "tpa": -0.001,
+   "ast": 0.0,
+   "tov": 0.0,
+   "orb": 0.001,
+   "drb": 0.002,
+   "stl": 0.002,
+   "blk": 0.002,
+   "pf": 0.001,
+   "rima": 0.001,
+   "share": 0.0,
+   "ht": 0.001,
+   "share2": 0.0
+  }
+ },
+ "intercept": 107.73976469870142,
+ "home": 2.080015665808354,
+ "points_per_win": 40.316411434929705,
+ "replacement_impact": -2.770248921120926,
+ "pool": 3404
+}

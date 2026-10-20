@@ -61,7 +61,7 @@ function playerScores(p) {
       for (const k of Object.keys(sk)) delete sk[k];
       if (NR) {
         const pool = (key) => RANK_LATEST.rows.filter((x) => x[RC["rk_" + key]] != null).length;
-        for (const [k, key] of [["scoring", "sc"], ["playmaking", "pl"], ["rebounding", "rb"], ["defense", "df"]])
+        for (const [k, key] of [["scoring", "sc"], ["playmaking", "pl"], ["rebounding", "rb"], ["defense", "df"], ["win", "wn"]])
           if (NR[RC[key]] != null) sk[k] = { score: NR[RC[key]], rank: NR[RC["rk_" + key]], pool: pool(key) };
       }
       out.skills = { version: SK.version, season: SK.season, pool: SK.pool, team: r[1], min: r[3], mpg: r[4], ref: !!r[6], s: sk };
@@ -77,7 +77,7 @@ function playerScores(p) {
       const NR = hit.length === 1 ? hit[0] : hit.find((x) => normName(x[C.team]).slice(0, 5) === normName(last.school).slice(0, 5));
       if (NR) {
         const sk = {}, pool = (key) => R.rows.filter((x) => x[C["rk_" + key]] != null).length;
-        for (const [k, key] of [["scoring", "sc"], ["playmaking", "pl"], ["rebounding", "rb"], ["defense", "df"]])
+        for (const [k, key] of [["scoring", "sc"], ["playmaking", "pl"], ["rebounding", "rb"], ["defense", "df"], ["win", "wn"]])
           if (NR[C[key]] != null) sk[k] = { score: NR[C[key]], rank: NR[C["rk_" + key]], pool: pool(key) };
         if (Object.keys(sk).length) out.skills = { version: "rankings", season: last.season, pool: pool("sc"), team: NR[C.team], min: Math.round(NR[C.min] || 0), mpg: null, ref: true, s: sk };
       }

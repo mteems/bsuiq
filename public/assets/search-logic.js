@@ -588,6 +588,7 @@ export const defaultSearchColumnOrder= [
   "sk_pl",
   "sk_rb",
   "sk_df",
+  "sk_wn",
 ];
 export const searchColumnWidths= {
   name: "minmax(275px,1.85fr)",
@@ -614,6 +615,7 @@ export const searchColumnWidths= {
   sk_pl: "minmax(48px,.5fr)",
   sk_rb: "minmax(48px,.5fr)",
   sk_df: "minmax(48px,.5fr)",
+  sk_wn: "minmax(48px,.5fr)",
 };
 export function loadColumnOrder(
   storageKey,
@@ -650,7 +652,7 @@ function resultGridStyle(columnOrder) {
   };
 }
 export const defaultStatColumns= [
-  "gp", "mpg", "ppg", "rpg", "apg", "spg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "sk_sc", "sk_pl", "sk_rb", "sk_df",
+  "gp", "mpg", "ppg", "rpg", "apg", "spg", "topg", "fg_pct", "two_pct", "three_pct", "ft_pct", "efg_pct", "sk_sc", "sk_pl", "sk_rb", "sk_df", "sk_wn",
 ];
 export const cols= [
   { key: "name", label: "Player" },
@@ -675,6 +677,7 @@ export const cols= [
   { key: "sk_pl", label: "PLAY" },
   { key: "sk_rb", label: "RBND" },
   { key: "sk_df", label: "DEF" },
+  { key: "sk_wn", label: "WIN" },
   { label: "" },
 ];
 
