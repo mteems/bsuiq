@@ -1,0 +1,122 @@
+{
+ "NEW overall (multi-season)": {
+  "game_error_pts": 9.946,
+  "r": 0.4841,
+  "by_season": {
+   "2022": 9.46,
+   "2023": 9.77,
+   "2024": 9.91,
+   "2025": 9.98,
+   "2026": 10.44
+  },
+  "big_bias_pts_per100": 1.12,
+  "team_bias_per_pt": 0.029
+ },
+ "NEW single-season": {
+  "game_error_pts": 10.018,
+  "r": 0.4742,
+  "by_season": {
+   "2022": 9.56,
+   "2023": 9.91,
+   "2024": 9.96,
+   "2025": 10.06,
+   "2026": 10.46
+  },
+  "big_bias_pts_per100": 1.16,
+  "team_bias_per_pt": 0.034
+ },
+ "NEW box prior only": {
+  "game_error_pts": 10.026,
+  "r": 0.4734,
+  "by_season": {
+   "2022": 9.57,
+   "2023": 9.92,
+   "2024": 9.96,
+   "2025": 10.06,
+   "2026": 10.46
+  },
+  "big_bias_pts_per100": 1.18,
+  "team_bias_per_pt": 0.033
+ },
+ "Torvik BPM": {
+  "game_error_pts": 10.057,
+  "r": 0.4684,
+  "by_season": {
+   "2022": 9.57,
+   "2023": 9.96,
+   "2024": 10.03,
+   "2025": 10.04,
+   "2026": 10.52
+  },
+  "big_bias_pts_per100": 1.13,
+  "team_bias_per_pt": 0.016
+ },
+ "team strength only": {
+  "game_error_pts": 10.347,
+  "r": 0.424,
+  "by_season": {
+   "2022": 9.86,
+   "2023": 10.13,
+   "2024": 10.41,
+   "2025": 10.37,
+   "2026": 10.8
+  },
+  "big_bias_pts_per100": 1.34,
+  "team_bias_per_pt": -0.003
+ },
+ "v0.5 Overall (current site)": {
+  "game_error_pts": 10.363,
+  "r": 0.4099,
+  "by_season": {
+   "2022": 9.95,
+   "2023": 10.1,
+   "2024": 10.31,
+   "2025": 10.46,
+   "2026": 10.82
+  },
+  "big_bias_pts_per100": 1.42,
+  "team_bias_per_pt": 0.074
+ },
+ "v0.5 Win (current site)": {
+  "game_error_pts": 10.437,
+  "r": 0.3952,
+  "by_season": {
+   "2022": 10.06,
+   "2023": 10.19,
+   "2024": 10.39,
+   "2025": 10.52,
+   "2026": 10.87
+  },
+  "big_bias_pts_per100": 1.32,
+  "team_bias_per_pt": 0.083
+ },
+ "v0.5 Impact (honest retrain)": {
+  "game_error_pts": 9.915,
+  "r": 0.4919,
+  "by_season": {
+   "2022": 9.37,
+   "2023": 9.97,
+   "2024": 9.89,
+   "2025": 9.92,
+   "2026": 10.29
+  },
+  "big_bias_pts_per100": 1.04,
+  "team_bias_per_pt": -0.01
+ },
+ "v0.5 Impact (in-sample)": {
+  "game_error_pts": 9.801,
+  "r": 0.5082,
+  "by_season": {
+   "2022": 9.29,
+   "2023": 9.72,
+   "2024": 9.79,
+   "2025": 9.84,
+   "2026": 10.22
+  },
+  "big_bias_pts_per100": 0.9,
+  "team_bias_per_pt": -0.003
+ },
+ "home edge only": {
+  "game_error_pts": 11.267
+ }
+}

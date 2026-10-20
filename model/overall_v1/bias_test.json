@@ -1,0 +1,53 @@
+{
+ "impact plain": {
+  "game_error_pts": 9.915,
+  "coef": {
+   "x1": 0.493,
+   "x2": -0.263
+  }
+ },
+ "impact +bias terms": {
+  "game_error_pts": 9.897,
+  "coef": {
+   "x1": 0.441,
+   "x2": -0.274,
+   "big": 0.567,
+   "res": 0.149,
+   "nres": 0.081
+  }
+ },
+ "new plain": {
+  "game_error_pts": 9.946,
+  "coef": {
+   "x1": 0.418,
+   "x2": -1.508
+  }
+ },
+ "new +bias terms": {
+  "game_error_pts": 9.928,
+  "coef": {
+   "x1": 0.46,
+   "x2": -1.258,
+   "big": 0.755,
+   "res": -0.059,
+   "nres": 0.439
+  }
+ },
+ "blend plain": {
+  "game_error_pts": 9.895,
+  "coef": {
+   "x1": 0.453,
+   "x2": -0.367
+  }
+ },
+ "blend +bias terms": {
+  "game_error_pts": 9.878,
+  "coef": {
+   "x1": 0.409,
+   "x2": -0.339,
+   "big": 0.566,
+   "res": 0.128,
+   "nres": 0.179
+  }
+ }
+}

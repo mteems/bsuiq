@@ -101,8 +101,8 @@ const ovrBlock = OV ? `<div class="povr"><div class="label"><span data-def="over
   <div class="povr-in">${ring(OV.score)}<div>
     <span class="stag" style="background:${scol(OV.score)};margin-top:0">${tierOf(OV.score).toUpperCase()}</span>
     <div class="srank" style="font-size:14px;margin-top:6px">${OV.rank ? `${ord(OV.rank)} of ${OV.pool.toLocaleString()}` : "—"}</div>
-    ${OV.wprk && OV.wpg ? `<div class="m" style="font-size:12px;margin-top:2px">${ord(OV.wprk)} among ${PGN[OV.wpg] || "his position"}</div>` : ""}
-    <div class="povr-k"><span><span data-def="ind">Ind/100</span><b>${sgn(OV.ind)}</b></span><span><span data-def="winscore">Win</span><b>${OV.wn == null ? "—" : OV.wn.toFixed(0)}</b></span><span><span data-def="pimp">Proj '27</span><b>${sgn(OV.pimp)}</b></span></div>
+    ${OV.oprk && OV.wpg ? `<div class="m" style="font-size:12px;margin-top:2px">${ord(OV.oprk)} among ${PGN[OV.wpg] || "his position"}</div>` : ""}
+    <div class="povr-k"><span><span data-def="tal">Talent/100</span><b>${sgn(OV.tal)}</b></span><span><span data-def="winscore">Win</span><b>${OV.wn == null ? "—" : OV.wn.toFixed(0)}</b></span><span><span data-def="pimp">Proj '27</span><b>${sgn(OV.pimp)}</b></span></div>
   </div></div><a class="cap" href="/rankings#nat/ovr" style="color:var(--soft)">Overall rankings →</a></div>` : "";
 const ini = (playerName(P).match(/\b\w/g) || []).slice(0, 2).join("");
 page.innerHTML = `

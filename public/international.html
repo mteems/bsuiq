@@ -211,9 +211,13 @@ function drawStates() {
     .on("mousemove", (e, f) => { const n = vis().filter((p) => d3.geoContains(f, p.ll)).length; tipOn(e, `<b>${f.properties.n}</b>${n ? ` · ${n} player${n > 1 ? "s" : ""}` : ""}`); }).on("mouseleave", tipOff);
   shadeStates();
 }
-function shadeStates() { const on = st.hover ?? st.sel; gStates.selectAll("path").classed("has", (f) => vis().some((p) => d3.geoContains(f, p.ll))).classed("hot", (f) => on != null && d3.geoContains(f, P[on].ll)); }
+function shadeStates() { const on = st.hover ?? st.sel, V = vis(); gStates.selectAll("path").classed("has", (f) => V.some((p) => stateHas(f, p))).classed("hot", (f) => on != null && stateHas(f, P[on])); }
 const gLab = svg.append("g"), gPts = svg.append("g");
-const countryAt = (ll) => { for (const f of land) if (d3.geoContains(f, ll)) return f.properties.a; return null; };
+// Which country / state each player sits in, worked out once (map shading doesn't redo it while panning).
+const cMemo = new Map();
+const countryAt = (ll) => { const key = ll.join(","); if (!cMemo.has(key)) { let a = null; for (const f of land) if (d3.geoContains(f, ll)) { a = f.properties.a; break; } cMemo.set(key, a); } return cMemo.get(key); };
+const sMemo = new Map();
+const stateHas = (f, p) => { const key = f.properties.c + f.properties.n + "|" + p.ll.join(","); if (!sMemo.has(key)) sMemo.set(key, d3.geoContains(f, p.ll)); return sMemo.get(key); };
 function drawLand(features) {
   gSphere.attr("d", path({ type: "Sphere" })); gGrat.attr("d", path(d3.geoGraticule10()));
   gLand.selectAll("path").data(features, (f) => f.properties.a).join("path").attr("class", "land").attr("d", path)
@@ -226,9 +230,33 @@ function shadeLand() { const has = new Set(vis().flatMap((p) => [p.a3, countryAt
 drawLand(land);
 let T = d3.zoomIdentity;
 const zoom = d3.zoom().scaleExtent([1, 24]).translateExtent([[-Wd * 0.1, -Ht * 0.1], [Wd * 1.1, Ht * 1.1]])
-  .on("zoom", (e) => { T = e.transform; gMap.attr("transform", T); st.k = T.k; if (T.k > 1.8 && !W50) load50(); placePoints(); })
-  .on("end", (e) => { if (e.sourceEvent) { st.region = regionFor(); drawConts(); drawList(); } });
+  .on("start", (e) => { if (e.sourceEvent) stopGlide(); })
+  .on("zoom", (e) => { T = e.transform; gMap.attr("transform", T); st.k = T.k; if (T.k > 1.8 && !W50) load50(); placePoints(false); trackDrag(e); })
+  .on("end", (e) => { if (!e.sourceEvent) return; if (!startGlide(e)) settle(); });
 svg.call(zoom).on("dblclick.zoom", null);
+// Glide: when a drag is let go while moving, the map keeps sliding and eases to a stop.
+let trail = [], glide = null;
+const settle = () => { st.region = regionFor(); drawConts(); drawList(); shadeLand(); };
+function trackDrag(e) {
+  const se = e.sourceEvent; if (!se || se.type === "wheel") { trail = []; return; }
+  const now = performance.now(); trail.push({ t: now, x: T.x, y: T.y, k: T.k }); while (trail.length && now - trail[0].t > 90) trail.shift();
+}
+function stopGlide() { if (glide) { cancelAnimationFrame(glide); glide = null; } trail = []; }
+function startGlide(e) {
+  const a = trail[0], b = trail[trail.length - 1]; trail = [];
+  if (!a || !b || b.t - a.t < 12 || a.k !== b.k || performance.now() - b.t > 60) return false;
+  let vx = (b.x - a.x) / (b.t - a.t), vy = (b.y - a.y) / (b.t - a.t); // px per ms
+  if (Math.hypot(vx, vy) < 0.15) return false;
+  let last = performance.now();
+  const step = (now) => {
+    const dt = Math.min(40, now - last); last = now;
+    const f = Math.pow(0.94, dt / 16); vx *= f; vy *= f;
+    svg.call(zoom.translateBy, (vx * dt) / T.k, (vy * dt) / T.k);
+    if (Math.hypot(vx, vy) < 0.02) { glide = null; settle(); return; }
+    glide = requestAnimationFrame(step);
+  };
+  glide = requestAnimationFrame(step); return true;
+}
 function load50() { W50 = "loading"; fetch("/assets/geo/world-50m.json").then((r) => r.json()).then((j) => { W50 = j; drawLand(j.features); drawStates(); }).catch(() => (W50 = null)); }
 function tFor(bbox) {
   const [[x0, y0], [x1, y1]] = [proj([bbox[0], bbox[3]]), proj([bbox[2], bbox[1]])];
@@ -245,7 +273,7 @@ document.getElementById("zreset").onclick = () => goRegion("World");
 
 // One dot per player at his club's city. Players in the same city pack together.
 const xy = (ll) => T.apply(proj(ll));
-function placePoints() {
+function placePoints(shade = true) {
   const k = st.k, r = k >= 1.8 ? 6.5 : 5, golden = Math.PI * (3 - Math.sqrt(5));
   const byCity = d3.group(vis(), (p) => p.city || p.nat);
   const pts = [];
@@ -274,17 +302,17 @@ function placePoints() {
   L.select("text.pn").attr("y", -2).text((d) => d.name);
   L.select("text.ps").attr("y", 11).text((d) => d.sub);
   document.getElementById("where").innerHTML = `${st.region}<em>${vis().filter((p) => inRegion(p, st.region)).length} player${vis().filter((p) => inRegion(p, st.region)).length === 1 ? "" : "s"}</em>`;
-  highlight();
+  highlight(shade);
 }
 const fmtAge = (p) => (p.age ? p.age.toFixed(1) : "—");
 function tipHTML(p) { return p.kind === "hs" ? `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""}${p.r247 ? ` · 247 #${p.r247}` : ""}<br>${esc(p.school)} · ${esc(p.city)}` : `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""} · ${fmtAge(p)} yrs<br>${esc(p.team || p.club)} · ${esc(p.city)}, ${p.nat}`; }
-function highlight() {
+function highlight(shade = true) {
   const on = st.hover ?? st.sel;
   gPts.selectAll("g.mk").each(function (d) { const rr = (d.r || 16) + (d.p.i === on ? 3 : 0), g = d3.select(this);
     g.select("clipPath circle").attr("r", rr - 1.5); g.select(".halo").attr("r", rr + 6).attr("opacity", d.p.i === on ? 0.35 : 0.18); g.select(".ring").attr("r", rr).attr("stroke", d.p.i === on ? "#fff" : DOT);
     g.select("image").attr("x", -rr).attr("y", -rr).attr("width", rr * 2).attr("height", rr * 2); if (d.p.i === on) g.raise(); });
   document.querySelectorAll(".pr").forEach((r) => { r.classList.toggle("hl", +r.dataset.i === st.hover); r.classList.toggle("sel", +r.dataset.i === st.sel); });
-  shadeLand();
+  if (shade) shadeLand();
 }
 
 // ---------------------------------------------------------------- side panel
