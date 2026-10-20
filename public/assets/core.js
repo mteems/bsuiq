@@ -156,9 +156,10 @@ export async function searchPlayers(q) {
 
 // ---------- top bar ----------
 const NAV = [
-  [["home", "/", "Roster"], ["scouting", "/scouting", "Scouting"], ["rankings", "/rankings", "Rankings"]],
-  [["search", "/search", "Search"], ["targets", "/targets", "Targets"], ["board", "/board", "Transfer Board"], ["highschool", "/highschool", "High School"], ["international", "/international", "Recruit Map"]],
-  [["cap", "/cap", "Salary Cap"], ["builder", "/builder", "Roster Builder"]],
+  ["Scouting", [["home", "/", "Roster"], ["scouting", "/scouting", "Scouting"], ["rankings", "/rankings", "Rankings"]]],
+  ["Transfer portal", [["search", "/search", "Search"], ["targets", "/targets", "Targets"], ["board", "/board", "Transfer Board"]]],
+  ["Prep", [["prep", "/prep", "Prep List"], ["international", "/international", "Recruit Map"]]],
+  ["Front office", [["cap", "/cap", "Salary Cap"], ["builder", "/builder", "Roster Builder"]]],
 ];
 // ---------- who is signed in (staff name; keeps saved scenarios and boards per person) ----------
 let meP = null;
@@ -189,7 +190,7 @@ export function topBar(active) {
   el.className = "top";
   el.innerHTML = `<div class="bar">
     <a class="brand" href="/"><img alt="" src="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png"><b>BRONCO IQ</b></a>
-    <nav class="nav">${NAV.map((g, i) => (i ? `<span class="navsep" aria-hidden="true"></span>` : "") + g.map(([k, href, l]) => `<a href="${href}" class="${active === k ? "on" : ""}">${l}</a>`).join("")).join("")}</nav>
+    <nav class="nav">${NAV.map(([label, g], i) => (i ? `<span class="navsep" aria-hidden="true"></span>` : "") + `<span class="navg"><span class="navgl">${label}</span><span class="navgi">${g.map(([k, href, l]) => `<a href="${href}" class="${active === k || (k === "prep" && active === "highschool") ? "on" : ""}">${l}</a>`).join("")}</span></span>`).join("")}</nav>
     <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" placeholder="Search players or schools" autocomplete="off" aria-label="Search players"><div class="results" id="qr"></div></div>
     <div class="user" id="who"></div></div>`;

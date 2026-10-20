@@ -212,7 +212,7 @@ function secure(res, isHtml) {
   return r;
 }
 
-const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:highschool|high-school)\/?$/, "/highschool"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"], [/^\/targets\/?$/, "/targets"], [/^\/(?:board|transfer-board)\/?$/, "/board"]];
+const PAGES = [[/^\/$/, "/"], [/^\/search\/?$/, "/search"], [/^\/player\/[\w.-]+\/?$/, "/player"], [/^\/scouting\/?$/, "/scouting"], [/^\/rankings\/?$/, "/rankings"], [/^\/international\/?$/, "/international"], [/^\/(?:highschool|high-school)\/?$/, "/highschool"], [/^\/(?:prep|prep-board|prep-list)\/?$/, "/prep"], [/^\/(?:cap|salary-cap)\/?$/, "/cap"], [/^\/(?:builder|roster-builder)\/?$/, "/builder"], [/^\/targets\/?$/, "/targets"], [/^\/(?:board|transfer-board)\/?$/, "/board"]];
 
 
 // ---------- Player Search: links to the Recruiting Hub (read-only) ----------
@@ -365,6 +365,28 @@ async function transferBoard(request, env, sess, scope) {
   if (Object.keys(P).length > 600) return json({ error: "That board is full (600 players)." }, 400);
   await env.STAFF.put(scopeKey("tb", scope, user), JSON.stringify({ players: P }));
   return json({ ok: true, user, scope, players: Object.values(P) });
+}
+
+// Prep Board (international + high school prospects). KV "prep:staff" (shared) or "prep:u:<name>":
+//   { lanes: { G: [id, ...], W: [...], B: [...] } }   order = the staff's ranking within each lane
+//   GET  /api/prep            → { user, me: {lanes}, staff: {lanes} }
+//   POST /api/prep/<me|staff> { lanes } → replaces that board's order
+async function prepBoard(request, env, sess, scope) {
+  const user = sess.user, empty = { lanes: { G: [], W: [], B: [] } };
+  const read = async (sc) => (env.STAFF && (sc === "staff" || user) ? (await env.STAFF.get(scopeKey("prep", sc, user), "json")) || empty : empty);
+  if (!scope) {
+    if (request.method !== "GET") return json({ error: "method" }, 405);
+    return json({ user, me: await read("me"), staff: await read("staff") });
+  }
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  if (!env.STAFF) return json({ error: "Saving isn't set up on this deployment (no KV)." }, 503);
+  if (scope === "me" && !user) return json({ error: "Choose your name first (top right of the page)." }, 400);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const ok = (v) => /^[\w:-]{2,80}$/.test(String(v || "")), lanes = {}, seen = new Set();
+  for (const k of ["G", "W", "B"]) lanes[k] = (Array.isArray(b?.lanes?.[k]) ? b.lanes[k] : []).filter((id) => ok(id) && !seen.has(id) && seen.add(id)).slice(0, 400);
+  const out = { lanes, by: user || "Staff", at: new Date().toISOString() };
+  await env.STAFF.put(scopeKey("prep", scope, user), JSON.stringify(out));
+  return json({ ok: true, user, scope, board: out });
 }
 
 // School roster pages (for players ESPN has no headshot for): returns each roster photo with its
@@ -565,6 +587,8 @@ export default {
     if (path === "/api/me") return meApi(request, env, sess);
     const fo = path.match(/^\/api\/fo\/(cap|builder)(?:\/(me|staff)\/([\w-]{1,60}))?$/);
     if (fo) return frontOffice(request, env, sess, fo[1], fo[2], fo[3]);
+    const pb = path.match(/^\/api\/prep(?:\/(me|staff))?$/);
+    if (pb) return prepBoard(request, env, sess, pb[1]);
     const tb = path.match(/^\/api\/tb(?:\/(me|staff))?$/);
     if (tb) return transferBoard(request, env, sess, tb[1]);
     if (path === "/api/scrape/roster") return scrapeRoster(url);

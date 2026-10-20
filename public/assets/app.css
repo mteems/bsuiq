@@ -208,7 +208,9 @@ thead tr:last-child th{padding-top:7px;padding-bottom:8px;vertical-align:bottom}
 
 /* conference text badge when no logo */
 .cfb{width:24px;height:24px;flex:none;border:1px solid var(--edge);border-radius:4px;display:grid;place-items:center;font:500 7.5px var(--mono);color:var(--dim);background:var(--card)}
-.nav .navsep{width:1px;align-self:stretch;margin:6px 6px;background:var(--line)}
+.nav .navsep{width:1px;align-self:stretch;margin:4px 8px;background:#3a3d42}
+.navg{display:flex;flex-direction:column;gap:1px}.navgi{display:flex;gap:2px}
+.navgl{font:500 8.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:0 10px;white-space:nowrap}
 
 /* ---------- buttons (site-wide; neutral grey/white selection, orange = primary action) ---------- */
 .fbtn{height:34px;background:var(--card);border:1px solid var(--edge);border-radius:7px;color:var(--soft);font:600 12.5px var(--ui);padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}

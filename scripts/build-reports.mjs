@@ -95,6 +95,10 @@ for (const [y, T] of Object.entries(TOT)) {
   }
 }
 // Where 2025-26 players are now: every D-I 2026-27 roster.
+// Where each player was in 2025-26 by ESPN (team logo for "Who's new"): name → ESPN team id ("dup" when ambiguous).
+const PREV = new Map();
+const TLOGO = new Map(Object.entries(J("espn-team-ids.json").teams));
+for (const r of parseCSV(readFileSync(join(dir, "espn_rosters.csv"), "utf8"))) if (r.season === "2026") PREV.set(norm(r.name), PREV.has(norm(r.name)) ? "dup" : +r.espn_team_id);
 const NOW = new Map();
 for (const r of parseCSV(readFileSync(join(dir, "espn_rosters.csv"), "utf8"))) if (r.season === "2027") NOW.set(norm(r.name) + "|" + Math.round((+r.height_in || 0) / 2), [r.team, +r.espn_team_id]), NOW.set(norm(r.name), NOW.has(norm(r.name)) ? "dup" : [r.team, +r.espn_team_id]);
 
@@ -241,7 +245,7 @@ function build(t) {
     const next = dest && dest[1] !== espn ? [dest[0], dest[1]] : s.yr === "Sr" ? ["out of eligibility", 0] : ["departed", 0];
     return [s.name, s.role || "", r1(s.minp), r1(s.ppg), r1(s.treb), r1(s.bpm), next[0], next[1]];
   });
-  const newT = players.filter((x) => x.tag === "T").sort((a, b) => b.mpg - a.mpg).map((x) => [x.p.name, x.L.team, x.L.conf, r1(x.L.ppg), r1(x.L.ortg), x.L.tpa ? r1((100 * x.L.tpm) / x.L.tpa) : null, x.L.tpa, x.pr.cAdj ? (x.pr.cAdj > 0 ? "+" : "−") + Math.abs(x.pr.cAdj).toFixed(1) : "0", yy(x.L.y)]);
+  const newT = players.filter((x) => x.tag === "T").sort((a, b) => b.mpg - a.mpg).map((x) => [x.p.name, x.L.team, x.L.conf, r1(x.L.ppg), r1(x.L.ortg), x.L.tpa ? r1((100 * x.L.tpm) / x.L.tpa) : null, x.L.tpa, x.pr.cAdj ? (x.pr.cAdj > 0 ? "+" : "−") + Math.abs(x.pr.cAdj).toFixed(1) : "0", yy(x.L.y), typeof PREV.get(norm(x.p.name)) === "number" && x.L.y === 2026 ? PREV.get(norm(x.p.name)) : (TLOGO.get(x.L.team) ?? null)]);
   const fresh = players.filter((x) => x.tag === "F");
   const rets = players.filter((x) => x.tag === "" );
 

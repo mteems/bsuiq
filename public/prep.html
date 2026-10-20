@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Prep List · Bronco IQ</title>
+<link rel="icon" href="https://a.espncdn.com/i/teamlogos/ncaa/500-dark/68.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter-tight@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ibm-plex-mono@5/500.css">
+<link rel="stylesheet" href="/assets/app.css">
+<style>
+/* Prep List: every international and high school prospect on one board, in three position lanes.
+   Drag a card to rank him (or move him to another lane). No money tiers: just the order. */
+.pwrap{max-width:1500px;margin:auto;padding:18px 24px 30px}
+.ptop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.ptop h1{margin-top:4px}.ptop .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:780px;line-height:1.5}
+.pact{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.lh{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1a1b1e;border-bottom:1px solid var(--line)}
+.lh b{font:650 12px var(--ui);letter-spacing:.06em;text-transform:uppercase}.lh span{font:500 10.5px var(--mono);color:var(--muted)}
+.lb{display:grid;gap:6px;padding:8px;min-height:120px;transition:background .12s}.lane.over .lb{background:#1f2124}
+.pcard{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:start;background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:8px 9px;cursor:grab;touch-action:none;user-select:none}
+.pcard:hover{border-color:#55595f}.pcard.lifted{opacity:.3}
+.pcard.before::before{content:"";position:absolute;left:0;right:0;top:-5px;height:2px;background:#f2f3f4;border-radius:2px}
+.pcard.after::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:2px;background:#f2f3f4;border-radius:2px}
+.rk{font:600 12px var(--mono);color:var(--dim);text-align:center;padding-top:2px}
+.ct{display:flex;gap:9px;align-items:flex-start;min-width:0}
+.ct .hs{width:40px;height:48px;border-radius:6px;background:var(--bg);overflow:hidden;flex:none}.ct .hs img{width:100%;height:100%;object-fit:cover;object-position:50% 15%;-webkit-user-drag:none}
+.ct .nm{min-width:0;flex:1}
+.ct .nm a{display:block;font-size:13.5px;font-weight:700;line-height:1.15;color:#fff;cursor:pointer}.ct .nm a:hover{text-decoration:underline}
+.ct .nm .s{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct .nm .s img{width:16px;height:11px;border-radius:2px;object-fit:cover;flex:none}
+.ct .nm .f{font:500 8.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:3px}
+.kind{font:600 8.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--edge);color:var(--dim);border-radius:3px;padding:1px 4px;flex:none}
+.cs{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);margin-top:2px;border-top:1px solid var(--line2);padding-top:5px}
+.cs div{text-align:center}.cs span{display:block;font:500 8px var(--mono);letter-spacing:.06em;color:var(--muted)}.cs b{font-size:12px;font-weight:700}
+.ghost{position:fixed;z-index:1000;pointer-events:none;margin:0;box-shadow:0 18px 40px rgba(0,0,0,.55);transform:scale(1.03) rotate(-1deg);border-color:#8a8e95!important}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!important}
+.msg{font:11px var(--mono);color:var(--muted)}
+@media (max-width:1000px){.lanes{grid-template-columns:repeat(3,minmax(260px,1fr));overflow-x:auto}}
+@media (max-width:700px){.pwrap{padding:14px 16px}}
+@media print{.pact{display:none!important}.pcard{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main class="pwrap" id="page"><div class="loading">Loading the prep list…</div></main>
+<script type="module">
+import { topBar, esc, me, getJSON, pc } from "/assets/core.js";
+topBar("prep");
+
+const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+const inch = (h) => { const m = String(h || "").match(/(\d+)\D+(\d+)/); return m ? +m[1] * 12 + +m[2] : null; };
+const POSG = (p) => (/C|PF/.test(p) && !/SF\/PF/.test(p) ? "B" : /SF/.test(p) ? "W" : "G");
+const LANES = [["G", "Guards"], ["W", "Wings"], ["B", "Bigs"]];
+const [intl, hs, geo, FR, M0] = await Promise.all([getJSON("/data/intl/board.json"), getJSON("/data/hs/board.json").catch(() => ({ players: [] })), getJSON("/data/intl/geo.json"), getJSON("/data/rankings/freshmen-2026-27.json").catch(() => null), me()]);
+const proj = (p) => (FR?.map && p.r247 && inch(p.ht) ? FR.map.intercept + FR.map.log_rank * Math.log(p.r247) + FR.map.height_in * inch(p.ht) : null);
+const P = [
+  ...intl.players.map((p) => ({ ...p, kind: "intl", id: "intl:" + slug(p.name), href: "/international#" + slug(p.name), where: p.club || p.team, flag: (geo.countries[p.nat] || [])[1], ev: [...(p.fiba || [])].sort((a, b) => b.yr - a.yr)[0] })),
+  ...hs.players.map((p) => ({ ...p, kind: "hs", id: "hs:" + slug(p.name), href: "/highschool#" + slug(p.name), where: p.school, proj: proj(p) })),
+].map((p) => ({ ...p, lane0: POSG(p.pos || "") }));
+const byId = new Map(P.map((p) => [p.id, p]));
+let M = M0, scope = (() => { try { return localStorage.getItem("biq-prep-scope") === "me" ? "me" : "staff"; } catch { return "staff"; } })();
+if (scope === "me" && !M.user) scope = "staff";
+let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", msg = "";
+async function load() { try { const r = await getJSON("/api/prep"); SAVED = { me: r.me || { lanes: {} }, staff: r.staff || { lanes: {} } }; } catch { msg = "Couldn't load the saved order."; } }
+await load();
+
+// Order in each lane: the saved ranking first, then anyone not ranked yet (high school by 247 rank, then by name).
+function lanesNow() {
+  const L = SAVED[scope]?.lanes || {}, placed = new Set(), out = {};
+  for (const [k] of LANES) { out[k] = (L[k] || []).filter((id) => byId.has(id) && !placed.has(id)); out[k].forEach((id) => placed.add(id)); }
+  const rest = P.filter((p) => !placed.has(p.id)).sort((a, b) => (a.r247 || 999) - (b.r247 || 999) || a.name.localeCompare(b.name));
+  for (const p of rest) out[p.lane0].push(p.id);
+  return out;
+}
+const f1 = (v) => (v == null ? "—" : (+v).toFixed(1));
+const sg = (v) => (v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1));
+const rk = (v) => (v ? "#" + v : "—");
+function stats(p) {
+  if (p.kind === "hs") return [["247", rk(p.r247)], ["ON3", rk(p.rOn3)], ["ESPN", rk(p.rEspn)], ["PROJ FR", p.proj == null ? "—" : `<em style="font-style:normal;color:${pc(50 + Math.max(-45, Math.min(45, p.proj * 9)))}">${sg(p.proj)}</em>`]];
+  const e = p.ev; return e ? [["PTS", f1(e.pts)], ["REB", f1(e.reb)], ["AST", f1(e.ast)], ["EFF", f1(e.eff)]] : [["PTS", "—"], ["REB", "—"], ["AST", "—"], ["EFF", "—"]];
+}
+function card(p, i) {
+  return `<article class="pcard" data-id="${esc(p.id)}"><div class="rk">${i + 1}</div>
+    <div class="ct"><span class="hs">${p.headshot ? `<img alt="" loading="lazy" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}</span>
+      <div class="nm"><a href="${esc(p.href)}" draggable="false">${esc(p.name)}</a><div class="s">${p.flag ? `<img alt="" src="https://flagcdn.com/w40/${p.flag}.png" onerror="this.remove()">` : ""}<span>${esc(p.where || "")}</span></div>
+        <div class="f">${[p.pos, p.ht, p.cls ? "'" + String(p.cls).slice(2) : "", p.kind === "hs" ? p.state : p.nat].filter(Boolean).map(esc).join(" · ")}</div></div>
+      <span class="kind">${p.kind === "hs" ? "HS" : "INTL"}</span></div>
+    <div class="cs">${stats(p).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join("")}</div></article>`;
+}
+const page = document.getElementById("page");
+function render() {
+  const L = lanesNow(), show = (id) => kind === "all" || byId.get(id).kind === kind;
+  page.innerHTML = `<div class="ptop">
+    <div><div class="label">Prep</div><h1>Prep List</h1><div class="sub">Every international and high school prospect on one board. Drag a card up or down to rank him, or into another lane to change his position group. Click a name for his full card. Add players by asking Claude to add them by name; the full high school table is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School list</a>.</div></div>
+    <div class="pact"><span class="msg" id="msg">${esc(msg)}</span>
+      <div class="seg2"><button data-k="all" class="${kind === "all" ? "on" : ""}">All</button><button data-k="intl" class="${kind === "intl" ? "on" : ""}">International</button><button data-k="hs" class="${kind === "hs" ? "on" : ""}">High school</button></div>
+      <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My order${M.user ? ` · ${esc(M.user)}` : ""}</button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff order</button></div>
+      <button class="fbtn" id="print">Print</button></div></div>
+  <div class="lanes">${LANES.map(([k, l]) => { const ids = L[k].filter(show); return `<section class="lane" data-lane="${k}"><div class="lh"><b>${l}</b><span>${ids.length}</span></div><div class="lb">${ids.map((id, i) => card(byId.get(id), i)).join("") || `<div class="m" style="font:500 9.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:#4a4d53;text-align:center;padding:30px 0">Drop players here</div>`}</div></section>`; }).join("")}</div>`;
+}
+async function save(L) {
+  SAVED[scope] = { lanes: L }; msg = "Saving…"; render();
+  try { const r = await fetch(`/api/prep/${scope}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ lanes: L }) }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || "Couldn't save"); msg = scope === "me" ? "Saved to your order" : "Saved to the staff order"; }
+  catch (e) { msg = e.message; }
+  render();
+}
+addEventListener("biq-me", async () => { M = await me(true); if (scope === "me" && !M.user) scope = "staff"; await load(); render(); });
+page.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  if (b.dataset.k) { kind = b.dataset.k; render(); }
+  else if (b.dataset.scope) { scope = b.dataset.scope; try { localStorage.setItem("biq-prep-scope", scope); } catch {} msg = ""; render(); }
+  else if (b.id === "print") print();
+});
+
+// Pointer drag: the card lifts and follows the pointer; a white line shows where it will land.
+let drag = null;
+page.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0 || e.target.closest("a,button,input")) return;
+  const c = e.target.closest(".pcard"); if (!c) return; e.preventDefault();
+  drag = { id: c.dataset.id, el: c, x0: e.clientX, y0: e.clientY, on: false };
+});
+addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  if (!drag.on) {
+    if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 5) return;
+    const r = drag.el.getBoundingClientRect(), g = drag.el.cloneNode(true); g.classList.add("ghost");
+    Object.assign(g.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" }); document.body.appendChild(g);
+    Object.assign(drag, { ghost: g, dx: e.clientX - r.left, dy: e.clientY - r.top, on: true }); drag.el.classList.add("lifted"); document.body.classList.add("dragging");
+  }
+  drag.ghost.style.left = e.clientX - drag.dx + "px"; drag.ghost.style.top = e.clientY - drag.dy + "px";
+  page.querySelectorAll(".before,.after,.lane.over").forEach((x) => x.classList.remove("before", "after", "over"));
+  const under = document.elementFromPoint(e.clientX, e.clientY), lane = under?.closest(".lane"), c = under?.closest(".pcard");
+  drag.lane = lane?.dataset.lane || null; drag.ref = null; drag.after = false;
+  if (lane) lane.classList.add("over");
+  if (c && c.dataset.id !== drag.id) { const r = c.getBoundingClientRect(); drag.after = e.clientY > r.top + r.height / 2; drag.ref = c.dataset.id; c.classList.add(drag.after ? "after" : "before"); }
+  if (e.clientY < 70) scrollBy(0, -14); else if (e.clientY > innerHeight - 70) scrollBy(0, 14);
+});
+function end(drop) {
+  if (!drag) return; const D = drag; drag = null;
+  D.ghost?.remove(); D.el.classList.remove("lifted"); document.body.classList.remove("dragging");
+  page.querySelectorAll(".before,.after,.lane.over").forEach((x) => x.classList.remove("before", "after", "over"));
+  if (!drop || !D.on || !D.lane) return;
+  const L = lanesNow(); for (const k in L) L[k] = L[k].filter((id) => id !== D.id);
+  const dest = L[D.lane]; let at = D.ref ? dest.indexOf(D.ref) : dest.length; if (D.ref && D.after) at++;
+  dest.splice(at < 0 ? dest.length : at, 0, D.id);
+  save(L);
+}
+addEventListener("pointerup", () => end(true));
+addEventListener("pointercancel", () => end(false));
+addEventListener("keydown", (e) => { if (e.key === "Escape") end(false); });
+render();
+</script>
+</body>
+</html>
