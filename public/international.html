@@ -139,7 +139,7 @@
 <body>
 <main class="iwrap">
   <div class="ihead">
-    <div><div class="label">Recruiting · International + High school · Class of 2027</div><h1>Recruit map</h1></div>
+    <div><div class="label">Recruiting · International + High school · Classes of 2027-28</div><h1>Recruit map</h1></div>
     <div class="ikpis" id="kpis"></div>
   </div>
   <div class="ibar">
@@ -151,6 +151,7 @@
     <div class="mapbox" id="mapbox">
       <svg id="map" aria-label="World map of international recruits"></svg>
       <div class="where" id="where"></div>
+      <div class="legend"><span><s style="background:#34a853"></s>Green</span><span><s style="background:#fbbc04"></s>Yellow</span><span><s style="background:#ea4335"></s>Red</span><span><s style="background:#8a8e95"></s>Not colored</span><span style="color:var(--faint)">staff big board</span></div>
       <div class="mapui"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Whole world" style="font-size:12px">⌂</button></div>
     </div>
     <aside class="side"><div id="card" class="slist" hidden></div><div id="listview" style="display:contents"><div class="shd" id="shd"></div><div class="slist" id="list"></div></div></aside>
@@ -162,7 +163,12 @@ import { d3, topBar, tipOn, tipOff, esc } from "/assets/core.js";
 topBar("international");
 
 const DOT = "#e2622a";
-const POSG = (p) => (/C|PF/.test(p) && !/SF\/PF/.test(p) ? "B" : /SF|SG\/SF/.test(p) || p === "SF/PF" ? "W" : "G");
+// Staff big-board colors: each player's ring is his color; grey = not colored on the board.
+const TIERC = { green: "#34a853", yellow: "#fbbc04", red: "#ea4335" }, NOC = "#8a8e95";
+const colOf = (p) => TIERC[p.tier] || NOC;
+// Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
+const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
+  if (/\bC\b|PF|^C/.test(p) && !/SF\/PF/.test(p)) return "B"; if (p === "F") return inches >= 81 ? "B" : "W"; if (/SF|^W|GF|SG\/SF/.test(p)) return "W"; return "G"; };
 const POSL = { G: "Guard", W: "Wing", B: "Big" };
 const REGIONS = [["World", null], ["Europe", [-12, 34.5, 50, 61]], ["Africa", [-19, -12, 40, 25]], ["North America", [-128, 9, -58, 58]], ["South America", [-82, -38, -34, 8]], ["Asia", [70, 10, 140, 50]], ["Oceania", [110, -46, 178, -8]]];
 const [geo, board, W110, HSB] = await Promise.all([fetch("/data/intl/geo.json").then((r) => r.json()), fetch("/data/intl/board.json").then((r) => r.json()), fetch("/assets/geo/world-110m.json").then((r) => r.json()), fetch("/data/hs/board.json").then((r) => r.json()).catch(() => ({ players: [] }))]);
@@ -176,7 +182,7 @@ const ageOf = (p) => (p.born ? (Date.now() - Date.parse(p.born)) / 3.15576e10 : 
 const regionOfLL = (ll) => { for (const [r, b] of REGIONS) if (b && ll[0] >= b[0] && ll[0] <= b[2] && ll[1] >= b[1] && ll[1] <= b[3]) return r; return "World"; };
 // International board + High school board on one map. kind: "intl" | "hs".
 const ALL = [...board.players.map((p) => ({ ...p, kind: "intl" })), ...(HSB.players || []).map((p) => ({ ...p, kind: "hs", nat: "United States", aau: p.club, club: p.school, team: p.school }))];
-const P = ALL.map((p, i) => { const [a3, a2] = C[p.nat] || (p.kind === "hs" ? ["USA", "us"] : ["", ""]); const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos), ll, age: ageOf(p), slug: slug(p.name), grp: p.kind === "hs" ? "High school · United States" : p.nat }; });
+const P = ALL.map((p, i) => { const [a3, a2] = C[p.nat] || (p.kind === "hs" ? ["USA", "us"] : ["", ""]); const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos, p.ht), ll, age: ageOf(p), slug: slug(p.name), grp: p.kind === "hs" ? "High school · United States" : p.nat }; });
 const st = { region: "World", pos: new Set(["G", "W", "B"]), sel: null, hover: null, k: 1, kind: "all" };
 const vis = () => P.filter((p) => st.pos.has(p.pg) && (st.kind === "all" || p.kind === st.kind));
 const inRegion = (p, r) => r === "World" || p.reg === r;
@@ -286,8 +292,8 @@ function placePoints(shade = true) {
     .on("mousemove", (e, d) => { st.hover = d.p.i; highlight(); tipOn(e, tipHTML(d.p)); }).on("mouseleave", () => { st.hover = null; highlight(); tipOff(); })
     .on("click", (e, d) => select(d.p.i, true));
   me.append("clipPath").attr("id", (d) => "hc" + d.p.i).append("circle");
-  me.append("circle").attr("class", "halo").attr("fill", DOT).attr("opacity", 0.18);
-  me.append("circle").attr("class", "ring").attr("fill", "#2a2c30").attr("stroke", DOT).attr("stroke-width", 2.5);
+  me.append("circle").attr("class", "halo").attr("fill", (d) => colOf(d.p)).attr("opacity", 0.18);
+  me.append("circle").attr("class", "ring").attr("fill", "#2a2c30").attr("stroke", (d) => colOf(d.p)).attr("stroke-width", 2.5);
   me.filter((d) => d.p.headshot).append("image").attr("href", (d) => d.p.headshot).attr("clip-path", (d) => `url(#hc${d.p.i})`).attr("preserveAspectRatio", "xMidYMin slice");
   me.merge(M).attr("transform", (d) => `translate(${d.x},${d.y})`).each((d) => (d.r = R));
   // labels: name always (only a few players); club + city when zoomed in
@@ -309,7 +315,7 @@ function tipHTML(p) { return p.kind === "hs" ? `<b>${esc(p.name)}</b><br>${p.pos
 function highlight(shade = true) {
   const on = st.hover ?? st.sel;
   gPts.selectAll("g.mk").each(function (d) { const rr = (d.r || 16) + (d.p.i === on ? 3 : 0), g = d3.select(this);
-    g.select("clipPath circle").attr("r", rr - 1.5); g.select(".halo").attr("r", rr + 6).attr("opacity", d.p.i === on ? 0.35 : 0.18); g.select(".ring").attr("r", rr).attr("stroke", d.p.i === on ? "#fff" : DOT);
+    g.select("clipPath circle").attr("r", rr - 1.5); g.select(".halo").attr("r", rr + 6).attr("opacity", d.p.i === on ? 0.35 : 0.18); g.select(".ring").attr("r", rr).attr("stroke", d.p.i === on ? "#fff" : colOf(d.p));
     g.select("image").attr("x", -rr).attr("y", -rr).attr("width", rr * 2).attr("height", rr * 2); if (d.p.i === on) g.raise(); });
   document.querySelectorAll(".pr").forEach((r) => { r.classList.toggle("hl", +r.dataset.i === st.hover); r.classList.toggle("sel", +r.dataset.i === st.sel); });
   if (shade) shadeLand();
@@ -321,7 +327,7 @@ function drawList() {
   const gs = [...G].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
   document.getElementById("shd").innerHTML = `<h2>${st.region === "World" ? "All players" : st.region}</h2><div class="label">${V.length} player${V.length === 1 ? "" : "s"} · ${gs.length} group${gs.length === 1 ? "" : "s"}</div>`;
   document.getElementById("list").innerHTML = gs.length ? gs.map(([nat, ps]) => `<div class="cgrp"><div class="ch">${ps[0].a2 ? `<img alt="" src="https://flagcdn.com/w40/${ps[0].a2}.png" onerror="this.remove()">` : ""}<b>${esc(nat)}</b><span>${ps.length}</span></div>
-    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}">` : `<s style="background:${DOT}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${p.kind === "hs" ? (p.r247 ? "247 #" + p.r247 : "HS") : fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
+    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}" style="box-shadow:0 0 0 2px ${colOf(p)}">` : `<s style="background:${colOf(p)}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${p.kind === "hs" ? (p.r247 ? "247 #" + p.r247 : "HS") : fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
     : `<div class="empty">No players here yet.</div>`;
   document.querySelectorAll(".pr").forEach((r) => { const i = +r.dataset.i; r.onmouseenter = () => { st.hover = i; highlight(); }; r.onmouseleave = () => { st.hover = null; highlight(); }; r.onclick = () => select(i, true); });
   highlight();
@@ -374,6 +380,7 @@ function select(i, fly) {
     <dl class="cinfo"><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
     ${fibaHTML(p)}</div>`;
   wireFiba(p);
+  document.querySelector("#card .hs")?.style.setProperty("box-shadow", `0 0 0 2.5px ${colOf(p)}`);
   const cardEl = document.getElementById("card"); cardEl.hidden = false; cardEl.scrollTop = 0; document.getElementById("listview").style.display = "none";
   document.querySelector("#card .x").onclick = closeCard;
   if (fly) { if (st.region !== p.reg) { st.region = p.reg; drawConts(); drawList(); } flyTo(p); }

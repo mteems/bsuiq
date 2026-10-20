@@ -167,6 +167,7 @@ if (existsSync(src("reports/index.json"))) {
 // International board (DraftExpress list + map lookups).
 if (existsSync(src("intl"))) cpSync(src("intl"), join(out, "intl"), { recursive: true });
 if (existsSync(src("hs"))) cpSync(src("hs"), join(out, "hs"), { recursive: true });
+if (existsSync(src("proj-2027.json"))) cpSync(src("proj-2027.json"), join(out, "proj-2027.json"));
 if (existsSync(src("rankings/freshmen-2026-27.json"))) cpSync(src("rankings/freshmen-2026-27.json"), join(out, "rankings/freshmen-2026-27.json"));
 if (existsSync(src("pd"))) cpSync(src("pd"), join(out, "pd"), { recursive: true });
 if (existsSync(src("search"))) cpSync(src("search"), join(out, "search"), { recursive: true });

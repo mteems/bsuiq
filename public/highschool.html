@@ -55,15 +55,18 @@ const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-
 const inch = (h) => { const m = String(h || "").match(/(\d+)\D+(\d+)/); return m ? +m[1] * 12 + +m[2] : null; };
 // Projected freshman impact per 100 possessions vs. an average D-I player: the Win model's freshman
 // terms (247 rank + height), learned from 10 recruiting classes. Unranked prospects get no number.
-const proj = (p) => (FR?.map && p.r247 && inch(p.ht) ? FR.map.intercept + FR.map.log_rank * Math.log(p.r247) + FR.map.height_in * inch(p.ht) : null);
-const POSG = (p) => (/C|PF/.test(p) && !/SF\/PF/.test(p) ? "B" : /SF/.test(p) ? "W" : "G");
-const P = B.players.map((p) => ({ ...p, slug: slug(p.name), pg: POSG(p.pos || ""), proj: proj(p) }));
-const st = { q: "", pos: "all", cls: "all", sort: "r247", dir: 1, open: location.hash.slice(1) || null };
+const proj = (p) => { const r = p.r247 ?? p.rInd; return FR?.map && r && inch(p.ht) ? FR.map.intercept + FR.map.log_rank * Math.log(r) + FR.map.height_in * inch(p.ht) : null; };
+const TIER = { green: 0, yellow: 1, red: 2 }, TC = { green: "#34a853", yellow: "#fbbc04", red: "#ea4335" };
+// Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
+const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
+  if (/\bC\b|PF|^C/.test(p) && !/SF\/PF/.test(p)) return "B"; if (p === "F") return inches >= 81 ? "B" : "W"; if (/SF|^W|GF|SG\/SF/.test(p)) return "W"; return "G"; };
+const P = B.players.map((p) => ({ ...p, slug: slug(p.name), pg: POSG(p.pos, p.ht), proj: proj(p), on3r: p.rInd ?? p.rOn3 ?? null, tierN: TIER[p.tier] ?? 3 }));
+const st = { q: "", pos: "all", cls: "all", sort: "tierN", dir: 1, open: location.hash.slice(1) || null };
 const classes = [...new Set(P.map((p) => p.cls))].sort();
 const page = document.getElementById("page");
 const rk = (v) => (v ? "#" + v : `<span style="color:var(--faint)">—</span>`);
 const sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
-const COLS = [["name", "Player", "l"], ["pos", "Pos", "l"], ["ht", "Ht", ""], ["wt", "Wt", ""], ["cls", "Class", ""], ["state", "Where", "l"], ["r247", "247", ""], ["rOn3", "On3 Ind.", ""], ["rEspn", "ESPN", ""], ["rRivals", "Rivals", ""], ["proj", "Proj. Fr impact", ""], ["status", "Status", "l"]];
+const COLS = [["tierN", "", "l"], ["name", "Player", "l"], ["pos", "Pos", "l"], ["ht", "Ht", ""], ["wt", "Wt", ""], ["cls", "Class", ""], ["state", "Where", "l"], ["r247", "247", ""], ["on3r", "On3 Ind.", ""], ["rEspn", "ESPN", ""], ["rRivals", "Rivals", ""], ["proj", "Proj. Fr impact", ""], ["status", "Status", "l"]];
 const DEF = { proj: "frproj", r247: "r247" };
 
 function rows() {
@@ -72,7 +75,7 @@ function rows() {
     .sort((a, b) => {
       const k = st.sort, x = k === "ht" ? inch(a.ht) : a[k], y = k === "ht" ? inch(b.ht) : b[k];
       if (x == null && y == null) return a.name.localeCompare(b.name); if (x == null) return 1; if (y == null) return -1;
-      return (typeof x === "string" ? x.localeCompare(y) : x - y) * st.dir;
+      return (typeof x === "string" ? x.localeCompare(y) : x - y) * st.dir || (a.on3r ?? a.r247 ?? 999) - (b.on3r ?? b.r247 ?? 999) || a.name.localeCompare(b.name);
     });
 }
 function detail(p) {
@@ -80,7 +83,7 @@ function detail(p) {
   return `<tr class="det"><td colspan="${COLS.length}"><div class="dg">
     <dl><dt>School</dt><dd>${esc(p.school)} · ${esc(p.city)}</dd>${p.full ? `<dt>Full name</dt><dd>${esc(p.full)}</dd>` : ""}${p.home ? `<dt>Hometown</dt><dd>${esc(p.home)}</dd>` : ""}${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.club ? `<dt>Club</dt><dd>${esc(p.club)}</dd>` : ""}${p.pr ? `<dt>Position rk</dt><dd>${esc(p.pr)}</dd>` : ""}${p.on3 ? `<dt>On3 rating</dt><dd>${p.on3}</dd>` : ""}</dl>
     <dl><dt>Status</dt><dd>${esc(p.status || "—")}</dd>${L("Finalists", p.finalists)}${L("Offers", p.offers)}${L("Contacts", p.contacts)}</dl>
-    <div>${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}<div class="note" style="margin-top:8px">${p.proj != null ? `Projected freshman impact <b style="color:#fff">${sg(p.proj)}</b> per 100 possessions vs. an average D-I player (Win model freshman terms: 247 rank #${p.r247}, ${esc(p.ht)}). This feeds the Roster Builder when you add him.` : "No national ranking, so no model projection: the Roster Builder uses the average-freshman estimate for him."}</div>
+    <div>${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}<div class="note" style="margin-top:8px">${p.proj != null ? `Projected freshman impact <b style="color:#fff">${sg(p.proj)}</b> per 100 possessions vs. an average D-I player (Win model freshman terms: national rank #${p.r247 ?? p.rInd}, ${esc(p.ht)}). This feeds the Roster Builder when you add him.` : "No national ranking, so no model projection: the Roster Builder uses the average-freshman estimate for him."}</div>
       <div class="lk" style="margin-top:10px">${Object.entries(p.links || {}).map(([l, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join("")}</div>
       <a class="mapbtn" href="/international#${p.slug}">Show on the Recruit Map →</a>
       <div class="note" style="margin-top:10px;font-size:11px;color:var(--muted)">Sources: ${esc(p.src || "")}</div></div>
@@ -89,16 +92,16 @@ function detail(p) {
 function render() {
   const R = rows();
   page.innerHTML = `<div class="htop"><div><div class="label">Recruiting · High school</div><h1>High School</h1>
-      <div class="sub">Every high school prospect on our board. Click a row for his schools, offers and links; every player here also shows on the <a href="/international" style="color:var(--soft);text-decoration:underline">Recruit Map</a> with the international prospects. To add a player, ask Claude to add him by name.</div></div></div>
+      <div class="sub">Every uncommitted high school prospect on our board; the colored line is the staff board color (green, yellow, red), and the list opens sorted that way. Click a row for his schools, offers and links; every player here also shows on the <a href="/international" style="color:var(--soft);text-decoration:underline">Recruit Map</a> with the international prospects. To add a player, ask Claude to add him by name.</div></div></div>
     <div class="hbar"><input id="q" placeholder="Search player, school or city" value="${esc(st.q)}">
       <div class="seg3" id="pos">${[["all", "All"], ["G", "Guards"], ["W", "Wings"], ["B", "Bigs"]].map(([k, l]) => `<button data-k="${k}" class="${st.pos === k ? "on" : ""}">${l}</button>`).join("")}</div>
       ${classes.length > 1 ? `<div class="seg3" id="cls">${[["all", "All classes"], ...classes.map((c) => [String(c), String(c)])].map(([k, l]) => `<button data-k="${k}" class="${st.cls === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}
       <span class="n">${R.length} of ${P.length} players · class of ${classes.join(", ")}</span></div>
     <div class="hp"><table class="ht"><thead><tr>${COLS.map(([k, l, c]) => `<th class="${c}"><button data-sort="${k}" class="${st.sort === k ? "on" : ""}">${DEF[k] ? `<span data-def="${DEF[k]}">${l}</span>` : l}${st.sort === k ? (st.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`).join("")}</tr></thead><tbody>
-    ${R.map((p) => `<tr class="row${st.open === p.slug ? " open" : ""}" data-s="${p.slug}" id="${p.slug}">
+    ${R.map((p) => `<tr class="row${st.open === p.slug ? " open" : ""}" data-s="${p.slug}" id="${p.slug}"><td class="l" style="width:6px;padding:0"><i title="${p.tier ? "Staff board: " + p.tier : "Not colored on the staff board"}" style="display:block;width:3px;height:38px;border-radius:2px;background:${TC[p.tier] || "transparent"}"></i></td>
       <td class="l"><div class="pp"><span class="ph">${p.headshot ? `<img alt="" loading="lazy" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}</span><div><b>${esc(p.name)}</b><div class="s">${esc(p.school)}</div></div></div></td>
       <td class="l">${esc(p.pos || "—")}</td><td>${esc(p.ht || "—")}</td><td>${p.wt ?? "—"}</td><td>${p.cls}</td><td class="l">${esc(p.city)}</td>
-      <td>${rk(p.r247)}</td><td>${rk(p.rOn3)}</td><td>${rk(p.rEspn)}</td><td>${rk(p.rRivals)}</td>
+      <td>${rk(p.r247)}</td><td>${rk(p.on3r)}</td><td>${rk(p.rEspn)}</td><td>${rk(p.rRivals)}</td>
       <td>${p.proj == null ? `<span style="color:var(--faint)">—</span>` : `<span class="chip" style="background:${pc(50 + Math.max(-45, Math.min(45, p.proj * 9)))}">${sg(p.proj)}</span>`}</td>
       <td class="l"><span class="st">${esc(p.finalists ? `Finalists: ${p.finalists.length} schools` : p.status || "—")}</span></td></tr>${st.open === p.slug ? detail(p) : ""}`).join("") || `<tr><td colspan="${COLS.length}" class="l" style="color:var(--muted)">No players match.</td></tr>`}
     </tbody></table></div>
@@ -106,7 +109,7 @@ function render() {
   const q = document.getElementById("q"); q.oninput = () => { st.q = q.value; render(); const n = document.getElementById("q"); n.focus(); n.setSelectionRange(st.q.length, st.q.length); };
   page.querySelectorAll("#pos button").forEach((b) => (b.onclick = () => { st.pos = b.dataset.k; render(); }));
   page.querySelectorAll("#cls button").forEach((b) => (b.onclick = () => { st.cls = b.dataset.k; render(); }));
-  page.querySelectorAll("th button").forEach((b) => (b.onclick = () => { const k = b.dataset.sort; if (st.sort === k) st.dir *= -1; else { st.sort = k; st.dir = ["r247", "rOn3", "rEspn", "rRivals", "name", "pos", "state", "status", "cls"].includes(k) ? 1 : -1; } render(); }));
+  page.querySelectorAll("th button").forEach((b) => (b.onclick = () => { const k = b.dataset.sort; if (st.sort === k) st.dir *= -1; else { st.sort = k; st.dir = ["tierN", "r247", "on3r", "rEspn", "rRivals", "name", "pos", "state", "status", "cls"].includes(k) ? 1 : -1; } render(); }));
   page.querySelectorAll("tr.row").forEach((r) => (r.onclick = (e) => { if (e.target.closest("a")) return; st.open = st.open === r.dataset.s ? null : r.dataset.s; history.replaceState(null, "", st.open ? "#" + st.open : location.pathname); render(); }));
 }
 render();

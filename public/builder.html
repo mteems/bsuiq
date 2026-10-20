@@ -71,7 +71,7 @@ body.dragging .rmzone{opacity:1;transform:translate(-50%,0)}
 <body>
 <main class="bwrap" id="page"><div class="loading">Loading the player pool…</div></main>
 <script type="module">
-import { topBar, esc, pc as pcol } from "/assets/core.js";
+import { topBar, esc, pc as pcol, getJSON } from "/assets/core.js";
 import { loadFO, shot, teamMark, loadScenarios, putScenario, delScenario, scenarioBarHTML, saveMenu, openPicker } from "/assets/fo.js";
 topBar("builder");
 
@@ -82,6 +82,10 @@ const uid = () => crypto.randomUUID();
 const blank = () => ({ id: "draft", name: "Depth chart", grid: Object.fromEntries(POS.map(([k]) => [k, ["", "", ""]])), min: {} });
 
 const FO = await loadFO();
+// 2026-27 projections for every D-I team (scripts/build-proj27.mjs): used for the Pac-12 and postseason outlook.
+const PJ = await getJSON("/data/proj-2027.json").catch(() => null);
+const CURVE = PJ?.curve || [32.6, 30.1, 27.5, 24.8, 21.8, 18.2, 14.8, 11.4, 8.2, 5.3, 3.0, 1.5, 0.6, 0.2, 0.1];
+let auto = (() => { try { return localStorage.getItem("biq-builder-auto") === "1"; } catch { return false; } })();
 let SV = await loadScenarios("builder"), d = blank(), loaded = null, saveState = "", saveErr = "", sortKey = "min";
 addEventListener("biq-me", async () => { SV = await loadScenarios("builder"); if (loaded?.scope === "me") loaded = null; render(); });
 try { const x = JSON.parse(localStorage.getItem("biq-builder-draft") || "null"); if (x?.grid) { d = x; loaded = JSON.parse(localStorage.getItem("biq-builder-loaded2") || "null"); } } catch {}
@@ -99,24 +103,86 @@ function project() {
   const placed = [];
   POS.forEach(([k], c) => d.grid[k].forEach((id, r) => { if (id) placed.push({ id, pos: k, row: r, p: FO.byId.get(id) }); }));
   const live = placed.filter((x) => x.p);
-  const minOf = (x) => d.min[x.id] ?? ROWS[x.row][1];
-  const totalMin = live.reduce((a, x) => a + minOf(x), 0), wScale = totalMin > 0 ? 200 / Math.max(200, totalMin) : 0;
+  // Even minutes ("auto"): ignore the depth chart and the sliders; players sorted by projected impact
+  // get the average D-I minutes by rotation spot, the same way every other team is projected.
+  const impOf = (x) => { const R = x.p.rates, src = R && R.min >= 100 ? R : null, fr = !src ? x.p.fr : null; return { src, fr, po: src?.pimpo ?? fr?.po ?? PRIOR.po, pd: src?.pimpd ?? fr?.pd ?? PRIOR.pd }; };
+  const autoMin = new Map([...live].sort((a, b) => { const A = impOf(a), B = impOf(b); return B.po + B.pd - (A.po + A.pd); }).map((x, i) => [x.id, CURVE[i] || 0]));
+  const minOf = (x) => (auto ? autoMin.get(x.id) : d.min[x.id] ?? ROWS[x.row][1]);
+  const totalMin = Math.round(live.reduce((a, x) => a + minOf(x), 0)), wScale = totalMin > 0 ? 200 / Math.max(200, totalMin) : 0;
   let oImp = 0, dImp = 0;
   const rows = live.map((x) => {
-    const R = x.p.rates, src = R && R.min >= 100 ? R : null, m = minOf(x);
-    const fr = !src ? x.p.fr : null;
-    const po = src?.pimpo ?? fr?.po ?? PRIOR.po, pd = src?.pimpd ?? fr?.pd ?? PRIOR.pd;
+    const m = minOf(x), { src, fr, po, pd } = impOf(x);
     const r = src ? { pts40: src.pts40, reb40: src.reb40, ast40: src.ast40, ts: src.ts, usg: src.usg, po, pd } : { ...PRIOR };
     oImp += po * (m * wScale) / 40; dImp += pd * (m * wScale) / 40;
     return { ...x, m, r, prior: !src && !fr, fr, ppg: (r.pts40 || 0) * m / 40, rpg: (r.reb40 || 0) * m / 40, apg: (r.ast40 || 0) * m / 40 };
   });
-  const O = AVG + oImp, D = AVG - dImp, net = O - D;
+  // Centered on the average 2026-27 D-I team and shrunk as the backtest says (PJ), so these numbers
+  // match the Pac-12 outlook below.
+  const netRaw = oImp + dImp, sh = PJ?.shrink ?? 1;
+  const O = AVG + sh * (oImp - (PJ?.meanO ?? 0)), D = AVG - sh * (dImp - (PJ?.meanD ?? 0)), net = O - D;
   // Points are shared: scale everyone so the team scores what its offense rating says it should.
   const teamPts = (O * PACE) / 100, raw = rows.reduce((a, x) => a + x.ppg, 0), k = raw > 0 && totalMin >= 150 ? teamPts / raw : 1;
   for (const x of rows) x.ppg *= k;
-  const winP = 1 / (1 + Math.exp(-net / 9.5)), wins = Math.round(winP * GAMES);
-  const dist = FO.dist?.net || [], rank = dist.length ? dist.filter((v) => v > net).length + 1 : null;
-  return { rows, O, D, net, wins, losses: GAMES - wins, rank, nTeams: dist.length, totalMin, priors: rows.filter((x) => x.prior).length };
+  const winP = 1 / (1 + Math.exp((-1.702 * net) / 11)), wins = Math.round(winP * GAMES);
+  const proj = PJ ? PJ.teams.filter((t) => t.tid !== 68).map((t) => sh * (t.net - PJ.mean)) : FO.dist?.net || [];
+  const rank = proj.length ? proj.filter((v) => v > net).length + 1 : null;
+  return { rows, O, D, net, netRaw, wins, losses: GAMES - wins, rank, nTeams: proj.length + 1, totalMin, priors: rows.filter((x) => x.prior).length };
+}
+
+// ---------------------------------------------------------------- Pac-12 and postseason outlook
+// Every other D-I team uses its 2026-27 roster projection (same model, same minutes method); Boise St.
+// uses this depth chart. Ratings are shrunk (x0.8) and centered, as the backtest says. 3,000 simulated
+// seasons: each team's true level varies around its projection (sd 5.5 per 100), Pac-12 plays a home and
+// an away game with everyone (home edge 3, game sd 11), then a 9-team conference tournament (8 v 9
+// play-in). NCAA: top 46 nationally (at-large line) or Pac-12 tournament champion. Round reached by
+// national rank, as you'd expect from seeding: top 32 = second round, top 16 = Sweet 16, top 4 = Final Four level.
+const SIMS = 3000; let simKey = null, simOut = null;
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function outlook(netBoise) {
+  if (!PJ) return null;
+  const key = netBoise.toFixed(2); if (simKey === key) return simOut;
+  const R = rng(27), gauss = () => { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const Phi = (z) => 1 / (1 + Math.exp(-1.702 * z));
+  const T = PJ.teams.map((t) => ({ ...t, r: PJ.shrink * ((t.tid === 68 ? netBoise : t.net) - PJ.mean) }));
+  const pac = T.filter((t) => t.conf === "Pac-12"), n = pac.length;
+  const acc = pac.map((t) => ({ t, w: 0, fin: 0, first: 0, champ: 0, ncaa: 0, r32: 0, s16: 0, f4: 0, ranks: [], finishes: new Array(n).fill(0) }));
+  const all = new Float64Array(T.length), pacIdx = pac.map((p) => T.indexOf(p));
+  for (let s = 0; s < SIMS; s++) {
+    for (let i = 0; i < T.length; i++) all[i] = T[i].r + PJ.sd * gauss();
+    const rv = pacIdx.map((i) => all[i]), wins = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) { if (R() < Phi((rv[i] - rv[j] + 3) / 11)) wins[i]++; else wins[j]++; }
+    const order = [...Array(n).keys()].sort((a, b) => wins[b] - wins[a] || R() - 0.5);
+    order.forEach((ti, place) => { acc[ti].fin += place + 1; acc[ti].finishes[place]++; if (place === 0) acc[ti].first++; acc[ti].w += wins[ti]; });
+    const g = (a, b) => (R() < Phi((rv[a] - rv[b]) / 11) ? a : b), sd = order; // sd[0] = 1 seed
+    const pi = n >= 9 ? g(sd[7], sd[8]) : sd[7];
+    const q = [g(sd[0], pi), g(sd[3], sd[4]), g(sd[1], sd[6]), g(sd[2], sd[5])];
+    const champ = g(g(q[0], q[1]), g(q[2], q[3])); acc[champ].champ++;
+    for (let k = 0; k < n; k++) {
+      const me = rv[k]; let rank = 1; for (let i = 0; i < all.length; i++) if (all[i] > me) rank++;
+      acc[k].ranks.push(rank);
+      if (rank <= 46 || k === champ) { acc[k].ncaa++; if (rank <= 32) acc[k].r32++; if (rank <= 16) acc[k].s16++; if (rank <= 4) acc[k].f4++; }
+    }
+  }
+  const med = (a) => { const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+  simOut = acc.map((a) => ({ team: a.t.team, tid: a.t.tid, r: a.t.r, rank: med(a.ranks), w: a.w / SIMS, l: 2 * (n - 1) - a.w / SIMS, fin: a.fin / SIMS, first: a.first / SIMS, champ: a.champ / SIMS, ncaa: a.ncaa / SIMS, r32: a.r32 / SIMS, s16: a.s16 / SIMS, f4: a.f4 / SIMS, mode: a.finishes.indexOf(Math.max(...a.finishes)) + 1 })).sort((a, b) => a.fin - b.fin);
+  simKey = key; return simOut;
+}
+const ordn = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+const pct = (v) => (v >= 0.995 ? ">99%" : v < 0.005 ? "<1%" : Math.round(v * 100) + "%");
+function outlookHTML(J) {
+  if (!PJ || !J.rows.length) return "";
+  const O = outlook(J.netRaw); if (!O) return "";
+  const me = O.find((x) => x.tid === 68);
+  const tier = me.rank <= 4 ? "Final Four level" : me.rank <= 16 ? "Sweet 16 level" : me.rank <= 32 ? "NCAA second-round level" : me.rank <= 46 ? "NCAA at-large level" : me.rank <= 80 ? "bubble / NIT level" : "outside the postseason picture";
+  const bar = (l, v) => `<div style="display:grid;grid-template-columns:118px 1fr 40px;gap:8px;align-items:center;font-size:12px;margin-top:6px"><span>${l}</span><div class="mbar" style="margin:0"><i style="width:${Math.round(v * 100)}%;background:${pcol(50 + Math.max(-45, Math.min(45, (v - 0.3) * 120)))}"></i></div><b style="text-align:right;font:600 12px var(--mono)">${pct(v)}</b></div>`;
+  return `<div class="ts"><div class="label">Pac-12 outlook · 2026-27</div>
+    <table class="tbl" style="margin-top:8px;font-size:12px"><thead><tr><th class="l">Team</th><th><span data-def="projnet">Net</span></th><th>Natl</th><th>Conf</th><th>1st</th><th>NCAA</th></tr></thead><tbody>
+    ${O.map((x) => `<tr style="${x.tid === 68 ? "background:rgba(255,255,255,.06);font-weight:700" : ""}"><td class="l">${esc(x.team)}</td><td>${sg(x.r)}</td><td class="m">#${x.rank}</td><td class="m">${x.w.toFixed(1)}-${x.l.toFixed(1)}</td><td>${pct(x.first)}</td><td>${pct(x.ncaa)}</td></tr>`).join("")}
+    </tbody></table>
+    <div class="label" style="margin-top:14px">Boise St. postseason · this depth chart</div>
+    <div style="font-size:13px;margin-top:6px">Projected <b>#${me.rank}</b> nationally, most likely <b>${ordn(me.mode)}</b> in the Pac-12 (avg ${me.fin.toFixed(1)}): <b>${tier}</b>.</div>
+    ${bar("Wins Pac-12 (reg.)", me.first)}${bar("Wins Pac-12 tourney", me.champ)}${bar("Makes NCAA", me.ncaa)}${bar("2nd round (top 32)", me.r32)}${bar("Sweet 16 (top 16)", me.s16)}
+    <div class="cap" style="margin-top:8px">3,000 simulated seasons. Other teams: their 2026-27 rosters through the same model and even minutes. NCAA = top 46 nationally or Pac-12 tournament champion; rounds by national rank (top 32 ≈ second round). Net = projected margin per 100 possessions vs. an average D-I team.</div></div>`;
 }
 
 // ---------------------------------------------------------------- render
@@ -132,7 +198,7 @@ function render() {
     return `<div class="pc${r === 0 ? " st" : ""}" data-cell="${k}:${r}" data-filled="1" title="Drag to move or swap">
       <button class="x" data-clear="${k}:${r}" aria-label="Remove ${esc(p.name)}" title="Remove from depth chart">✕</button>
       <div class="ptop">${shot(p)}<div class="nm"><a href="${esc(p.href)}" draggable="false"><b>${esc(p.name)}</b></a><div class="t">${teamMark(p, 15)}<span>${esc(p.school)}</span></div><div class="tg">${esc(p.type)}${p.pos ? " · " + esc(p.pos) : ""}${p.ht ? " · " + esc(p.ht) : ""}</div></div></div>
-      <div class="mins"><input type="range" min="0" max="40" step="1" value="${m}" data-min="${esc(id)}" aria-label="Projected minutes"><b><span id="mv-${esc(id)}">${m}</span><span>MPG</span></b></div>
+      <div class="mins"><input type="range" min="0" max="40" step="1" value="${Math.round(m)}" data-min="${esc(id)}" aria-label="Projected minutes"${auto ? ' disabled title="Even minutes is on: minutes come from his projected rank on this roster"' : ""}><b><span id="mv-${esc(id)}">${Math.round(m)}</span><span>MPG</span></b></div>
       <div class="line"><div><b id="pp-${esc(id)}">${f1(x.ppg)}</b><span>PTS</span></div><div><b>${f1(x.rpg)}</b><span>REB</span></div><div><b>${f1(x.apg)}</b><span>AST</span></div><div><b>${x.r.ts != null ? Math.round(x.r.ts) : "—"}</b><span>TS%</span></div></div></div>`;
   };
   const tone = J.net >= 3 ? "var(--good)" : J.net <= -3 ? "var(--bad)" : "#fff";
@@ -147,7 +213,7 @@ function render() {
     </div>
   </div>
   ${scenarioBarHTML(SV, loaded)}
-  <div class="interim"><b>Projections: Win model v0.5.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. Freshmen are projected from the model's freshman terms (247 Composite rank and height), learned from 10 recruiting classes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} with no D-I season and no ranking use the model's average freshman.` : ""} Drag a card to move or swap it; drag it to the bottom of the screen or click ✕ to remove it.</div>
+  <div class="interim"><b>Projections: Win model v0.5, same method as every 2026-27 team projection.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. Freshmen are projected from the model's freshman terms (247 Composite rank and height), learned from 10 recruiting classes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} with no D-I season and no ranking use the model's average freshman.` : ""} Drag a card to move or swap it; drag it to the bottom of the screen or click ✕ to remove it.</div>
   <div class="lay">
     <div>
       <div class="dc"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="label">Depth chart name</span><input class="foin" id="dname" value="${esc(d.name)}" aria-label="Depth chart name" style="height:32px;max-width:320px;margin:0"></div><div class="dgrid">
@@ -160,17 +226,20 @@ function render() {
         </tbody></table>` : `<div class="m" style="color:var(--muted)">Add players to the depth chart to see projected averages.</div>`}</div></section>
     </div>
     <aside class="side">
+      <div class="ts"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="label">Minutes</span><div class="seg2" id="automode"><button data-auto="0" class="${auto ? "" : "on"}">Manual</button><button data-auto="1" class="${auto ? "on" : ""}">Even (by talent)</button></div></div>
+        <div class="cap" style="margin-top:6px">${auto ? "Even: depth chart and sliders are ignored. Players are ranked by projected impact and given the average D-I minutes for that rotation spot (32, 30, 28, 25, 22, 18, 15, 11, 8, 5…), the same way every other team below is projected." : "Manual: the minutes you set on each card."}</div></div>
       <div class="ts"><div class="label">Projected team success</div>
         <div class="big"><b style="color:${tone}">${J.rows.length ? sg(J.net) : "—"}</b><span class="label">net rating / 100</span></div>
         <div class="tsg">
-          <div><span class="label">Record</span><b>${J.rows.length ? `${J.wins}-${J.losses}` : "—"}</b><div class="s">over ${GAMES} games</div></div>
-          <div><span class="label">D-I rank</span><b style="color:${J.rank ? (pctOfRank(J.rank, J.nTeams) >= 70 ? "var(--good)" : pctOfRank(J.rank, J.nTeams) <= 30 ? "var(--bad)" : "#fff") : "#fff"}">${J.rows.length && J.rank ? "≈ #" + J.rank : "—"}</b><div class="s">${J.nTeams ? `of ${J.nTeams}, by 2025-26 net` : ""}</div></div>
+          <div><span class="label">Record</span><b>${J.rows.length ? `${J.wins}-${J.losses}` : "—"}</b><div class="s">vs. an average D-I team, ${GAMES} games</div></div>
+          <div><span class="label">D-I rank</span><b style="color:${J.rank ? (pctOfRank(J.rank, J.nTeams) >= 70 ? "var(--good)" : pctOfRank(J.rank, J.nTeams) <= 30 ? "var(--bad)" : "#fff") : "#fff"}">${J.rows.length && J.rank ? "≈ #" + J.rank : "—"}</b><div class="s">${J.nTeams ? `of ${J.nTeams}, 2026-27 projections` : ""}</div></div>
           <div><span class="label" data-def="adjo">Offense</span><b>${J.rows.length ? f1(J.O) : "—"}</b><div class="s">pts / 100 · D-I avg ${AVG}</div></div>
           <div><span class="label" data-def="adjd">Defense</span><b>${J.rows.length ? f1(J.D) : "—"}</b><div class="s">allowed / 100</div></div>
         </div>
         <div style="margin-top:12px"><div style="display:flex;justify-content:space-between"><span class="label">Minutes</span><span class="label" style="color:${J.totalMin > 200 ? "var(--bad)" : "#fff"}">${J.totalMin} / 200</span></div><div class="mbar"><i style="width:${Math.min(100, J.totalMin / 2)}%;background:${J.totalMin > 200 ? "var(--bad)" : "var(--good)"}"></i></div>
         <div class="cap" style="margin-top:6px">${J.totalMin > 200 ? "Over 200: everyone's share of the minutes is scaled down." : J.totalMin < 200 ? `${200 - J.totalMin} minutes unassigned.` : "All 200 minutes assigned."}</div></div>
       </div>
+      ${outlookHTML(J)}
       <div class="ts"><div class="label">Projected leaders</div>
         ${[["Points", "ppg"], ["Rebounds", "rpg"], ["Assists", "apg"]].map(([l, k]) => { const top = [...J.rows].sort((a, b) => b[k] - a[k]).slice(0, 3); return `<div style="margin-top:10px"><div class="label" style="font-size:9.5px;margin-bottom:4px">${l}</div>${top.map((x) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><a href="${esc(x.p.href)}" style="color:inherit">${esc(x.p.name)}</a><b>${f1(x[k])}</b></div>`).join("") || `<div class="m" style="color:var(--muted);font-size:12px">—</div>`}</div>`; }).join("")}
       </div>
@@ -189,6 +258,7 @@ page.addEventListener("input", (e) => {
   if (t.dataset.min) { d.min[t.dataset.min] = +t.value; changed(); const s = document.getElementById("mv-" + t.dataset.min); if (s) s.textContent = t.value; }
 });
 page.addEventListener("change", (e) => { if (e.target.dataset.min) render(); });
+page.addEventListener("click", (e) => { const b = e.target.closest("[data-auto]"); if (!b) return; auto = b.dataset.auto === "1"; try { localStorage.setItem("biq-builder-auto", auto ? "1" : "0"); } catch {} render(); });
 page.addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return; const ds = b.dataset;
   if (ds.pick) { const [k, r] = cell(ds.pick); openPicker({ title: `Add ${k} · ${ROWS[r][0]}`, types: ["Returner", "Transfer", "Freshman"], players: FO.players, exclude: inUse(), onPick: (p) => { d.grid[k][r] = p.id; delete d.min[p.id]; changed(); render(); } }); }

@@ -24,6 +24,8 @@
 .lb{display:grid;gap:6px;padding:8px;min-height:120px;transition:background .12s}.lane.over .lb{background:#1f2124}
 .pcard{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:start;background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:8px 9px;cursor:grab;touch-action:none;user-select:none}
 .pcard:hover{border-color:#55595f}.pcard.lifted{opacity:.3}
+.pcard[data-tier]{border-left-width:3px}.pcard[data-tier=green]{border-left-color:#34a853}.pcard[data-tier=yellow]{border-left-color:#fbbc04}.pcard[data-tier=red]{border-left-color:#ea4335}
+.cs b em{font-style:normal}.cs b.dim{color:var(--muted);font-weight:500}
 .pcard.before::before{content:"";position:absolute;left:0;right:0;top:-5px;height:2px;background:#f2f3f4;border-radius:2px}
 .pcard.after::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:2px;background:#f2f3f4;border-radius:2px}
 .rk{font:600 12px var(--mono);color:var(--dim);text-align:center;padding-top:2px}
@@ -53,18 +55,24 @@ topBar("prep");
 
 const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
 const inch = (h) => { const m = String(h || "").match(/(\d+)\D+(\d+)/); return m ? +m[1] * 12 + +m[2] : null; };
-const POSG = (p) => (/C|PF/.test(p) && !/SF\/PF/.test(p) ? "B" : /SF/.test(p) ? "W" : "G");
+// Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
+const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
+  if (/\bC\b|PF|^C/.test(p) && !/SF\/PF/.test(p)) return "B"; if (p === "F") return inches >= 81 ? "B" : "W"; if (/SF|^W|GF|SG\/SF/.test(p)) return "W"; return "G"; };
 const LANES = [["G", "Guards"], ["W", "Wings"], ["B", "Bigs"]];
 const [intl, hs, geo, FR, M0] = await Promise.all([getJSON("/data/intl/board.json"), getJSON("/data/hs/board.json").catch(() => ({ players: [] })), getJSON("/data/intl/geo.json"), getJSON("/data/rankings/freshmen-2026-27.json").catch(() => null), me()]);
-const proj = (p) => (FR?.map && p.r247 && inch(p.ht) ? FR.map.intercept + FR.map.log_rank * Math.log(p.r247) + FR.map.height_in * inch(p.ht) : null);
+// Freshman projection (Win model's freshman terms) from a national rank + height; 247 rank first, else On3 Industry.
+const rankOf = (p) => p.r247 ?? p.rInd ?? p.rOn3 ?? null;
+const proj = (p) => { const r = p.r247 ?? p.rInd; return FR?.map && r && inch(p.ht) ? FR.map.intercept + FR.map.log_rank * Math.log(r) + FR.map.height_in * inch(p.ht) : null; };
+const TIER = { green: 0, yellow: 1, red: 2 }, tierOf = (p) => TIER[p.tier] ?? 3;
 const P = [
   ...intl.players.map((p) => ({ ...p, kind: "intl", id: "intl:" + slug(p.name), href: "/international#" + slug(p.name), where: p.club || p.team, flag: (geo.countries[p.nat] || [])[1], ev: [...(p.fiba || [])].sort((a, b) => b.yr - a.yr)[0] })),
   ...hs.players.map((p) => ({ ...p, kind: "hs", id: "hs:" + slug(p.name), href: "/highschool#" + slug(p.name), where: p.school, proj: proj(p) })),
-].map((p) => ({ ...p, lane0: POSG(p.pos || "") }));
+].map((p) => ({ ...p, lane0: POSG(p.pos, p.ht) }));
 const byId = new Map(P.map((p) => [p.id, p]));
 let M = M0, scope = (() => { try { return localStorage.getItem("biq-prep-scope") === "me" ? "me" : "staff"; } catch { return "staff"; } })();
 if (scope === "me" && !M.user) scope = "staff";
-let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", msg = "";
+let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", cls = "all", msg = "";
+const CLASSES = [...new Set(P.map((p) => String(p.cls)).filter((c) => c && c !== "undefined"))].sort();
 async function load() { try { const r = await getJSON("/api/prep"); SAVED = { me: r.me || { lanes: {} }, staff: r.staff || { lanes: {} } }; } catch { msg = "Couldn't load the saved order."; } }
 await load();
 
@@ -72,31 +80,42 @@ await load();
 function lanesNow() {
   const L = SAVED[scope]?.lanes || {}, placed = new Set(), out = {};
   for (const [k] of LANES) { out[k] = (L[k] || []).filter((id) => byId.has(id) && !placed.has(id)); out[k].forEach((id) => placed.add(id)); }
-  const rest = P.filter((p) => !placed.has(p.id)).sort((a, b) => (a.r247 || 999) - (b.r247 || 999) || a.name.localeCompare(b.name));
+  const rest = P.filter((p) => !placed.has(p.id)).sort((a, b) => (rankOf(a) || 999) - (rankOf(b) || 999) || a.name.localeCompare(b.name));
   for (const p of rest) out[p.lane0].push(p.id);
+  // Staff colors first (green, then yellow, then red, then not colored); the saved order holds within each color.
+  for (const k in out) { const pos = new Map(out[k].map((id, i) => [id, i])); out[k].sort((a, b) => tierOf(byId.get(a)) - tierOf(byId.get(b)) || pos.get(a) - pos.get(b)); }
   return out;
 }
 const f1 = (v) => (v == null ? "—" : (+v).toFixed(1));
 const sg = (v) => (v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1));
 const rk = (v) => (v ? "#" + v : "—");
+// The same four numbers for every prospect, high school or international:
+//   RANK national recruiting rank · PROJ FR projected first-season Talent / 100 (HS: freshman terms from
+//   rank + height; international: international model v0.1) · LEVEL where he competes · PPG latest scoring.
+const circuit = (club) => { const m = String(club || "").match(/\(([^)]+)\)/); return m ? m[1].replace(/^Nike /, "").replace(/^Adidas /, "") : ""; };
+const evShort = (e) => (e ? e.event.replace(/^FIBA /, "").replace("EuroBasket", "Euro").replace(" Oceania Cup", " Oceania").replace(/ Championship.*$/, "") : "");
 function stats(p) {
-  if (p.kind === "hs") return [["247", rk(p.r247)], ["ON3", rk(p.rOn3)], ["ESPN", rk(p.rEspn)], ["PROJ FR", p.proj == null ? "—" : `<em style="font-style:normal;color:${pc(50 + Math.max(-45, Math.min(45, p.proj * 9)))}">${sg(p.proj)}</em>`]];
-  const e = p.ev; return e ? [["PTS", f1(e.pts)], ["REB", f1(e.reb)], ["AST", f1(e.ast)], ["EFF", f1(e.eff)]] : [["PTS", "—"], ["REB", "—"], ["AST", "—"], ["EFF", "—"]];
+  const pr = p.kind === "hs" ? p.proj : p.proj ?? null;
+  const prV = pr == null ? (p.kind === "hs" ? `<b class="dim" title="Unranked: the model's average freshman">≈${sg(-2.6)}</b>` : `<b class="dim">—</b>`) : `<b><em style="color:${pc(50 + Math.max(-45, Math.min(45, pr * 9)))}">${sg(pr)}</em></b>`;
+  const lvl = p.kind === "hs" ? circuit(p.club) || "HS" : evShort(p.ev) || (p.league || "").split("/")[0].trim() || "Club";
+  const ppg = p.kind === "hs" ? p.ppg : p.ev?.pts;
+  return [["RANK", `<b${rankOf(p) ? "" : ' class="dim"'}>${rankOf(p) ? "#" + rankOf(p) : "—"}</b>`], ["PROJ FR", prV], ["LEVEL", `<b style="font-size:10.5px">${esc(lvl)}</b>`], ["PPG", `<b${ppg == null ? ' class="dim"' : ""}>${ppg == null ? "—" : f1(ppg)}</b>`]];
 }
 function card(p, i) {
-  return `<article class="pcard" data-id="${esc(p.id)}"><div class="rk">${i + 1}</div>
+  return `<article class="pcard" data-id="${esc(p.id)}"${p.tier ? ` data-tier="${p.tier}" title="Staff board: ${p.tier}"` : ""}><div class="rk">${i + 1}</div>
     <div class="ct"><span class="hs">${p.headshot ? `<img alt="" loading="lazy" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}</span>
       <div class="nm"><a href="${esc(p.href)}" draggable="false">${esc(p.name)}</a><div class="s">${p.flag ? `<img alt="" src="https://flagcdn.com/w40/${p.flag}.png" onerror="this.remove()">` : ""}<span>${esc(p.where || "")}</span></div>
         <div class="f">${[p.pos, p.ht, p.cls ? "'" + String(p.cls).slice(2) : "", p.kind === "hs" ? p.state : p.nat].filter(Boolean).map(esc).join(" · ")}</div></div>
       <span class="kind">${p.kind === "hs" ? "HS" : "INTL"}</span></div>
-    <div class="cs">${stats(p).map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join("")}</div></article>`;
+    <div class="cs">${stats(p).map(([l, v]) => `<div><span>${l}</span>${v}</div>`).join("")}</div></article>`;
 }
 const page = document.getElementById("page");
 function render() {
-  const L = lanesNow(), show = (id) => kind === "all" || byId.get(id).kind === kind;
+  const L = lanesNow(), show = (id) => { const p = byId.get(id); return (kind === "all" || p.kind === kind) && (cls === "all" || String(p.cls) === cls); };
   page.innerHTML = `<div class="ptop">
-    <div><div class="label">Prep</div><h1>Prep List</h1><div class="sub">Every international and high school prospect on one board. Drag a card up or down to rank him, or into another lane to change his position group. Click a name for his full card. Add players by asking Claude to add them by name; the full high school table is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School list</a>.</div></div>
+    <div><div class="label">Prep</div><h1>Prep List</h1><div class="sub">Every international and high school prospect on one board. The line on each card is the staff board color (green, yellow, red); cards are ordered green, then yellow, then red, and you rank players within their color by dragging a card up or down (or into another lane to change his position group). Players who have committed elsewhere are left off. Click a name for his full card. The full high school table is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School list</a>.</div></div>
     <div class="pact"><span class="msg" id="msg">${esc(msg)}</span>
+      <div class="seg2">${["all", ...CLASSES].map((c) => `<button data-cls="${c}" class="${cls === c ? "on" : ""}">${c === "all" ? "All classes" : c}</button>`).join("")}</div>
       <div class="seg2"><button data-k="all" class="${kind === "all" ? "on" : ""}">All</button><button data-k="intl" class="${kind === "intl" ? "on" : ""}">International</button><button data-k="hs" class="${kind === "hs" ? "on" : ""}">High school</button></div>
       <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My order${M.user ? ` · ${esc(M.user)}` : ""}</button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff order</button></div>
       <button class="fbtn" id="print">Print</button></div></div>
@@ -112,6 +131,7 @@ addEventListener("biq-me", async () => { M = await me(true); if (scope === "me" 
 page.addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b || b.disabled) return;
   if (b.dataset.k) { kind = b.dataset.k; render(); }
+  else if (b.dataset.cls) { cls = b.dataset.cls; render(); }
   else if (b.dataset.scope) { scope = b.dataset.scope; try { localStorage.setItem("biq-prep-scope", scope); } catch {} msg = ""; render(); }
   else if (b.id === "print") print();
 });

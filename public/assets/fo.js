@@ -49,7 +49,7 @@ export async function loadFO() {
     for (const p of hs.players || []) {
       const [first, ...rest] = String(p.name).split(" ");
       out.push({ id: "hs:" + slug(p.name), type: "Freshman", first, last: rest.join(" "), school: p.school || "", pos: p.pos || "", ht: p.ht || "", cls: p.cls ? `Class of ${p.cls}` : "",
-        photo: p.headshot || "", logo: "", cid: null, rates: null, rank247: p.r247 || null, href: "/highschool#" + slug(p.name) });
+        photo: p.headshot || "", logo: "", cid: null, rates: null, rank247: p.r247 || p.rInd || null, tier: p.tier || null, href: "/highschool#" + slug(p.name) });
     }
     // Freshman projections: this year's 247 top 100 by name; otherwise a known 247 rank + height.
     const FRN = new Map((FR?.rows || []).map((r) => [nkey(r.name), r]));

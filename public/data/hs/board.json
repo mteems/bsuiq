@@ -1,5 +1,5 @@
 {
- "_about": "High school board. One entry per prospect. ll = [lon, lat] of the city he plays in now. r247 = 247Sports national rank (used by the Win model's freshman projection); rOn3 = On3 Industry rank; rEspn / rRivals as listed. Leave out anything unknown.",
+ "_about": "High school board. One entry per prospect. ll = [lon, lat] of the city he plays in now. r247 = 247Sports national rank (used by the Win model's freshman projection); rOn3 = On3 Industry rank; rEspn / rRivals as listed. Leave out anything unknown. tier = staff big-board color (green / yellow / red); none = not colored on the board. rInd = On3 Industry (consensus) national rank.",
  "players": [
   {
    "name": "Jamaal McKnight",
@@ -80,7 +80,10 @@
    "links": {
     "On3": "https://www.on3.com/rivals/lyris-robinson-260557/"
    },
-   "src": "On3 / Rivals profile (rankings, size, school, offers; official visit to Creighton)"
+   "src": "On3 / Rivals profile (rankings, size, school, offers; official visit to Creighton)",
+   "tier": "green",
+   "rInd": 53,
+   "club": "AZ Unity (Nike)"
   },
   {
    "name": "Kam Babbs",
@@ -115,7 +118,8 @@
     "RealGM": "https://basketball.realgm.com/player/Kam-Babbs/Summary/258283",
     "SeaTown Sports": "https://www.seatownsports.com/p/washington-basketball-recruiting"
    },
-   "src": "Prep Hoops (school, club, position); RealGM (6-5, 170, Pangos camp); SeaTown Sports (Portland State and Bethune-Cookman in touch, spring game line). The schools listed under contacts are on his Prep Hoops recruiting list; offers aren't confirmed. Headshot: Prep Hoops, Pangos Premier 80 (July 2025)."
+   "src": "Prep Hoops (school, club, position); RealGM (6-5, 170, Pangos camp); SeaTown Sports (Portland State and Bethune-Cookman in touch, spring game line). The schools listed under contacts are on his Prep Hoops recruiting list; offers aren't confirmed. Headshot: Prep Hoops, Pangos Premier 80 (July 2025).",
+   "tier": "yellow"
   },
   {
    "name": "Kaiden Wilson",
@@ -131,7 +135,7 @@
     41.59
    ],
    "home": "Redondo Beach, Calif.",
-   "club": "Paul George Elite",
+   "club": "Paul George Elite (Nike EYBL)",
    "status": "Unranked nationally",
    "notes": "Tarkanian Classic, Dec. 2025 (4-0, champions): 11.5 pts, 5 reb, 1.5 blk, 43% FG, 32% 3P in 20 min. Prep Hoops: \"perhaps the best athlete in the building\" at its Elite Camp.",
    "headshot": "https://prephoops.com/wp-content/uploads/sites/2/2025/08/wilson.jpg",
@@ -142,6 +146,924 @@
    },
    "src": "Staff: now at Iowa United Prep for 2026-27 (Prep Hoops also lists Iowa United). 247Sports (6-5, 200, Redondo Union); Prep Hoops (Paul George Elite, evaluation); Tarkanian Classic line (Redondo Union, Dec. 2025) from his coach's post on X.",
    "prev": "Redondo Union HS (Redondo Beach, Calif.), 2025-26"
+  },
+  {
+   "name": "Jordan Carlson",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "F",
+   "ht": "6-9",
+   "school": "Lake City HS",
+   "city": "Coeur d'Alene, Idaho",
+   "state": "ID",
+   "ll": [
+    -116.78,
+    47.68
+   ],
+   "club": "Select (Puma)",
+   "status": "Uncommitted",
+   "wt": 205,
+   "notes": "Gatorade Idaho Player of the Year (2025-26).",
+   "links": {
+    "On3": "https://www.on3.com/rivals/jordan-carlson-290216/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Trevor Dickson",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "G",
+   "ht": "6-4",
+   "school": "Modesto Christian",
+   "city": "Modesto, California",
+   "state": "CA",
+   "ll": [
+    -121.0,
+    37.64
+   ],
+   "club": "Oakland Soldiers (Nike EYBL)",
+   "status": "Uncommitted",
+   "rInd": 204,
+   "stars": 3,
+   "wt": 170,
+   "headshot": "https://on3static.com/uploads/assets/411/725/725411.png",
+   "links": {
+    "On3": "https://www.on3.com/rivals/trevor-dickson-280954/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Siyahe Siaisiai",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "F",
+   "ht": "6-10",
+   "school": "Coronado HS",
+   "city": "Las Vegas, Nevada",
+   "state": "NV",
+   "ll": [
+    -115.14,
+    36.17
+   ],
+   "club": "Las Vegas Knicks (Puma)",
+   "status": "Uncommitted",
+   "rInd": 196,
+   "stars": 3,
+   "headshot": "https://on3static.com/uploads/assets/325/725/725325.png",
+   "notes": "On3 lists him at Link Academy; staff sheet has Coronado HS (2026 Nevada state champions).",
+   "links": {
+    "On3": "https://www.on3.com/rivals/siyahe-siaisiai-290784/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Amarion Hunter",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "G",
+   "ht": "6-2",
+   "school": "Carter HS",
+   "city": "Dallas, Texas",
+   "state": "TX",
+   "ll": [
+    -96.8,
+    32.78
+   ],
+   "club": "Dallas Mustangs (RecruitLook)",
+   "status": "Uncommitted",
+   "rInd": 205,
+   "stars": 3,
+   "wt": 170,
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/2023/08/IMG_0043.jpg?w=480",
+   "links": {
+    "On3": "https://www.on3.com/rivals/amarion-hunter-288682/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Isaac Bongen",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "Central Catholic HS",
+   "city": "Portland, Oregon",
+   "state": "OR",
+   "ll": [
+    -122.68,
+    45.52
+   ],
+   "club": "Cascade Kings (RecruitLook)",
+   "status": "Uncommitted",
+   "wt": 175,
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/2026/06/bongen-crop-1426x935-1782857797.jpg?w=800",
+   "links": {
+    "On3": "https://www.on3.com/rivals/isaac-bongen-242311/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Sincere Houston",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "G",
+   "ht": "6-2",
+   "school": "Modesto Christian",
+   "city": "Modesto, California",
+   "state": "CA",
+   "ll": [
+    -121.0,
+    37.64
+   ],
+   "club": "Lakeshow (Adidas)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "DJ Gaines",
+   "cls": 2027,
+   "tier": "green",
+   "pos": "G",
+   "ht": "5-11",
+   "school": "Westminster Academy",
+   "city": "Fort Lauderdale, Florida",
+   "state": "FL",
+   "ll": [
+    -80.14,
+    26.12
+   ],
+   "club": "Nightrydas (Nike)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Jacob David",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-6",
+   "school": "Rock Canyon HS",
+   "city": "Littleton, Colorado",
+   "state": "CO",
+   "ll": [
+    -105.02,
+    39.61
+   ],
+   "club": "Colorado Collective (Puma)",
+   "status": "Uncommitted",
+   "rInd": 229,
+   "stars": 3,
+   "headshot": "https://on3static.com/uploads/assets/282/634/634282.jpg",
+   "links": {
+    "On3": "https://www.on3.com/rivals/jacob-david-287230/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Malcolm Weatherspoon",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "Central Catholic HS",
+   "city": "Portland, Oregon",
+   "state": "OR",
+   "ll": [
+    -122.68,
+    45.52
+   ],
+   "club": "Seattle Rotary (Nike EYBL)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/user-uploads/IMG_6137_51bd78.jpeg?w=576",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "Tripp Haywood",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-2",
+   "school": "AZ Compass Prep",
+   "city": "Chandler, Arizona",
+   "state": "AZ",
+   "ll": [
+    -111.84,
+    33.31
+   ],
+   "club": "AZ Unity (Nike)",
+   "status": "Uncommitted",
+   "rInd": 139,
+   "stars": 3,
+   "wt": 175,
+   "headshot": "https://on3static.com/uploads/assets/106/726/726106.png",
+   "notes": "On3: Jimmie \"Tripp\" Haywood, Compass Prep.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/jimmie-haywood-251011/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Drew Bramlett",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "La Cueva HS",
+   "city": "Albuquerque, New Mexico",
+   "state": "NM",
+   "ll": [
+    -106.65,
+    35.08
+   ],
+   "club": "ABC Prep (RecruitLook)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Christopher Brown",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "F",
+   "ht": "6-9",
+   "school": "Dream City Christian",
+   "city": "Glendale, Arizona",
+   "state": "AZ",
+   "ll": [
+    -112.19,
+    33.54
+   ],
+   "club": "Utah Prospects (Nike)",
+   "status": "Uncommitted",
+   "rInd": 102,
+   "stars": 4,
+   "wt": 210,
+   "headshot": "https://on3static.com/uploads/assets/470/423/423470.jpeg",
+   "links": {
+    "On3": "https://www.on3.com/rivals/christopher-brown-244990/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Isaiah Davis",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "Austin Prep",
+   "city": "Austin, Texas",
+   "state": "TX",
+   "ll": [
+    -97.74,
+    30.27
+   ],
+   "club": "Perseverance (New Balance)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Mar Landry",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-6",
+   "school": "Oak Hills HS",
+   "city": "Oak Hills, California",
+   "state": "CA",
+   "ll": [
+    -117.4,
+    34.38
+   ],
+   "club": "Paul George Elite (Nike)",
+   "status": "Uncommitted",
+   "wt": 195,
+   "notes": "On3: Damarian Landry.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/damarian-landry-313656/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Elijah Popoola",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "Palisades Charter",
+   "city": "Pacific Palisades, California",
+   "state": "CA",
+   "ll": [
+    -118.53,
+    34.05
+   ],
+   "club": "BTI (Puma)",
+   "status": "Uncommitted",
+   "wt": 180,
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/2025/12/ej.popoola.27.ca_.jpg?w=1024",
+   "notes": "Twin brother of Olujimi (OJ) Popoola.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/ej-popoola-290215/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Olujimi Popoola",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "Palisades Charter",
+   "city": "Pacific Palisades, California",
+   "state": "CA",
+   "ll": [
+    -118.53,
+    34.05
+   ],
+   "club": "BTI (Puma)",
+   "status": "Uncommitted",
+   "rInd": 204,
+   "stars": 3,
+   "wt": 180,
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/2025/09/oj.popoola.27.ca_.jpg?w=1024",
+   "notes": "Twin brother of Elijah (EJ) Popoola.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/oj-popoola-283651/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Archie Weatherspoon",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-3",
+   "school": "Rangeview HS",
+   "city": "Aurora, Colorado",
+   "state": "CO",
+   "ll": [
+    -104.83,
+    39.73
+   ],
+   "club": "Mountain Stars (Under Armour)",
+   "status": "Uncommitted",
+   "rInd": 220,
+   "stars": 3,
+   "wt": 170,
+   "headshot": "https://on3static.com/uploads/assets/912/572/572912.jpeg",
+   "links": {
+    "On3": "https://www.on3.com/rivals/archie-weatherspoon-283427/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Kolt Yarbrough",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "F",
+   "ht": "6-7",
+   "school": "Elite Sports",
+   "city": "Issaquah, Washington",
+   "state": "WA",
+   "ll": [
+    -122.03,
+    47.53
+   ],
+   "club": "Slow Grind 3SSB (Adidas 3SSB)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/user-uploads/IMG_2934.jpeg?w=749",
+   "notes": "Prep Hoops lists YNG Dreamerz / Moravian Prep (N.C.).",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "William Haun",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "F",
+   "ht": "6-7",
+   "school": "Granada HS",
+   "city": "Livermore, California",
+   "state": "CA",
+   "ll": [
+    -121.77,
+    37.68
+   ],
+   "club": "Lakeshow (Adidas)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Julian Cunningham",
+   "cls": 2027,
+   "tier": "yellow",
+   "pos": "C",
+   "ht": "6-10",
+   "school": "Palisades Charter",
+   "city": "Pacific Palisades, California",
+   "state": "CA",
+   "ll": [
+    -118.53,
+    34.05
+   ],
+   "club": "Gamepoint (Adidas 3SSB)",
+   "status": "Uncommitted",
+   "notes": "Prep Hoops lists SoCal Academy.",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Vincent Cronin",
+   "cls": 2027,
+   "tier": "red",
+   "pos": "W",
+   "ht": "6-7",
+   "school": "Edina HS",
+   "city": "Edina, Minnesota",
+   "state": "MN",
+   "ll": [
+    -93.35,
+    44.89
+   ],
+   "club": "D1 Minnesota (Adidas)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/2025/05/Vincent-Cronin.jpg?w=1024",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "GJ Hill-Thomas",
+   "cls": 2027,
+   "tier": "red",
+   "pos": "G",
+   "ht": "5-10",
+   "school": "Bishop O'Dowd",
+   "city": "Oakland, California",
+   "state": "CA",
+   "ll": [
+    -122.27,
+    37.8
+   ],
+   "club": "Oakland Soldiers (Nike EYBL)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/user-uploads/IMG_5981_5db226.jpeg?w=812",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "Fallilou Mbengue",
+   "cls": 2027,
+   "tier": null,
+   "pos": "F",
+   "ht": "6-10",
+   "school": "Central Florida Christian Academy",
+   "city": "Orlando, Florida",
+   "state": "FL",
+   "ll": [
+    -81.38,
+    28.54
+   ],
+   "club": "SOH Elite (Under Armour)",
+   "status": "Uncommitted",
+   "rInd": 250,
+   "stars": 3,
+   "wt": 205,
+   "notes": "On3 lists Combine Academy.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/fallilou-mbengue-280943/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Ryan Doane",
+   "cls": 2028,
+   "tier": "green",
+   "pos": "F",
+   "ht": "6-9",
+   "school": "JSerra Catholic",
+   "city": "San Juan Capistrano, California",
+   "state": "CA",
+   "ll": [
+    -117.66,
+    33.5
+   ],
+   "club": "CPSA (Puma)",
+   "status": "Uncommitted",
+   "rInd": 113,
+   "stars": 3,
+   "wt": 205,
+   "headshot": "https://on3static.com/uploads/assets/666/675/675666.jpg",
+   "notes": "On3 lists Mater Dei.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/ryan-doane-289293/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Jacobi Oware",
+   "cls": 2028,
+   "tier": "green",
+   "pos": "W",
+   "ht": "6-7",
+   "school": "Long Beach Poly",
+   "city": "Long Beach, California",
+   "state": "CA",
+   "ll": [
+    -118.19,
+    33.77
+   ],
+   "club": "CPSA (Puma)",
+   "status": "Uncommitted",
+   "rInd": 60,
+   "stars": 4,
+   "wt": 180,
+   "headshot": "https://on3static.com/uploads/assets/703/675/675703.jpg",
+   "notes": "On3: Jakobi Oware (St. Pius X–St. Matthias); Prep Hoops national rank 44.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/jakobi-oware-289299/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Davion Shareef-Dulaney",
+   "cls": 2028,
+   "tier": "green",
+   "pos": "G",
+   "ht": "6-2",
+   "school": "Lincoln HS",
+   "city": "Tacoma, Washington",
+   "state": "WA",
+   "ll": [
+    -122.44,
+    47.25
+   ],
+   "club": "Select (Puma)",
+   "status": "Uncommitted",
+   "rInd": 183,
+   "stars": 3,
+   "wt": 170,
+   "headshot": "https://on3static.com/uploads/assets/318/675/675318.jpg",
+   "links": {
+    "On3": "https://www.on3.com/rivals/davion-shareef-dulaney-289275/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Brenden Williams",
+   "cls": 2028,
+   "tier": "green",
+   "pos": "C",
+   "ht": "6-10",
+   "school": "Moreau Catholic",
+   "city": "Hayward, California",
+   "state": "CA",
+   "ll": [
+    -122.08,
+    37.67
+   ],
+   "club": "Team Lillard (Adidas)",
+   "status": "Uncommitted",
+   "rInd": 116,
+   "stars": 3,
+   "wt": 200,
+   "notes": "On3: Brendan Williams.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/brendan-williams-234916/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Austin Birley",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-5",
+   "school": "West Valley HS",
+   "city": "Yakima, Washington",
+   "state": "WA",
+   "ll": [
+    -120.51,
+    46.6
+   ],
+   "club": "Select (Puma)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/user-uploads/IMG_6837_c1c45f.jpeg?w=683",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "Malik Mason",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-4",
+   "school": "Grant HS",
+   "city": "Portland, Oregon",
+   "state": "OR",
+   "ll": [
+    -122.68,
+    45.52
+   ],
+   "club": "Select (Puma)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/user-uploads/mason.jpg?w=1024",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "Zane Zilliax",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "F",
+   "ht": "6-9",
+   "school": "Seattle Academy",
+   "city": "Seattle, Washington",
+   "state": "WA",
+   "ll": [
+    -122.33,
+    47.61
+   ],
+   "club": "Dream Vision (Adidas)",
+   "status": "Uncommitted",
+   "rInd": 168,
+   "stars": 3,
+   "headshot": "https://on3static.com/uploads/assets/281/675/675281.jpg",
+   "links": {
+    "On3": "https://www.on3.com/rivals/zane-zilliax-269918/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Anthony Key",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "F",
+   "ht": "6-8",
+   "school": "Atascocita HS",
+   "city": "Atascocita, Texas",
+   "state": "TX",
+   "ll": [
+    -95.18,
+    29.99
+   ],
+   "club": "Fam Elite (Puma)",
+   "status": "Uncommitted",
+   "rInd": 100,
+   "stars": 3,
+   "wt": 190,
+   "headshot": "https://on3static.com/uploads/assets/994/610/610994.png",
+   "links": {
+    "On3": "https://www.on3.com/rivals/anthony-key-269917/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Grayson Celestine",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-5",
+   "school": "Atascocita HS",
+   "city": "Atascocita, Texas",
+   "state": "TX",
+   "ll": [
+    -95.18,
+    29.99
+   ],
+   "club": "Fam Elite (Puma)",
+   "status": "Uncommitted",
+   "headshot": "https://prephoops.com/wp-content/uploads/sites/2/user-uploads/IMG_4528_207057-rotated.jpeg?w=768",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; Prep Hoops (headshot)"
+  },
+  {
+   "name": "MJ Wilson",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-5",
+   "school": "Crown Point HS",
+   "city": "Crown Point, Indiana",
+   "state": "IN",
+   "ll": [
+    -87.37,
+    41.42
+   ],
+   "club": "Grand Park Premier (Puma)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Kenny Turner",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-0",
+   "school": "Mansfield HS",
+   "city": "Arlington, Texas",
+   "state": "TX",
+   "ll": [
+    -97.11,
+    32.74
+   ],
+   "club": "3D Empire (Puma)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Liam Dick",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-7",
+   "school": "Hellgate HS",
+   "city": "Missoula, Montana",
+   "state": "MT",
+   "ll": [
+    -114.0,
+    46.87
+   ],
+   "club": "Select (Puma)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Justice Holt",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-5",
+   "school": "Lincoln HS",
+   "city": "Tacoma, Washington",
+   "state": "WA",
+   "ll": [
+    -122.44,
+    47.25
+   ],
+   "club": "Select (Puma)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Parks Weaver",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-5",
+   "school": "Folsom HS",
+   "city": "Folsom, California",
+   "state": "CA",
+   "ll": [
+    -121.18,
+    38.68
+   ],
+   "club": "Team Lillard (Adidas)",
+   "status": "Uncommitted",
+   "rInd": 190,
+   "stars": 3,
+   "wt": 165,
+   "headshot": "https://on3static.com/uploads/assets/446/500/500446.png",
+   "notes": "On3 lists De La Salle.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/parks-weaver-250856/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Jaricho Julmist",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-4",
+   "school": "Elite Prep",
+   "city": "Sequim, Washington",
+   "state": "WA",
+   "ll": [
+    -123.1,
+    48.08
+   ],
+   "club": "Slow Grind (Adidas 3SSB)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Will Nelson Jr.",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "W",
+   "ht": "6-6",
+   "school": "Madison Prep",
+   "city": "Baton Rouge, Louisiana",
+   "state": "LA",
+   "ll": [
+    -91.15,
+    30.45
+   ],
+   "club": "Houston Hoops (Nike EYBL)",
+   "status": "Uncommitted",
+   "rInd": 62,
+   "stars": 4,
+   "wt": 185,
+   "headshot": "https://on3static.com/uploads/assets/70/496/496070.png",
+   "notes": "On3 lists Tennessee Collegiate Academy.",
+   "links": {
+    "On3": "https://www.on3.com/rivals/will-nelson-250771/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Varshon Clark",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-4",
+   "school": "Hamilton Southeastern",
+   "city": "Fishers, Indiana",
+   "state": "IN",
+   "ll": [
+    -85.97,
+    39.96
+   ],
+   "club": "All Ohio Red (Nike EYBL)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Elijah Sumi-Scruggs",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "6-4",
+   "school": "Aveson International",
+   "city": "Pasadena, California",
+   "state": "CA",
+   "ll": [
+    -118.14,
+    34.15
+   ],
+   "club": "BTI (Puma)",
+   "status": "Uncommitted",
+   "links": {},
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school."
+  },
+  {
+   "name": "Emmanuel Nwabuoku",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "F",
+   "ht": "6-9",
+   "school": "Strake Jesuit",
+   "city": "Houston, Texas",
+   "state": "TX",
+   "ll": [
+    -95.37,
+    29.76
+   ],
+   "club": "JL3 (Nike EYBL)",
+   "status": "Uncommitted",
+   "rInd": 50,
+   "stars": 4,
+   "wt": 200,
+   "headshot": "https://on3static.com/uploads/assets/682/684/684682.png",
+   "links": {
+    "On3": "https://www.on3.com/rivals/emmanuel-nwabuoku-250759/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
+  },
+  {
+   "name": "Madden Hill",
+   "cls": 2028,
+   "tier": "yellow",
+   "pos": "G",
+   "ht": "5-10",
+   "school": "Clear Springs HS",
+   "city": "League City, Texas",
+   "state": "TX",
+   "ll": [
+    -95.09,
+    29.51
+   ],
+   "club": "JL3 (Nike EYBL)",
+   "status": "Uncommitted",
+   "rInd": 98,
+   "stars": 3,
+   "wt": 155,
+   "headshot": "https://on3static.com/uploads/assets/234/505/505234.png",
+   "links": {
+    "On3": "https://www.on3.com/rivals/madden-hill-250765/"
+   },
+   "src": "Staff big board (Oct 20, 2026): color, position, height, AAU / circuit, school.; On3 / Rivals (industry rank, weight, headshot, commitment status)"
   }
  ]
 }
