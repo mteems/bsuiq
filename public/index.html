@@ -43,6 +43,9 @@ td a:hover{text-decoration:underline;text-underline-offset:3px}
 </main>
 <script type="module">
 import { chip, tc, f1, f0, esc, getJSON, playerName, shortSchool, topBar, LG, sortableTable } from "/assets/core.js";
+import { loadRoles, roleOf, roleTag, ROLE_CSS } from "/assets/roles.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${ROLE_CSS}</style>`);
+await loadRoles();
 topBar("home");
 
 // Upcoming schedule (from the scouting page's opponent list).
@@ -64,10 +67,10 @@ document.getElementById("kpis").innerHTML = [
 const q = (r, k) => (r.last && r.last.gp >= 8 && r.last.mpg >= 8 ? r.last.pct[k]?.pct ?? null : null);
 document.getElementById("roster").innerHTML = `<table class="dtab"><thead>
   <tr><th class="l" colspan="5"></th><th class="grp sep" colspan="3">Last season</th><th class="grp sep" colspan="9">Production · percentile chips</th></tr>
-  <tr><th class="l">#</th><th class="l">Player</th><th class="l">Pos</th><th>Ht</th><th class="l">Cl</th><th class="l sep">Season</th><th class="l">School</th><th><span data-def="gp">GP</span></th>
+  <tr><th class="l">#</th><th class="l">Player</th><th class="l"><span data-def="brole">Role</span></th><th>Ht</th><th class="l">Cl</th><th class="l sep">Season</th><th class="l">School</th><th><span data-def="gp">GP</span></th>
   <th class="sep"><span data-def="mpg">MPG</span></th><th><span data-def="ppg">PPG</span></th><th><span data-def="ts">TS%</span></th><th><span data-def="p3">3P%</span></th><th>3PA</th><th><span data-def="rpg">RPG</span></th><th><span data-def="apg">APG</span></th><th><span data-def="ato">A/TO</span></th><th><span data-def="spg">STL</span></th></tr></thead><tbody>
   ${rows.map((r) => { const L = r.last; const tag = r.isNew ? ' <span class="tag new">NEW</span>' : r.noStats ? ' <span class="tag fr">FR</span>' : "";
-    return `<tr><td class="l m">${esc(r.jersey_number || "")}</td><td class="l pl"><a href="/player/${encodeURIComponent(r.id)}">${esc(playerName(r))}</a>${tag}</td><td class="l m">${esc(r.position)}</td><td class="m">${esc(r.height)}</td><td class="l m">${esc((r.class_year || "").slice(0, 2))}</td>
+    return `<tr><td class="l m">${esc(r.jersey_number || "")}</td><td class="l pl"><a href="/player/${encodeURIComponent(r.id)}">${esc(playerName(r))}</a>${tag}</td><td class="l m" data-v="${esc(roleOf({ key: r.cid || r.id, cid: r.cid, pos: r.position, ht: r.height }).role)}">${roleTag(roleOf({ key: r.cid || r.id, cid: r.cid, pos: r.position, ht: r.height }))}</td><td class="m">${esc(r.height)}</td><td class="l m">${esc((r.class_year || "").slice(0, 2))}</td>
     ${L ? `<td class="l sep m">${L.season}</td><td class="l m">${esc(shortSchool(L.school))}</td><td class="m">${L.gp}</td>
       <td class="sep">${chip(q(r, "mpg"), f1(L.mpg))}</td><td>${chip(q(r, "ppg"), f1(L.ppg))}</td><td>${chip(q(r, "ts"), f1(L.ts))}</td><td data-v="${L.three_pa ? (L.p3 ?? L.three_pct ?? "") : ""}">${!L.three_pa ? `<span class="m">—</span>` : L.p3 != null ? chip(q(r, "p3"), f1(L.p3)) : `<span class="m">${f1(L.three_pct)}</span>`}</td><td class="att">${L.three_pa ? f0(L.three_pa) : "—"}</td>
       <td>${chip(q(r, "rpg"), f1(L.rpg))}</td><td>${chip(q(r, "apg"), f1(L.apg))}</td><td>${chip(q(r, "ato"), L.ato == null ? "—" : L.ato.toFixed(2))}</td><td>${chip(q(r, "spg"), f1(L.spg))}</td>`

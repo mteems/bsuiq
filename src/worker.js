@@ -325,9 +325,12 @@ async function frontOffice(request, env, sess, kind, scope, id) {
 //   GET  /api/tb               → { user, me: [...], staff: [...] }
 //   POST /api/tb/<me|staff>    { op: "set", id, p, target?, lane?, tier? }   (lane: null takes him off the board)
 //                              { op: "remove", id }  · { op: "order", items: [{ id, tOrder? , lane?, tier?, bOrder? }] }
-const LANES = ["Point Guards", "Combo Guards", "Wings", "Stretch 4/5", "Bigs"], TIERS = ["Max", "Starter", "Role", "Development"];
+// Lanes follow the role model (Point guard → Point Guards; Combo guard, Sniper → Combo Guards; Wing → Wings;
+// Forward, Stretch 4 → Forwards; Center, Stretch 5 → Bigs). "Stretch 4/5" was the old name for Forwards.
+const LANES = ["Point Guards", "Combo Guards", "Wings", "Forwards", "Bigs"], TIERS = ["Max", "Starter", "Role", "Development"];
+const fixLane = (P) => { for (const x of Object.values(P)) if (x.lane === "Stretch 4/5") x.lane = "Forwards"; return P; };
 async function transferBoard(request, env, sess, scope) {
-  const user = sess.user, read = async (sc) => (env.STAFF && (sc === "staff" || user) ? ((await env.STAFF.get(scopeKey("tb", sc, user), "json")) || { players: {} }).players : {});
+  const user = sess.user, read = async (sc) => fixLane(env.STAFF && (sc === "staff" || user) ? ((await env.STAFF.get(scopeKey("tb", sc, user), "json")) || { players: {} }).players : {});
   if (!scope) {
     if (request.method !== "GET") return json({ error: "method" }, 405);
     return json({ user, me: Object.values(await read("me")), staff: Object.values(await read("staff")) });
@@ -405,6 +408,27 @@ async function prepTiers(request, env, sess) {
   else return json({ error: "bad_tier" }, 400);
   await env.STAFF.put("prep:tiers", JSON.stringify(cur));
   return json({ ok: true, tiers: cur });
+}
+
+// Staff role overrides (role model v1). One KV object "roles":
+//   { "<canonical id | hs:slug | intl:slug>": { role?, unicorn?, by, at } }
+//   GET /api/roles → { overrides }   POST { id, role?: string|null, unicorn?: true|false|null }
+export const ROLE_NAMES = ["Point guard", "Combo guard", "Sniper", "Wing", "Forward", "Stretch 4", "Center", "Stretch 5"];
+async function rolesApi(request, env, sess) {
+  const cur = env.STAFF ? (await env.STAFF.get("roles", "json")) || {} : {};
+  if (request.method === "GET") return json({ overrides: cur });
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  if (!env.STAFF) return json({ error: "Saving isn't set up on this deployment (no KV)." }, 503);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const id = String(b?.id || "");
+  if (!/^[\w:.-]{2,90}$/.test(id)) return json({ error: "bad_id" }, 400);
+  const o = { ...(cur[id] || {}) };
+  if ("role" in b) { if (b.role == null) delete o.role; else if (ROLE_NAMES.includes(b.role)) o.role = b.role; else return json({ error: "bad_role" }, 400); }
+  if ("unicorn" in b) { if (b.unicorn == null) delete o.unicorn; else o.unicorn = !!b.unicorn; }
+  delete o.by; delete o.at;
+  if (Object.keys(o).length) cur[id] = { ...o, by: sess.user || "Staff", at: new Date().toISOString() }; else delete cur[id];
+  await env.STAFF.put("roles", JSON.stringify(cur));
+  return json({ ok: true, overrides: cur });
 }
 
 // School roster pages (for players ESPN has no headshot for): returns each roster photo with its
@@ -606,6 +630,7 @@ export default {
     const fo = path.match(/^\/api\/fo\/(cap|builder)(?:\/(me|staff)\/([\w-]{1,60}))?$/);
     if (fo) return frontOffice(request, env, sess, fo[1], fo[2], fo[3]);
     if (path === "/api/prep-tiers") return prepTiers(request, env, sess);
+    if (path === "/api/roles") return rolesApi(request, env, sess);
     const pb = path.match(/^\/api\/prep(?:\/(me|staff))?$/);
     if (pb) return prepBoard(request, env, sess, pb[1]);
     const tb = path.match(/^\/api\/tb(?:\/(me|staff))?$/);

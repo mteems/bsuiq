@@ -135,6 +135,7 @@
 .cnote{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
 .cnote b{display:inline;font-size:inherit;font-weight:650;margin:0}
 .tierchip{font:600 10px var(--mono);border-radius:4px;padding:2px 6px;color:#16171a}
+.rdet{margin-top:5px}.rdet summary{font:10px var(--mono);color:var(--muted);cursor:pointer;margin-bottom:5px}
 .tmsg{font:10px var(--mono);color:var(--muted);margin-top:4px;min-height:12px}
 .empty{padding:28px 16px;color:var(--muted);font-size:12.5px}
 @media (max-width:1100px){.igrid{grid-template-columns:1fr}.side{height:auto;max-height:560px}.ikpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -167,6 +168,8 @@
 <script type="module">
 import { d3, topBar, tipOn, tipOff, esc } from "/assets/core.js";
 import { loadTiers, applyTiers, setTier, tierPicker, TIERS, TIER_CSS } from "/assets/tiers.js";
+import { loadRoles, roleOf, roleTag, rolePicker, setRole, GROUPS, ROLE_CSS } from "/assets/roles.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${ROLE_CSS}</style>`);
 document.head.insertAdjacentHTML("beforeend", `<style>${TIER_CSS}</style>`);
 topBar("international");
 
@@ -177,7 +180,7 @@ const colOf = (p) => TIERC[p.tier] || NOC;
 // Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
 const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
   if (/\bC\b|PF|^C/.test(p) && !/SF\/PF/.test(p)) return "B"; if (p === "F") return inches >= 81 ? "B" : "W"; if (/SF|^W|GF|SG\/SF/.test(p)) return "W"; return "G"; };
-const POSL = { G: "Guard", W: "Wing", B: "Big" };
+const POSL = Object.fromEntries(GROUPS.map(([k, l]) => [k, l.replace(/s$/, "")]));
 const REGIONS = [["World", null], ["Europe", [-12, 34.5, 50, 61]], ["Africa", [-19, -12, 40, 25]], ["North America", [-128, 9, -58, 58]], ["South America", [-82, -38, -34, 8]], ["Asia", [70, 10, 140, 50]], ["Oceania", [110, -46, 178, -8]]];
 const [geo, board, W110, HSB] = await Promise.all([fetch("/data/intl/geo.json").then((r) => r.json()), fetch("/data/intl/board.json").then((r) => r.json()), fetch("/assets/geo/world-110m.json").then((r) => r.json()), fetch("/data/hs/board.json").then((r) => r.json()).catch(() => ({ players: [] }))]);
 const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
@@ -191,19 +194,23 @@ const regionOfLL = (ll) => { for (const [r, b] of REGIONS) if (b && ll[0] >= b[0
 // International board + High school board on one map. kind: "intl" | "hs".
 const ALL = [...board.players.map((p) => ({ ...p, kind: "intl" })), ...(HSB.players || []).map((p) => ({ ...p, kind: "hs", nat: "United States", aau: p.club, club: p.school, team: p.school }))];
 const P = ALL.map((p, i) => { const [a3, a2] = C[p.nat] || (p.kind === "hs" ? ["USA", "us"] : ["", ""]); const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos, p.ht), ll, age: ageOf(p), slug: slug(p.name), grp: p.kind === "hs" ? "High school · United States" : p.nat, id: p.kind + ":" + slug(p.name) }; });
-await loadTiers(); applyTiers(P);
-const st = { region: "World", pos: new Set(["G", "W", "B"]), tiers: new Set(["green", "yellow", "red", ""]), sel: null, hover: null, k: 1, kind: "all" };
+await Promise.all([loadTiers(), loadRoles()]); applyTiers(P);
+// Position group = role group (role model v1): Guards, Wings, Forwards, Bigs.
+const setR = (p) => { p.R = roleOf({ key: p.id, pos: p.pos, ht: p.ht, fiba: p.fiba }); p.pg = p.R.group; };
+P.forEach(setR);
+const st = { region: "World", pos: new Set(["G", "W", "F", "B"]), tiers: new Set(["green", "yellow", "red", ""]), sel: null, hover: null, k: 1, kind: "all" };
 const vis = () => P.filter((p) => st.pos.has(p.pg) && st.tiers.has(p.tier || "") && (st.kind === "all" || p.kind === st.kind));
 const inRegion = (p, r) => r === "World" || p.reg === r;
 
 // ---------------------------------------------------------------- KPIs + controls
 const kp = (l, v, s) => `<div class="ikpi"><span class="label">${l}</span><b>${v}</b><div class="sub">${s}</div></div>`;
 const cnt = (g) => P.filter((p) => p.pg === g).length;
+const roleCount = (roles) => roles.map((r) => [r, P.filter((p) => p.R.role === r).length]).filter((x) => x[1]).map(([r, n]) => `${n} ${r}`).join(" · ") || "—";
 const nI = P.filter((p) => p.kind === "intl").length, nH = P.length - nI;
 document.getElementById("kpis").innerHTML = kp("Players", P.length, "on the map") + kp("International", nI, [...new Set(P.filter((p) => p.kind === "intl").map((p) => p.nat))].join(" · ") || "—") + kp("High school", nH, [...new Set(P.filter((p) => p.kind === "hs").map((p) => p.state))].join(" · ") || "—")
-  + kp("Guards", cnt("G"), "PG / SG") + kp("Wings", cnt("W"), "SF / wing forwards") + kp("Bigs", cnt("B"), "PF / C");
+  + kp("Guards", cnt("G"), roleCount(["Point guard", "Combo guard", "Sniper"])) + kp("Wings", cnt("W"), "6'4\"–6'9\" wings") + kp("Forwards · Bigs", cnt("F") + cnt("B"), roleCount(["Forward", "Stretch 4", "Center", "Stretch 5"]));
 document.querySelectorAll("#kinds button").forEach((b) => (b.onclick = () => { st.kind = b.dataset.k; if (st.sel != null && !vis().includes(P[st.sel])) closeCard(); draw(); }));
-document.getElementById("fpos").insertAdjacentHTML("beforeend", ["G", "W", "B"].map((k) => `<button class="fchip" data-k="${k}">${POSL[k]}s</button>`).join(""));
+document.getElementById("fpos").insertAdjacentHTML("beforeend", GROUPS.map(([k, l]) => `<button class="fchip" data-k="${k}">${l}</button>`).join(""));
 document.querySelectorAll("#fpos .fchip").forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (st.pos.has(k) && st.pos.size > 1) st.pos.delete(k); else st.pos.add(k); b.classList.toggle("off", !st.pos.has(k)); draw(); }));
 function drawTierChips() {
   document.getElementById("ftier").innerHTML = `<span class="ddl">Color</span>` + TIERS.map(([k, l, c]) => `<button class="fchip${st.tiers.has(k) ? "" : " off"}" data-t="${k}"><s style="background:${c}"></s>${l} <i style="font-style:normal;color:var(--faint)">${P.filter((p) => (p.tier || "") === k).length}</i></button>`).join("");
@@ -378,7 +385,7 @@ function drawList() {
   const gs = [...G].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
   document.getElementById("shd").innerHTML = `<h2>${st.region === "World" ? "All players" : st.region}</h2><div class="label">${V.length} player${V.length === 1 ? "" : "s"} · ${gs.length} group${gs.length === 1 ? "" : "s"}</div>`;
   document.getElementById("list").innerHTML = gs.length ? gs.map(([nat, ps]) => `<div class="cgrp"><div class="ch">${ps[0].a2 ? `<img alt="" src="https://flagcdn.com/w40/${ps[0].a2}.png" onerror="this.remove()">` : ""}<b>${esc(nat)}</b><span>${ps.length}</span></div>
-    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}" style="box-shadow:0 0 0 2px ${colOf(p)}">` : `<s style="background:${colOf(p)}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.pos} · ${p.ht} · ${p.kind === "hs" ? (p.r247 ? "247 #" + p.r247 : "HS") : fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
+    ${ps.sort((a, b) => a.name.localeCompare(b.name)).map((p) => `<div class="pr" data-i="${p.i}">${p.headshot ? `<img class="av" alt="" src="${p.headshot}" style="box-shadow:0 0 0 2px ${colOf(p)}">` : `<s style="background:${colOf(p)}"></s>`}<div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="mt">${p.R.ab}${p.R.unicorn ? " · Unicorn" : ""} · ${p.ht} · ${p.kind === "hs" ? (p.r247 ? "247 #" + p.r247 : "HS") : fmtAge(p)} · ${esc(p.club)}</div></div><div class="tr">${esc(p.city)}</div></div>`).join("")}</div>`).join("")
     : `<div class="empty">No players here yet.</div>`;
   document.querySelectorAll(".pr").forEach((r) => { const i = +r.dataset.i; r.onmouseenter = () => { st.hover = i; highlight(); }; r.onmouseleave = () => { st.hover = null; highlight(); }; r.onclick = () => select(i, true); });
   highlight();
@@ -418,7 +425,7 @@ function hsCard(p) {
   return `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}<div style="min-width:0"><div class="label">High school · ${esc(p.pos)} · Class of ${p.cls}${p.stars ? ` · ${p.stars}★` : ""}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.school)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
     <div class="cgrid"><div><span class="label">Height</span><b>${esc(p.ht || "—")}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">247</span><b>${rk(p.r247)}</b></div><div><span class="label">On3 Ind.</span><b>${rk(p.rOn3)}</b></div></div>
     ${p.rEspn || p.rRivals ? `<div class="cgrid" style="margin-top:8px"><div><span class="label">ESPN</span><b>${rk(p.rEspn)}</b></div><div><span class="label">Rivals</span><b>${rk(p.rRivals)}</b></div><div style="grid-column:span 2"><span class="label">Position</span><b style="font-size:12px">${esc(p.pr || "—")}</b></div></div>` : ""}
-    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.school)} <span>${esc(p.city)}</span></dd>${p.home ? `<dt>Home</dt><dd>${esc(p.home)}</dd>` : ""}${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.aau ? `<dt>Club</dt><dd>${esc(p.aau)}</dd>` : ""}<dt>Status</dt><dd>${esc(p.status || "—")}</dd><dt>Color</dt><dd>${tierPicker(p.tier)}<div class="tmsg"></div></dd>${list("Finalists", p.finalists)}${list("Offers", p.offers)}${list("Contacts", p.contacts)}</dl>
+    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.school)} <span>${esc(p.city)}</span></dd>${p.home ? `<dt>Home</dt><dd>${esc(p.home)}</dd>` : ""}${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.aau ? `<dt>Club</dt><dd>${esc(p.aau)}</dd>` : ""}<dt>Status</dt><dd>${esc(p.status || "—")}</dd><dt>Role</dt><dd>${roleTag(p.R)}<details class="rdet"><summary>Change</summary>${rolePicker(p.R)}</details></dd><dt>Color</dt><dd>${tierPicker(p.tier)}<div class="tmsg"></div></dd>${list("Finalists", p.finalists)}${list("Offers", p.offers)}${list("Contacts", p.contacts)}</dl>
     ${p.notes ? `<div class="cnote">${esc(p.notes)}</div>` : ""}
     <div class="cnote">${Object.entries(p.links || {}).map(([l, u]) => `<a class="flink" style="margin:0 12px 0 0" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join("")}</div>
     <div class="cnote"><a href="/highschool#${p.slug}" style="color:var(--soft);text-decoration:underline">Open on the High School page</a></div></div>`;
@@ -428,12 +435,17 @@ function select(i, fly) {
   st.sel = i; const p = P[i];
   document.getElementById("card").innerHTML = p.kind === "hs" ? hsCard(p) : `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
     <div class="cgrid"><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div><div><span class="label">Born</span><b style="font-size:12.5px;white-space:nowrap">${p.born ? new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"}</b></div></div>
-    <dl class="cinfo"><dt>Color</dt><dd>${tierPicker(p.tier)}<div class="tmsg"></div></dd><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
+    <dl class="cinfo"><dt>Role</dt><dd>${roleTag(p.R)}<details class="rdet"><summary>Change</summary>${rolePicker(p.R)}</details></dd><dt>Color</dt><dd>${tierPicker(p.tier)}<div class="tmsg"></div></dd><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
     ${fibaHTML(p)}</div>`;
   wireFiba(p);
   document.querySelector("#card .hs")?.style.setProperty("box-shadow", `0 0 0 2.5px ${colOf(p)}`);
   const cardEl = document.getElementById("card"); cardEl.hidden = false; cardEl.scrollTop = 0; document.getElementById("listview").style.display = "none";
   document.querySelector("#card .x").onclick = closeCard;
+  document.querySelectorAll("#card [data-role-pick],#card [data-uni-pick],#card [data-role-auto]").forEach((b) => (b.onclick = async () => {
+    const patch = b.dataset.rolePick ? { role: b.dataset.rolePick } : b.dataset.uniPick != null ? { unicorn: b.dataset.uniPick === "1" } : { role: null, unicorn: null };
+    const msg = document.querySelector("#card .tmsg"); if (msg) msg.textContent = "Saving role…";
+    try { await setRole(p.id, patch); setR(p); select(p.i, false); draw(); document.querySelector("#card .tmsg").textContent = `Role: ${p.R.role}${p.R.unicorn ? " · Unicorn" : ""} · saved for all staff`; } catch (e) { if (msg) msg.textContent = e.message; }
+  }));
   document.querySelectorAll("#card [data-tier-pick]").forEach((b) => (b.onclick = async () => {
     const t = b.dataset.tierPick, prev = p.tier, msg = document.querySelector("#card .tmsg"); p.tier = t;
     document.querySelectorAll("#card [data-tier-pick]").forEach((x) => x.classList.toggle("on", x === b)); document.querySelector("#card .hs")?.style.setProperty("box-shadow", `0 0 0 2.5px ${colOf(p)}`);

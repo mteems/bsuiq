@@ -3,9 +3,11 @@
 // signed in with) and the staff share one set ("staff").
 import { getJSON, esc, me } from "/assets/core.js";
 
-export const LANES = ["Point Guards", "Combo Guards", "Wings", "Stretch 4/5", "Bigs"];
+import { BOARD_LANES, loadRoles, roleOf } from "/assets/roles.js";
+export const LANES = BOARD_LANES;
 export const TIERS = ["Max", "Starter", "Role", "Development"];
-export const laneFor = (pos) => { const s = String(pos || "").toUpperCase(); return /^(B|C)/.test(s) ? "Bigs" : /F/.test(s) ? "Stretch 4/5" : /W/.test(s) ? "Wings" : /PG/.test(s) ? "Point Guards" : "Combo Guards"; };
+// Default lane for a player = his role's lane (role model v1; staff role overrides included).
+export const laneFor = (pos, id, ht) => roleOf({ key: id, cid: id, pos, ht }).lane;
 export const SCOPE_KEY = "biq-tb-scope";
 export const getScope = () => { try { return localStorage.getItem(SCOPE_KEY) === "me" ? "me" : "staff"; } catch { return "staff"; } };
 export const setScope = (s) => { try { localStorage.setItem(SCOPE_KEY, s); } catch {} dispatchEvent(new CustomEvent("biq-tb-scope", { detail: s })); };
@@ -44,7 +46,8 @@ export async function openTB(anchor, players, { onChange } = {}) {
   const pop = document.createElement("div"); pop.className = "tbpop"; pop.setAttribute("role", "dialog");
   let lane = null, tier = null, busy = false, msg = "";
   const cur = () => (one ? entryOf(scope, one.id) : null);
-  const pick = () => { const c = cur(); lane = c?.lane || lane || laneFor(one?.p.pos || players[0]?.p.pos); tier = c?.tier || tier || "Role"; };
+  await loadRoles();
+  const pick = () => { const c = cur(); lane = c?.lane || lane || laneFor(one?.p.pos || players[0]?.p.pos, (one || players[0])?.id, (one || players[0])?.p.ht); tier = c?.tier || tier || "Role"; };
   pick();
   const draw = () => {
     const c = cur();

@@ -176,6 +176,8 @@ if (existsSync(src("rosters-2027.json"))) cpSync(src("rosters-2027.json"), join(
 if (existsSync(src("reports/_torvik.json"))) { const tv = JSON.parse(readFileSync(src("reports/_torvik.json"), "utf8")); write("torvik-final-2026.json", { cols: ["rk", "rec", "conf_rec", "adjo", "adjo_rk", "adjd", "adjd_rk", "tempo", "tempo_rk", "conf", "x"], avg: tv["2026"].avg, t: tv["2026"].t, src: tv._src }); }
 if (existsSync(src("conf-2027.json"))) cpSync(src("conf-2027.json"), join(out, "conf-2027.json"));
 if (existsSync(src("positions.json"))) cpSync(src("positions.json"), join(out, "positions.json"));
+// Player roles (role model v1, model/roles_v1): Point guard ... Stretch 5 + Unicorn tag, by canonical id.
+if (existsSync(src("roles-2025-26.json"))) cpSync(src("roles-2025-26.json"), join(out, "roles-2025-26.json"));
 // Public share pages (/s/<token>): one bundled file per link with only that team's data.
 if (existsSync(src("share.json"))) {
   const SH = JSON.parse(readFileSync(src("share.json"), "utf8")).shares || [];

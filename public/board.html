@@ -48,6 +48,8 @@
 import { topBar, esc, me } from "/assets/core.js";
 import { loadPool } from "/assets/pool.js";
 import { LANES, TIERS, loadTB, tbCall, openTB, getScope, setScope, snapPool } from "/assets/tb.js";
+import { loadRoles, roleOf, roleTag, ROLE_CSS } from "/assets/roles.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${ROLE_CSS}</style>`);
 import { openPicker } from "/assets/fo.js";
 topBar("board");
 
@@ -57,11 +59,11 @@ const LANE_STATS = {
   "Point Guards": [["PTS", "ppg"], ["AST", "apg"], ["TO", "topg"], ["3P%", "three_pct"], ["eFG%", "efg_pct"]],
   "Combo Guards": [["PTS", "ppg"], ["AST", "apg"], ["3P%", "three_pct"], ["eFG%", "efg_pct"], ["USG%", "usage_pct"]],
   Wings: [["PTS", "ppg"], ["REB", "rpg"], ["3P%", "three_pct"], ["eFG%", "efg_pct"], ["STL", "spg"]],
-  "Stretch 4/5": [["PTS", "ppg"], ["REB", "rpg"], ["2P%", "two_pct"], ["3P%", "three_pct"], ["eFG%", "efg_pct"]],
+  Forwards: [["PTS", "ppg"], ["REB", "rpg"], ["2P%", "two_pct"], ["3P%", "three_pct"], ["eFG%", "efg_pct"]],
   Bigs: [["PTS", "ppg"], ["REB", "rpg"], ["2P%", "two_pct"], ["BLK", "bpg"], ["eFG%", "efg_pct"]],
 };
 const page = document.getElementById("page");
-const [pool, T0, M0] = await Promise.all([loadPool(), loadTB(), me()]);
+const [pool, T0, M0] = await Promise.all([loadPool(), loadTB(), me(), loadRoles()]);
 let TBD = T0, M = M0, scope = getScope(), drag = null;
 if (scope === "me" && !M.user) scope = "staff";
 const view = (e) => { const p = pool.byId.get(e.id); return { e, s: p?.seasons?.[0], snap: p ? snapPool(p) : e.p || { name: e.id } }; };
@@ -71,7 +73,7 @@ function card(e, lane) {
   const { s, snap } = view(e), href = `/player/${encodeURIComponent(e.id)}`;
   return `<article class="bcard${drag === e.id ? " drag" : ""}" draggable="true" data-id="${esc(e.id)}">
     <div class="ct"><span class="hs">${snap.photo ? `<img alt="" loading="lazy" src="${esc(snap.photo)}" onerror="this.remove()">` : ""}</span>
-      <div class="nm"><a href="${href}" draggable="false">${esc(snap.name)}</a><div class="s">${snap.logo ? `<img alt="" src="${esc(snap.logo)}" onerror="this.remove()">` : ""}${esc(snap.school)}</div><div class="f">${[snap.ht, snap.cls].filter(Boolean).map(esc).join(" · ") || "—"}${e.by ? ` · ${esc(e.by)}` : ""}</div></div>
+      <div class="nm"><a href="${href}" draggable="false">${esc(snap.name)}</a><div class="s">${snap.logo ? `<img alt="" src="${esc(snap.logo)}" onerror="this.remove()">` : ""}${esc(snap.school)}</div><div class="f">${roleTag(roleOf({ key: e.id, cid: e.id, pos: snap.pos, ht: snap.ht }))}${[snap.ht, snap.cls].filter(Boolean).map(esc).join(" · ") || "—"}${e.by ? ` · ${esc(e.by)}` : ""}</div></div>
       <button class="cx" data-tb="${esc(e.id)}" title="Move, or change targets" aria-label="Board options">⋯</button><button class="cx" data-rm="${esc(e.id)}" title="Remove from board" aria-label="Remove from board">✕</button></div>
     <div class="cs">${LANE_STATS[lane].map(([l, k]) => `<div><span>${l}</span><b>${v(s, k)}</b></div>`).join("")}</div></article>`;
 }

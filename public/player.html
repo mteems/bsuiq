@@ -52,6 +52,8 @@ import { renderShotChart } from "/assets/shotchart.js";
 import { skillCards, ring, scol, tierOf, ord } from "/assets/scores.js";
 import { pdPBP, shotProfile } from "/assets/pd-pbp.js";
 import { espnGames } from "/assets/pool.js";
+import { loadRoles, roleOf, roleTag, rolePicker, setRole, ROLE_CSS } from "/assets/roles.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${ROLE_CSS}.prole{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.prole details summary{font:10.5px var(--mono);color:var(--muted);cursor:pointer}.prole details[open]{flex-basis:100%}.prole details .rpick{margin-top:6px}.prole .why{font:10.5px var(--mono);color:var(--muted)}</style>`);
 topBar("player");
 // Boise St. MBB staff (broncosports.com), by last name.
 const STAFF = ["Rice (L.)", "Voigt", "Alston", "Bergersen", "Burns", "Charles", "Few", "Rice (M.)", "Teems", "Yount"];
@@ -92,6 +94,10 @@ const pathText = pathBits.map((p) => `${shortSchool(p.school)} ${p.from === p.to
 const photo = LINKS?.photo?.[NKEY] || (P.espnId ? `https://a.espncdn.com/combiner/i?img=/i/headshots/mens-college-basketball/players/full/${P.espnId}.png&w=400&h=400&scale=crop` : "");
 const teamName = P.onRoster ? "Boise St." : shortSchool(P.school || last?.school || ""), teamId = P.onRoster ? 68 : P.espnTeamId;
 const conf = P.onRoster ? "Pac-12" : P.conference;
+await loadRoles();
+let ROLE = roleOf({ key: NKEY, cid: D.player.cid, pos: P.position, ht: P.height });
+const roleWhy = (R) => R.shares ? `${Math.round(R.shares.guard * 100)}% at the guard spots · ${Math.round(R.shares.wing * 100)}% wing · ${Math.round(R.shares.front * 100)}% frontcourt (${Math.round(R.shares.five * 100)}% the biggest on the floor), 2025-26 lineups` : R.source === "staff" ? "" : "from listed position and height until he plays D-I minutes";
+const roleBlock = () => `<span class="label" data-def="brole">Role</span>${roleTag(ROLE)}<span class="why">${ROLE.source === "staff" ? `set by ${esc(ROLE.by || "staff")}` : esc(roleWhy(ROLE))}</span><details><summary>Change role</summary>${rolePicker(ROLE)}</details>`;
 const fact = (l, v) => (v ? `<div class="pf"><span class="label">${l}</span><b>${esc(v)}</b></div>` : "");
 // Overall score: the headline rating, shown in the header.
 const OV = D.scores?.skills?.s?.overall;
@@ -113,6 +119,7 @@ page.innerHTML = `
     <h1>${esc(playerName(P))}</h1>
     <div class="pteam">${teamId ? LG(+teamId, 22) : ""}<b>${esc(teamName)}</b>${conf ? `<span class="m">· ${esc(conf)}</span>` : ""}${P.jersey_number ? `<span class="m">· #${esc(P.jersey_number)}</span>` : ""}${P.onRoster ? `<span class="m">· 2026-27 roster</span>` : ""}</div>
     <div class="pfacts">${fact("Pos", P.position)}${fact("Ht", P.height)}${fact("Wt", P.weight ? P.weight + " lb" : "")}${fact("Class", P.class_year)}${fact("Hometown", P.hometown)}${fact("High school", P.high_school)}${pathText && pathBits.length > 1 ? fact("Path", pathText + (P.onRoster ? " → Boise St." : "")) : P.onRoster && pathText ? fact("Path", pathText + " → Boise St.") : ""}</div>
+    <div class="prole" id="prole">${roleBlock()}</div>
     <div class="cap" style="margin-top:8px">Hover any dotted stat name for its definition. <span style="color:var(--good)">Orange = good</span> · <span style="color:var(--bad)">blue = poor</span>.</div>
   </div>
   ${ovrBlock}
@@ -309,6 +316,12 @@ const fx2 = (v) => (v == null ? "—" : v.toFixed(2));
   addEventListener("keydown", (e) => { if (e.key === "Escape") dr.hidden = true; });
   call().then(draw).catch(() => (list.innerHTML = `<div class="m" style="color:var(--muted)">Couldn't load notes.</div>`));
 })();
+// Role (role model v1): staff can change it here; saves for all staff.
+document.getElementById("prole")?.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-role-pick],[data-uni-pick],[data-role-auto]"); if (!b) return;
+  const patch = b.dataset.rolePick ? { role: b.dataset.rolePick } : b.dataset.uniPick != null ? { unicorn: b.dataset.uniPick === "1" } : { role: null, unicorn: null };
+  try { await setRole(NKEY, patch); ROLE = roleOf({ key: NKEY, cid: D.player.cid, pos: P.position, ht: P.height }); document.getElementById("prole").innerHTML = roleBlock(); } catch (err) { const w = document.querySelector("#prole .why"); if (w) w.textContent = err.message; }
+});
 </script>
 </body>
 </html>

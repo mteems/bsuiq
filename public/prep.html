@@ -12,12 +12,12 @@
 <link rel="stylesheet" href="/assets/app.css">
 <style>
 /* Prep List: every international and high school prospect on one board, in three position lanes.
-   Drag a card to rank him (or move him to another lane). No money tiers: just the order. */
+   Drag a card to rank him (moving him to another lane changes his role). No money tiers: just the order. */
 .pwrap{max-width:1500px;margin:auto;padding:18px 24px 30px}
 .ptop{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
 .ptop h1{margin-top:4px}.ptop .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:780px;line-height:1.5}
 .pact{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}
+.lanes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:start}
 .lane{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
 .lh{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1a1b1e;border-bottom:1px solid var(--line)}
 .lh b{font:650 12px var(--ui);letter-spacing:.06em;text-transform:uppercase}.lh span{font:500 10.5px var(--mono);color:var(--muted)}
@@ -49,7 +49,9 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .tfil{display:flex;gap:5px;align-items:center}.tfil .ddl{font:10px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
 .tfil button{background:var(--card);border:1px solid var(--edge);color:var(--dim);border-radius:6px;padding:5px 8px;font:10.5px var(--mono);cursor:pointer;display:flex;gap:5px;align-items:center}
 .tfil button s{width:8px;height:8px;border-radius:50%;display:inline-block}.tfil button.off{opacity:.38}.tfil button:hover{color:#fff}
-@media (max-width:1000px){.lanes{grid-template-columns:repeat(3,minmax(260px,1fr));overflow-x:auto}}
+@media (max-width:1200px){.lanes{grid-template-columns:repeat(4,minmax(260px,1fr));overflow-x:auto}}
+.rbtn{background:none;border:0;padding:0;cursor:pointer}.rbtn:hover .rtag{border-color:#d6d8db;color:#fff}
+.rpop{position:absolute;left:8px;right:8px;top:70px;z-index:20;background:#1a1b1e;border:1px solid var(--edge);border-radius:8px;padding:8px;box-shadow:0 10px 26px rgba(0,0,0,.5)}.rpop .label{margin-bottom:6px}
 @media (max-width:700px){.pwrap{padding:14px 16px}}
 @media print{.pact{display:none!important}.pcard{break-inside:avoid}}
 </style>
@@ -59,6 +61,9 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 <script type="module">
 import { topBar, esc, me, getJSON, pc } from "/assets/core.js";
 import { loadTiers, applyTiers, setTier, tierPicker, tierColor, TIERS, TIER_CSS } from "/assets/tiers.js";
+import { loadRoles, roleOf, roleTag, rolePicker, setRole, GROUPS, ROLE_CSS } from "/assets/roles.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${ROLE_CSS}</style>`);
+await loadRoles();
 document.head.insertAdjacentHTML("beforeend", `<style>${TIER_CSS}</style>`);
 topBar("prep");
 
@@ -67,7 +72,9 @@ const inch = (h) => { const m = String(h || "").match(/(\d+)\D+(\d+)/); return m
 // Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
 const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
   if (/\bC\b|PF|^C/.test(p) && !/SF\/PF/.test(p)) return "B"; if (p === "F") return inches >= 81 ? "B" : "W"; if (/SF|^W|GF|SG\/SF/.test(p)) return "W"; return "G"; };
-const LANES = [["G", "Guards"], ["W", "Wings"], ["B", "Bigs"]];
+// Lanes = role groups (assets/roles.js): Guards (Point guard, Combo guard, Sniper), Wings, Forwards (Forward, Stretch 4), Bigs (Center, Stretch 5).
+const LANES = GROUPS;
+const LANE_DEFAULT = { G: "Combo guard", W: "Wing", F: "Forward", B: "Center" };
 const [intl, hs, geo, FR, M0] = await Promise.all([getJSON("/data/intl/board.json"), getJSON("/data/hs/board.json").catch(() => ({ players: [] })), getJSON("/data/intl/geo.json"), getJSON("/data/rankings/freshmen-2026-27.json").catch(() => null), me()]);
 // Freshman projection (Win model's freshman terms) from a national rank + height; 247 rank first, else On3 Industry.
 const rankOf = (p) => p.r247 ?? p.rInd ?? p.rOn3 ?? null;
@@ -76,22 +83,24 @@ const TIER = { green: 0, yellow: 1, red: 2 }, tierOf = (p) => TIER[p.tier] ?? 3;
 const P = [
   ...intl.players.map((p) => ({ ...p, kind: "intl", id: "intl:" + slug(p.name), href: "/international#" + slug(p.name), where: p.club || p.team, flag: (geo.countries[p.nat] || [])[1], ev: [...(p.fiba || [])].sort((a, b) => b.yr - a.yr)[0] })),
   ...hs.players.map((p) => ({ ...p, kind: "hs", id: "hs:" + slug(p.name), href: "/highschool#" + slug(p.name), where: p.school, proj: proj(p) })),
-].map((p) => ({ ...p, lane0: POSG(p.pos, p.ht) }));
+].map((p) => { const R = roleOf({ key: p.id, pos: p.pos, ht: p.ht, fiba: p.fiba }); return { ...p, R, lane0: R.group }; });
 await loadTiers(); applyTiers(P);
 const byId = new Map(P.map((p) => [p.id, p]));
 let M = M0, scope = (() => { try { return localStorage.getItem("biq-prep-scope") === "me" ? "me" : "staff"; } catch { return "staff"; } })();
 if (scope === "me" && !M.user) scope = "staff";
-let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", cls = "all", msg = "", tierOn = new Set(["green", "yellow", "red", ""]), openTier = null;
+let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", cls = "all", msg = "", tierOn = new Set(["green", "yellow", "red", ""]), openTier = null, openRole = null;
 const CLASSES = [...new Set(P.map((p) => String(p.cls)).filter((c) => c && c !== "undefined"))].sort();
 async function load() { try { const r = await getJSON("/api/prep"); SAVED = { me: r.me || { lanes: {} }, staff: r.staff || { lanes: {} } }; } catch { msg = "Couldn't load the saved order."; } }
 await load();
 
 // Order in each lane: the saved ranking first, then anyone not ranked yet (high school by 247 rank, then by name).
 function lanesNow() {
-  const L = SAVED[scope]?.lanes || {}, placed = new Set(), out = {};
-  for (const [k] of LANES) { out[k] = (L[k] || []).filter((id) => byId.has(id) && !placed.has(id)); out[k].forEach((id) => placed.add(id)); }
-  const rest = P.filter((p) => !placed.has(p.id)).sort((a, b) => (rankOf(a) || 999) - (rankOf(b) || 999) || a.name.localeCompare(b.name));
-  for (const p of rest) out[p.lane0].push(p.id);
+  // Each player sits in his role's lane; a saved order (from any lane, including the old 3-lane board) sets his place in it.
+  const L = SAVED[scope]?.lanes || {}, rank = new Map(), out = Object.fromEntries(LANES.map(([k]) => [k, []]));
+  for (const k of ["G", "W", "F", "B"]) (L[k] || []).forEach((id) => { if (byId.has(id) && !rank.has(id)) rank.set(id, rank.size); });
+  const saved = P.filter((p) => rank.has(p.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id));
+  const rest = P.filter((p) => !rank.has(p.id)).sort((a, b) => (rankOf(a) || 999) - (rankOf(b) || 999) || a.name.localeCompare(b.name));
+  for (const p of [...saved, ...rest]) out[p.lane0].push(p.id);
   // Staff colors first (green, then yellow, then red, then not colored); the saved order holds within each color.
   for (const k in out) { const pos = new Map(out[k].map((id, i) => [id, i])); out[k].sort((a, b) => tierOf(byId.get(a)) - tierOf(byId.get(b)) || pos.get(a) - pos.get(b)); }
   return out;
@@ -115,9 +124,10 @@ function card(p, i) {
   return `<article class="pcard" data-id="${esc(p.id)}"${p.tier ? ` data-tier="${p.tier}"` : ""}${openTier === p.id ? ' style="z-index:5"' : ""}><div class="rk">${i + 1}</div>
     <div class="ct"><span class="hs">${p.headshot ? `<img alt="" loading="lazy" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}</span>
       <div class="nm"><a href="${esc(p.href)}" draggable="false">${esc(p.name)}</a><div class="s">${p.flag ? `<img alt="" src="https://flagcdn.com/w40/${p.flag}.png" onerror="this.remove()">` : ""}<span>${esc(p.where || "")}</span></div>
-        <div class="f">${[p.pos, p.ht, p.cls ? "'" + String(p.cls).slice(2) : "", p.kind === "hs" ? p.state : p.nat].filter(Boolean).map(esc).join(" · ")}</div></div>
+        <div class="f"><button class="rbtn" data-rolebtn="${esc(p.id)}" title="Change his role">${roleTag(p.R)}</button>${[p.ht, p.cls ? "'" + String(p.cls).slice(2) : "", p.kind === "hs" ? p.state : p.nat].filter(Boolean).map(esc).join(" · ")}</div></div>
       <span class="kind">${p.kind === "hs" ? "HS" : "INTL"}</span></div>
     <div class="cs">${stats(p).map(([l, v]) => `<div><span>${l}</span>${v}</div>`).join("")}</div>
+    ${openRole === p.id ? `<div class="rpop"><div class="label">Role · saves for all staff</div>${rolePicker(p.R)}</div>` : ""}
     <button class="tdot" data-tdot="${esc(p.id)}" style="background:${tierColor(p.tier)}" title="Board color: ${p.tier || "not colored"} (click to change)"></button>
     ${openTier === p.id ? `<div class="tpop"><div class="label">Board color</div>${tierPicker(p.tier)}</div>` : ""}</article>`;
 }
@@ -142,7 +152,11 @@ async function save(L) {
 }
 addEventListener("biq-me", async () => { M = await me(true); if (scope === "me" && !M.user) scope = "staff"; await load(); render(); });
 page.addEventListener("click", (e) => {
-  const b = e.target.closest("button"); if (!b && openTier && !e.target.closest(".tpop")) { openTier = null; render(); return; } if (!b || b.disabled) return;
+  const b = e.target.closest("button"); if (!b && (openTier || openRole) && !e.target.closest(".tpop,.rpop")) { openTier = null; openRole = null; render(); return; } if (!b || b.disabled) return;
+  if (b.dataset.rolebtn) { openRole = openRole === b.dataset.rolebtn ? null : b.dataset.rolebtn; openTier = null; render(); return; }
+  if (b.dataset.rolePick || b.dataset.uniPick != null || b.dataset.roleAuto) { const p = byId.get(openRole), patch = b.dataset.rolePick ? { role: b.dataset.rolePick } : b.dataset.uniPick != null ? { unicorn: b.dataset.uniPick === "1" } : { role: null, unicorn: null };
+    openRole = null; msg = "Saving role…"; render();
+    setRole(p.id, patch).then(() => { p.R = roleOf({ key: p.id, pos: p.pos, ht: p.ht, fiba: p.fiba }); p.lane0 = p.R.group; msg = `${p.name}: ${p.R.role}${p.R.unicorn ? " · Unicorn" : ""} · saved for all staff`; render(); }).catch((err) => { msg = err.message; render(); }); return; }
   if (b.dataset.tdot) { openTier = openTier === b.dataset.tdot ? null : b.dataset.tdot; render(); return; }
   if (b.dataset.tierPick != null) { const p = byId.get(openTier), t = b.dataset.tierPick, prev = p.tier; p.tier = t; openTier = null; msg = "Saving color…"; render();
     setTier(p.id, t).then(() => { msg = `${p.name}: ${t || "no color"} · saved for all staff`; render(); }).catch((err) => { p.tier = prev; msg = err.message; render(); }); return; }
@@ -156,7 +170,7 @@ page.addEventListener("click", (e) => {
 // Pointer drag: the card lifts and follows the pointer; a white line shows where it will land.
 let drag = null;
 page.addEventListener("pointerdown", (e) => {
-  if (e.button !== 0 || e.target.closest("a,button,input,.tpop")) return;
+  if (e.button !== 0 || e.target.closest("a,button,input,.tpop,.rpop")) return;
   const c = e.target.closest(".pcard"); if (!c) return; e.preventDefault();
   drag = { id: c.dataset.id, el: c, x0: e.clientX, y0: e.clientY, on: false };
 });
@@ -184,6 +198,9 @@ function end(drop) {
   const L = lanesNow(); for (const k in L) L[k] = L[k].filter((id) => id !== D.id);
   const dest = L[D.lane]; let at = D.ref ? dest.indexOf(D.ref) : dest.length; if (D.ref && D.after) at++;
   dest.splice(at < 0 ? dest.length : at, 0, D.id);
+  // Dropped in another lane: that's a role change (the lane's default role; refine it with the role tag).
+  const p = byId.get(D.id);
+  if (p && p.lane0 !== D.lane) { const role = LANE_DEFAULT[D.lane]; p.lane0 = D.lane; setRole(p.id, { role }).then(() => { p.R = roleOf({ key: p.id, pos: p.pos, ht: p.ht, fiba: p.fiba }); msg = `${p.name} is now a ${role} (click his role tag to refine)`; render(); }).catch((err) => { msg = err.message; render(); }); }
   save(L);
 }
 addEventListener("pointerup", () => end(true));

@@ -51,6 +51,8 @@
 import { topBar, esc, addDefs, pc, me } from "/assets/core.js";
 import { loadPool } from "/assets/pool.js";
 import { loadTB, tbCall, openTB, getScope, setScope, snapPool, tbIcon } from "/assets/tb.js";
+import { loadRoles, roleOf, roleTag, GROUPS, ROLE_CSS } from "/assets/roles.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${ROLE_CSS}</style>`);
 import { openPicker } from "/assets/fo.js";
 topBar("targets");
 addDefs({
@@ -58,22 +60,23 @@ addDefs({
   t_efg: ["Effective FG %", "Field-goal % with threes worth 1.5×."], t_3p: ["3-point %", ""], t_usg: ["Usage %", "Share of his team's possessions he used while on the floor (Barttorvik)."],
   t_sc: ["Scoring score", "Bronco IQ skill score, 2025-26. 50 = D-I average, 70 = top 7%, 80+ = top 1%."], t_pl: ["Playmaking score", "Bronco IQ skill score, 2025-26. 50 = D-I average."],
   t_rb: ["Rebounding score", "Bronco IQ skill score, 2025-26. 50 = D-I average."], t_df: ["Defense score", "Bronco IQ defensive score (DEF v2), 2025-26."],
+  t_role: ["Role", "Role model v1: Point guard, Combo guard, Sniper, Wing, Forward, Stretch 4, Center, Stretch 5, from where he plays in his lineups and his stats (listed position and height until he has D-I minutes). Change it on his player page."],
   t_board: ["Transfer board", "Where he sits on this Transfer Board (lane · tier). Click to add or move him."],
 });
 
-const GROUPS = [["G", "Guards"], ["W", "Wings"], ["F", "Forwards"], ["B", "Bigs"]];
-const grpOf = (pos) => { const s = String(pos || "").toUpperCase(); return /^(B|C)/.test(s) ? "B" : /W/.test(s) ? "W" : /F/.test(s) ? "F" : "G"; };
+// Groups follow the role model (assets/roles.js): Guards = Point guard, Combo guard, Sniper; Wings; Forwards = Forward, Stretch 4; Bigs = Center, Stretch 5.
+const grpOf = (R) => R.group;
 const COLS = [["gp", "GP", "t_gp", 0], ["mpg", "MPG", "t_mpg", 1], ["ppg", "PTS", "t_ppg", 1], ["rpg", "REB", "t_rpg", 1], ["apg", "AST", "t_apg", 1], ["efg_pct", "eFG%", "t_efg", 1], ["three_pct", "3P%", "t_3p", 1], ["usage_pct", "USG%", "t_usg", 1]];
 const SK = [["sk_sc", "SC", "t_sc"], ["sk_pl", "PL", "t_pl"], ["sk_rb", "RB", "t_rb"], ["sk_df", "DF", "t_df"]];
 const scol = (v) => pc(50 + Math.max(-45, Math.min(45, (v - 50) * 1.5)));
 const page = document.getElementById("page");
-const [pool, T0, M0] = await Promise.all([loadPool(), loadTB(), me()]);
+const [pool, T0, M0] = await Promise.all([loadPool(), loadTB(), me(), loadRoles()]);
 let TBD = T0;
 let M = M0, scope = getScope(); if (scope === "me" && !M.user) scope = "staff";
 let sortKey = null, sortDir = "desc", dragId = null;
 const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "");
 
-const view = (e) => { const p = pool.byId.get(e.id); const s = p?.seasons?.[0]; return { e, p, s, snap: p ? snapPool(p) : e.p || { name: e.id }, g: grpOf(p?.position || e.p?.pos) }; };
+const view = (e) => { const p = pool.byId.get(e.id); const s = p?.seasons?.[0]; const snap = p ? snapPool(p) : e.p || { name: e.id }; const R = roleOf({ key: e.id, cid: e.id, pos: p?.position || e.p?.pos, ht: snap.ht }); return { e, p, s, snap, R, g: grpOf(R) }; };
 function render() {
   const list = (TBD[scope] || []).filter((e) => e.target).map(view);
   const val = (x, k) => (k === "name" ? x.snap.name : k === "ht" ? +String(x.snap.ht).replace(/(\d)'(\d+).*/, (m, a, b) => a * 12 + +b) || 0 : x.s?.[k]);
@@ -83,13 +86,13 @@ function render() {
     return L.sort((a, b) => { const x = val(a, sortKey), y = val(b, sortKey); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; const c = typeof x === "string" ? x.localeCompare(y) : x - y; return sortDir === "asc" ? c : -c; });
   };
   const hdr = (k, l, def, cls = "") => `<th class="${cls}"><button data-sort="${k}" class="${sortKey === k ? "on" : ""}"><span${def ? ` data-def="${def}"` : ""}>${l}</span>${sortKey === k ? (sortDir === "asc" ? " ▲" : " ▼") : ""}</button></th>`;
-  const head = `<tr><th class="noprint"></th><th>#</th>${hdr("name", "Player", "", "l")}<th class="l">Pos</th>${hdr("ht", "Ht", "", "l")}<th class="l">Class</th>${COLS.map(([k, l, d]) => hdr(k, l, d)).join("")}${SK.map(([k, l, d]) => hdr(k, l, d)).join("")}<th class="l"><span data-def="t_board">Board</span></th><th class="l">Added</th><th class="noprint"></th></tr>`;
+  const head = `<tr><th class="noprint"></th><th>#</th>${hdr("name", "Player", "", "l")}<th class="l"><span data-def="t_role">Role</span></th>${hdr("ht", "Ht", "", "l")}<th class="l">Class</th>${COLS.map(([k, l, d]) => hdr(k, l, d)).join("")}${SK.map(([k, l, d]) => hdr(k, l, d)).join("")}<th class="l"><span data-def="t_board">Board</span></th><th class="l">Added</th><th class="noprint"></th></tr>`;
   const row = (x, i) => {
     const { e, p, s, snap } = x, href = `/player/${encodeURIComponent(e.id)}`;
     const num = (k, d) => { const v = s?.[k]; return `<td>${v == null ? `<span style="color:var(--faint)">—</span>` : d ? (+v).toFixed(1) : v}</td>`; };
     return `<tr data-id="${esc(e.id)}"${!sortKey ? ` draggable="true"` : ""}><td class="gr noprint" title="${sortKey ? "Switch to manual order to drag" : "Drag to reorder"}">${sortKey ? "" : "⋮⋮"}</td><td class="rk">${i + 1}</td>
       <td class="l"><div class="pc2"><span class="hs">${snap.photo ? `<img alt="" loading="lazy" src="${esc(snap.photo)}" onerror="this.remove()">` : ""}</span><div><a href="${href}">${esc(snap.name)}</a><div class="s">${snap.logo ? `<img alt="" src="${esc(snap.logo)}" onerror="this.remove()">` : ""}${esc(snap.school)}</div></div></div></td>
-      <td class="l">${esc(snap.pos || "—")}</td><td class="l">${esc(snap.ht || "—")}</td><td class="l" style="color:var(--soft)">${esc(snap.cls || "—")}</td>
+      <td class="l">${roleTag(x.R)}</td><td class="l">${esc(snap.ht || "—")}</td><td class="l" style="color:var(--soft)">${esc(snap.cls || "—")}</td>
       ${COLS.map(([k, , , d]) => num(k, d)).join("")}
       ${SK.map(([k]) => { const v = s?.[k]; return `<td>${v == null ? `<span style="color:var(--faint)">—</span>` : `<span class="chip" style="background:${scol(v)}">${Math.round(v)}</span>`}</td>`; }).join("")}
       <td class="l"><button class="bchip${e.lane ? "" : " add"}" data-tb="${esc(e.id)}">${e.lane ? `${esc(e.lane)} · ${esc(e.tier)}` : "＋ Add to board"}</button></td>
@@ -146,8 +149,8 @@ page.addEventListener("drop", async (e) => {
 });
 function exportCsv() {
   const list = (TBD[scope] || []).filter((e) => e.target).map(view).sort((a, b) => GROUPS.findIndex(([g]) => g === a.g) - GROUPS.findIndex(([g]) => g === b.g) || (a.e.tOrder || 0) - (b.e.tOrder || 0));
-  const head = ["Group", "Player", "School", "Pos", "Ht", "Class", ...COLS.map((c) => c[1]), ...SK.map((c) => c[1]), "Board lane", "Board tier", "Added by"];
-  const rowsOut = list.map((x) => [GROUPS.find(([g]) => g === x.g)[1], x.snap.name, x.snap.school, x.snap.pos, x.snap.ht, x.snap.cls, ...COLS.map(([k]) => x.s?.[k] ?? ""), ...SK.map(([k]) => (x.s?.[k] == null ? "" : Math.round(x.s[k]))), x.e.lane || "", x.e.tier || "", x.e.by || ""]);
+  const head = ["Group", "Player", "School", "Role", "Ht", "Class", ...COLS.map((c) => c[1]), ...SK.map((c) => c[1]), "Board lane", "Board tier", "Added by"];
+  const rowsOut = list.map((x) => [GROUPS.find(([g]) => g === x.g)[1], x.snap.name, x.snap.school, x.R.role, x.snap.ht, x.snap.cls, ...COLS.map(([k]) => x.s?.[k] ?? ""), ...SK.map(([k]) => (x.s?.[k] == null ? "" : Math.round(x.s[k]))), x.e.lane || "", x.e.tier || "", x.e.by || ""]);
   const csv = [head, ...rowsOut].map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); const a = document.createElement("a"); a.href = url; a.download = "bronco-iq-targets.csv"; a.click(); URL.revokeObjectURL(url);
 }
