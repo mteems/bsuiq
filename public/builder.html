@@ -106,7 +106,9 @@ function project() {
   // Even minutes ("auto"): ignore the depth chart and the sliders; players sorted by projected impact
   // get the average D-I minutes by rotation spot, the same way every other team is projected.
   const impOf = (x) => { const R = x.p.rates, src = R && R.min >= 100 ? R : null, fr = !src ? x.p.fr : null; return { src, fr, po: src?.pimpo ?? fr?.po ?? PRIOR.po, pd: src?.pimpd ?? fr?.pd ?? PRIOR.pd }; };
-  const autoMin = new Map([...live].sort((a, b) => { const A = impOf(a), B = impOf(b); return B.po + B.pd - (A.po + A.pd); }).map((x, i) => [x.id, CURVE[i] || 0]));
+  // Rotation order from the team model's minutes model (projected impact, last season's minutes, returner
+  // or transfer, newcomer), then the average D-I minutes for each rotation spot, as for every other team.
+  const autoMin = new Map(autoOrder(live, impOf).map((x, i) => [x.id, CURVE[i] || 0]));
   const minOf = (x) => (auto ? autoMin.get(x.id) : d.min[x.id] ?? ROWS[x.row][1]);
   const totalMin = Math.round(live.reduce((a, x) => a + minOf(x), 0)), wScale = totalMin > 0 ? 200 / Math.max(200, totalMin) : 0;
   let oImp = 0, dImp = 0;
@@ -123,17 +125,39 @@ function project() {
   // Points are shared: scale everyone so the team scores what its offense rating says it should.
   const teamPts = (O * PACE) / 100, raw = rows.reduce((a, x) => a + x.ppg, 0), k = raw > 0 && totalMin >= 150 ? teamPts / raw : 1;
   for (const x of rows) x.ppg *= k;
-  const winP = 1 / (1 + Math.exp((-1.702 * net) / 11)), wins = Math.round(winP * GAMES);
-  const proj = PJ ? PJ.teams.filter((t) => t.tid !== 68).map((t) => sh * (t.net - PJ.mean)) : FO.dist?.net || [];
-  const rank = proj.length ? proj.filter((v) => v > net).length + 1 : null;
-  return { rows, O, D, net, netRaw, wins, losses: GAMES - wins, rank, nTeams: proj.length + 1, totalMin, priors: rows.filter((x) => x.prior).length };
+  // Team model v2: projected margin per game vs. an average D-I team = player impact by minutes, plus the
+  // program's last 3 seasons and the share of last season's Boise minutes that return (walk-forward test r = .88).
+  const rate = teamRate(netRaw, live);
+  const winP = Phi(rate / Math.hypot(PJ?.gameSd ?? 10.4, PJ?.teamSd ?? 4.4)), wins = Math.round(winP * GAMES);
+  const proj = PJ ? PJ.teams.filter((t) => t.tid !== 68).map((t) => t.rate) : [];
+  const rank = proj.length ? proj.filter((v) => v > rate).length + 1 : null;
+  return { rows, O, D, net, netRaw, rate, wins, losses: GAMES - wins, rank, nTeams: proj.length + 1, totalMin, priors: rows.filter((x) => x.prior).length };
 }
 
+const Phi = (z) => 1 / (1 + Math.exp(-1.702 * z));
+// Same rotation-order model as scripts/build-proj27.mjs (minutesFor).
+function autoOrder(live, impOf) {
+  const MB = PJ?.minutes ? Object.fromEntries(PJ.minutes.MF.map((k, i) => [k, PJ.minutes.b[i]])) : null;
+  const L = live.map((x) => { const I = impOf(x), R = x.p.rates, hist = !!I.src, ret = hist && /^Boise St/.test(R?.team || ""); return { x, imp: I.po + I.pd, hist, ret, moved: hist && !ret, lastMpg: hist ? R.mpg || 0 : 0 }; })
+    .sort((a, b) => b.imp - a.imp);
+  if (!MB) return L.map((q) => q.x);
+  const top8 = L.slice(0, 8).reduce((a, q) => a + q.imp, 0) / Math.min(8, L.length || 1);
+  const sc = L.map((q, i) => { const f = { rel: q.imp - top8, ret: q.ret ? 1 : 0, hsh: q.ret ? q.lastMpg / 40 : 0, hshm: q.moved ? q.lastMpg / 40 : 0, fr: q.hist ? 0 : 1, nohist: q.hist ? 0 : 1 };
+    for (let k = 1; k <= 11; k++) f["r" + k] = i + 1 === k ? 1 : 0; f.r12 = i + 1 >= 12 ? 1 : 0;
+    return { q, v: Object.entries(MB).reduce((a, [k, b]) => a + b * (f[k] || 0), 0) }; });
+  return sc.sort((a, b) => b.v - a.v).map((s) => s.q.x);
+}
+function teamRate(netRaw, live) {
+  if (!PJ?.coef) return netRaw;
+  const m26 = PJ.boise?.m26 || {}, tot = Object.values(m26).reduce((a, b) => a + b, 0);
+  const ret = tot ? live.reduce((a, x) => a + (m26[x.p.cid || x.p.id] || 0), 0) / tot : 0;
+  return PJ.coef.int + PJ.coef.netC * (netRaw / 5) + PJ.coef.hist3 * (PJ.boise?.hist3 ?? PJ.minH) + PJ.coef.ret * ret - PJ.rmean;
+}
 // ---------------------------------------------------------------- Pac-12 and postseason outlook
-// Every other D-I team uses its 2026-27 roster projection (same model, same minutes method); Boise St.
-// uses this depth chart. Ratings are shrunk (x0.8) and centered, as the backtest says. 3,000 simulated
-// seasons: each team's true level varies around its projection (sd 5.5 per 100), Pac-12 plays a home and
-// an away game with everyone (home edge 3, game sd 11), then a 9-team conference tournament (8 v 9
+// Every other D-I team uses its 2026-27 roster projection (team model v2); Boise St. uses this depth
+// chart. 3,000 simulated seasons: each team's true level varies around its projected margin (sd 4.4 per
+// game, the backtest's miss), Pac-12 plays a home and an away game with everyone (home edge 2.2, game sd
+// 10.4, both fit on 2018-26 games), then a 9-team conference tournament (8 v 9
 // play-in). NCAA: top 46 nationally (at-large line) or Pac-12 tournament champion. Round reached by
 // national rank, as you'd expect from seeding: top 32 = second round, top 16 = Sweet 16, top 4 = Final Four level.
 const SIMS = 3000; let simKey = null, simOut = null;
@@ -142,18 +166,17 @@ function outlook(netBoise) {
   if (!PJ) return null;
   const key = netBoise.toFixed(2); if (simKey === key) return simOut;
   const R = rng(27), gauss = () => { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-  const Phi = (z) => 1 / (1 + Math.exp(-1.702 * z));
-  const T = PJ.teams.map((t) => ({ ...t, r: PJ.shrink * ((t.tid === 68 ? netBoise : t.net) - PJ.mean) }));
+  const T = PJ.teams.map((t) => ({ ...t, r: t.tid === 68 ? netBoise : t.rate })), TSD = PJ.teamSd ?? 4.4, GSD = PJ.gameSd ?? 10.4, HOME = PJ.home ?? 2.2;
   const pac = T.filter((t) => t.conf === "Pac-12"), n = pac.length;
   const acc = pac.map((t) => ({ t, w: 0, fin: 0, first: 0, champ: 0, ncaa: 0, r32: 0, s16: 0, f4: 0, ranks: [], finishes: new Array(n).fill(0) }));
   const all = new Float64Array(T.length), pacIdx = pac.map((p) => T.indexOf(p));
   for (let s = 0; s < SIMS; s++) {
-    for (let i = 0; i < T.length; i++) all[i] = T[i].r + PJ.sd * gauss();
+    for (let i = 0; i < T.length; i++) all[i] = T[i].r + TSD * gauss();
     const rv = pacIdx.map((i) => all[i]), wins = new Array(n).fill(0);
-    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) { if (R() < Phi((rv[i] - rv[j] + 3) / 11)) wins[i]++; else wins[j]++; }
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) { if (R() < Phi((rv[i] - rv[j] + HOME) / GSD)) wins[i]++; else wins[j]++; }
     const order = [...Array(n).keys()].sort((a, b) => wins[b] - wins[a] || R() - 0.5);
     order.forEach((ti, place) => { acc[ti].fin += place + 1; acc[ti].finishes[place]++; if (place === 0) acc[ti].first++; acc[ti].w += wins[ti]; });
-    const g = (a, b) => (R() < Phi((rv[a] - rv[b]) / 11) ? a : b), sd = order; // sd[0] = 1 seed
+    const g = (a, b) => (R() < Phi((rv[a] - rv[b]) / GSD) ? a : b), sd = order; // sd[0] = 1 seed
     const pi = n >= 9 ? g(sd[7], sd[8]) : sd[7];
     const q = [g(sd[0], pi), g(sd[3], sd[4]), g(sd[1], sd[6]), g(sd[2], sd[5])];
     const champ = g(g(q[0], q[1]), g(q[2], q[3])); acc[champ].champ++;
@@ -171,12 +194,12 @@ const ordn = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "n
 const pct = (v) => (v >= 0.995 ? ">99%" : v < 0.005 ? "<1%" : Math.round(v * 100) + "%");
 function outlookHTML(J) {
   if (!PJ || !J.rows.length) return "";
-  const O = outlook(J.netRaw); if (!O) return "";
+  const O = outlook(J.rate); if (!O) return "";
   const me = O.find((x) => x.tid === 68);
   const tier = me.rank <= 4 ? "Final Four level" : me.rank <= 16 ? "Sweet 16 level" : me.rank <= 32 ? "NCAA second-round level" : me.rank <= 46 ? "NCAA at-large level" : me.rank <= 80 ? "bubble / NIT level" : "outside the postseason picture";
   const bar = (l, v) => `<div style="display:grid;grid-template-columns:118px 1fr 40px;gap:8px;align-items:center;font-size:12px;margin-top:6px"><span>${l}</span><div class="mbar" style="margin:0"><i style="width:${Math.round(v * 100)}%;background:${pcol(50 + Math.max(-45, Math.min(45, (v - 0.3) * 120)))}"></i></div><b style="text-align:right;font:600 12px var(--mono)">${pct(v)}</b></div>`;
   return `<div class="ts"><div class="label">Pac-12 outlook · 2026-27</div>
-    <table class="tbl" style="margin-top:8px;font-size:12px"><thead><tr><th class="l">Team</th><th><span data-def="projnet">Net</span></th><th>Natl</th><th>Conf</th><th>1st</th><th>NCAA</th></tr></thead><tbody>
+    <table class="tbl" style="margin-top:8px;font-size:12px"><thead><tr><th class="l">Team</th><th><span data-def="projnet">Margin</span></th><th>Natl</th><th>Conf</th><th>1st</th><th>NCAA</th></tr></thead><tbody>
     ${O.map((x) => `<tr style="${x.tid === 68 ? "background:rgba(255,255,255,.06);font-weight:700" : ""}"><td class="l">${esc(x.team)}</td><td>${sg(x.r)}</td><td class="m">#${x.rank}</td><td class="m">${x.w.toFixed(1)}-${x.l.toFixed(1)}</td><td>${pct(x.first)}</td><td>${pct(x.ncaa)}</td></tr>`).join("")}
     </tbody></table>
     <div class="label" style="margin-top:14px">Boise St. postseason · this depth chart</div>
@@ -201,7 +224,7 @@ function render() {
       <div class="mins"><input type="range" min="0" max="40" step="1" value="${Math.round(m)}" data-min="${esc(id)}" aria-label="Projected minutes"${auto ? ' disabled title="Even minutes is on: minutes come from his projected rank on this roster"' : ""}><b><span id="mv-${esc(id)}">${Math.round(m)}</span><span>MPG</span></b></div>
       <div class="line"><div><b id="pp-${esc(id)}">${f1(x.ppg)}</b><span>PTS</span></div><div><b>${f1(x.rpg)}</b><span>REB</span></div><div><b>${f1(x.apg)}</b><span>AST</span></div><div><b>${x.r.ts != null ? Math.round(x.r.ts) : "—"}</b><span>TS%</span></div></div></div>`;
   };
-  const tone = J.net >= 3 ? "var(--good)" : J.net <= -3 ? "var(--bad)" : "#fff";
+  const tone = J.rate >= 3 ? "var(--good)" : J.rate <= -3 ? "var(--bad)" : "#fff";
   const sorted = [...J.rows].sort((a, b) => (sortKey === "name" ? a.p.name.localeCompare(b.p.name) : (b[sortKey === "min" ? "m" : sortKey] ?? 0) - (a[sortKey === "min" ? "m" : sortKey] ?? 0)));
   page.innerHTML = `
   <div class="btop">
@@ -213,7 +236,7 @@ function render() {
     </div>
   </div>
   ${scenarioBarHTML(SV, loaded)}
-  <div class="interim"><b>Projections: Win model v0.5, same method as every 2026-27 team projection.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. Freshmen are projected from the model's freshman terms (247 Composite rank and height), learned from 10 recruiting classes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} with no D-I season and no ranking use the model's average freshman.` : ""} Drag a card to move or swap it; drag it to the bottom of the screen or click ✕ to remove it.</div>
+  <div class="interim"><b>Projections: Win model v0.5 players, team model v2, the same method as every 2026-27 team projection.</b> Team ratings add up each player's projected 2026-27 impact per 100 possessions (the measures that best predicted next-season results over 10 seasons, plus a year of growth) by his share of the minutes. Stat lines are his last D-I season's per-40 rates at the minutes set here, scaled to the team's projected scoring. Freshmen are projected from the model's freshman terms (247 Composite rank and height), learned from 10 recruiting classes. ${J.priors ? `${J.priors} player${J.priors > 1 ? "s" : ""} with no D-I season and no ranking use the model's average freshman.` : ""} Drag a card to move or swap it; drag it to the bottom of the screen or click ✕ to remove it.</div>
   <div class="lay">
     <div>
       <div class="dc"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="label">Depth chart name</span><input class="foin" id="dname" value="${esc(d.name)}" aria-label="Depth chart name" style="height:32px;max-width:320px;margin:0"></div><div class="dgrid">
@@ -227,9 +250,9 @@ function render() {
     </div>
     <aside class="side">
       <div class="ts"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="label">Minutes</span><div class="seg2" id="automode"><button data-auto="0" class="${auto ? "" : "on"}">Manual</button><button data-auto="1" class="${auto ? "on" : ""}">Even (by talent)</button></div></div>
-        <div class="cap" style="margin-top:6px">${auto ? "Even: depth chart and sliders are ignored. Players are ranked by projected impact and given the average D-I minutes for that rotation spot (32, 30, 28, 25, 22, 18, 15, 11, 8, 5…), the same way every other team below is projected." : "Manual: the minutes you set on each card."}</div></div>
+        <div class="cap" style="margin-top:6px">${auto ? "Even: depth chart and sliders are ignored. Players are put in rotation order by the team model's minutes model (projected impact, last season's minutes, returner or newcomer) and given the average D-I minutes for that spot (32, 30, 28, 25, 22, 18, 15, 11, 8, 5…), the same way every other team below is projected." : "Manual: the minutes you set on each card."}</div></div>
       <div class="ts"><div class="label">Projected team success</div>
-        <div class="big"><b style="color:${tone}">${J.rows.length ? sg(J.net) : "—"}</b><span class="label">net rating / 100</span></div>
+        <div class="big"><b style="color:${tone}">${J.rows.length ? sg(J.rate) : "—"}</b><span class="label" data-def="projnet">proj. margin / game vs avg D-I</span></div>
         <div class="tsg">
           <div><span class="label">Record</span><b>${J.rows.length ? `${J.wins}-${J.losses}` : "—"}</b><div class="s">vs. an average D-I team, ${GAMES} games</div></div>
           <div><span class="label">D-I rank</span><b style="color:${J.rank ? (pctOfRank(J.rank, J.nTeams) >= 70 ? "var(--good)" : pctOfRank(J.rank, J.nTeams) <= 30 ? "var(--bad)" : "#fff") : "#fff"}">${J.rows.length && J.rank ? "≈ #" + J.rank : "—"}</b><div class="s">${J.nTeams ? `of ${J.nTeams}, 2026-27 projections` : ""}</div></div>
