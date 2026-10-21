@@ -91,7 +91,7 @@ const sg = (v) => (v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math
 const rk = (v) => (v ? "#" + v : "—");
 // The same four numbers for every prospect, high school or international:
 //   RANK national recruiting rank · PROJ FR projected first-season Talent / 100 (HS: freshman terms from
-//   rank + height; international: international model v0.1) · LEVEL where he competes · PPG latest scoring.
+//   rank + height; international: international model v1) · LEVEL where he competes · PPG latest scoring.
 const circuit = (club) => { const m = String(club || "").match(/\(([^)]+)\)/); return m ? m[1].replace(/^Nike /, "").replace(/^Adidas /, "") : ""; };
 const evShort = (e) => (e ? e.event.replace(/^FIBA /, "").replace("EuroBasket", "Euro").replace(" Oceania Cup", " Oceania").replace(/ Championship.*$/, "") : "");
 function stats(p) {

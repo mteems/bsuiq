@@ -1,4 +1,4 @@
-# International incoming-player model, v0.1 (phase 1)
+# International incoming-player model, v1
 
 **Goal.** Project an international prospect's first-season impact in D-I before he plays a minute. The target is Talent / 100 at the end of his first season (Overall model v1).
 
@@ -7,42 +7,76 @@
 - By region: Europe 610, Africa 215, Canada 210, Oceania 136, Americas 92, Asia 32.
 - Weighted by minutes played, so tiny samples count less.
 
-**Features** (everything we can know before he arrives, from our own data):
+## What v1 adds: FIBA youth-event production
+
+Every men's youth event on fiba.basketball from 2010 to 2026: EuroBasket U16/U18/U20 (Divisions A, B and C, plus the 2021 Challengers), the U17 and U19 World Cups, AmeriCup, AfroBasket, Asia Cup, Oceania, Centrobasket and the South American championships. That is 254 editions and about 36,000 player lines.
+
+- **Matching.** Each player is matched by name and date of birth (name and birth year when we only know the year). Only events before his first D-I season count. 565 of the 1,295 have at least one event: 71% of Europeans, 20 to 40% elsewhere.
+- **Production.** For each event, efficiency per 40 minutes is turned into a z-score within that event's field (players with 60+ minutes). So a U16 Division C star and a U18 Division A starter are each compared with the players they actually faced.
+- **Level.** A bonus by tier is added to the z-score:
+  - Division A or World Cup: +1.0
+  - Continental (AmeriCup, AfroBasket, Asia Cup, Oceania): +0.1
+  - Division B: 0
+  - Sub-regional: −0.3
+  - Division C: −0.6
+
+  There is also +0.08 per year of age group, so U20 counts more than U16.
+- **Features added:**
+  - Had a FIBA event (yes/no)
+  - Minutes-weighted average of the adjusted z-score
+  - "Playing up": years younger than the age limit
+  - Minutes per game in his biggest role
+
+## Features kept from v0.1
+
 - Age
 - Height
 - Position group
 - Home region
 - Class at entry: freshman, or older (pro / JUCO / post-grad)
-- Whether he came through a U.S. prep school
-- RSCI / 247 recruiting rank, if any
+- U.S. prep path
+- RSCI / 247 recruiting rank
 
-**Validation.** Leave-one-season-out: each season is predicted by a model fit on the other seasons.
+## Validation
 
-| Measure | Result |
+Leave-one-season-out: each season is predicted by a model fit on the other seasons. Results are for players with 200+ minutes.
+
+| Measure | v0.1 | v1 |
+|---|---|---|
+| Correlation (r), all internationals | .335 | **.426** |
+| Average error (pts / 100) | 2.59 | **2.50** |
+| Average error, "assume the international average" | 2.72 | 2.72 |
+| Correlation (r), players with FIBA events (n = 325) | .27 | **.45** |
+
+- **Europe:** r went from .23 to .43.
+- **Africa and Canada:** small gains.
+- **Oceania:** fell from .40 to .27. This is a small sample (85 players), so watch it.
+- **Tier bonuses:** these were the only tuned settings. With no tier bonus at all, r is still .406.
+
+**Signal check.** Talent in the first D-I season, by FIBA score (players with 200+ minutes):
+
+| FIBA score | Players | Talent / 100 |
+|---|---|---|
+| Under 0 | 46 | −3.4 |
+| 0 to 1 | 98 | −2.1 |
+| 1 to 2 | 129 | −0.9 |
+| 2 to 3 | 46 | +2.2 |
+| 3 or more | 6 | +3.8 |
+
+## What DraftExpress adds (next)
+
+DraftExpress Gold player pages have two things this model doesn't use yet:
+- Club and pro league stats by season.
+- A "College Level" rating.
+
+The account has a daily page-view cap, so it can't supply a historical training set in one pass. For now it is used for current prospects only, a few pages at a time.
+
+## Files
+
+| File | What it does |
 |---|---|
-| Correlation (r) with actual first-year Talent, players with 200+ minutes | .34 |
-| Average error, model | 2.59 |
-| Average error, international average | 2.72 |
-| Correlation (r) for the high school freshman model (ranked recruits), for comparison | .45 |
-
-**What the weights say (per standard deviation):**
-- Height: +0.77
-- Being ranked: +0.90, and better rank helps more
-- Age: +0.52. Older newcomers contribute more right away.
-- Guard: +0.27
-- U.S. prep path: −0.22
-- Region effects: small
-
-**What's missing.** This is the part EvanMiya's new model (Oct 2026) says matters most:
-- **Box-score production abroad**, translated by league strength. A player logging 10 minutes in the EuroLeague is typically better than one scoring 25 a game in France's second tier.
-- **Level of competition.** A global team and league strength scale (domestic league, European cups, how players' production changes when they move clubs).
-- **A "prospect signal".** How young a player was when he first had success against senior or international competition.
-- **FIBA youth event stats.**
-
-**Next steps:**
-1. Attach FIBA youth-event box scores to the 1,295 training players. The International-board workflow already pulls FIBA tables.
-2. Add pro and club league production with a league-strength factor (RealGM / Proballers / Eurobasket).
-3. Add an age-at-first-senior-minutes feature.
-4. Refit and re-test with the same leave-one-season-out split.
-
-Projections for the current board are in data-src/intl/board.json (`proj`).
+| `intl_v1.py` | Features and cross-validation |
+| `finalize_v1.py` | Final fit and the board's projections |
+| `intl_model_v1.json` | Weights and test results |
+| `fiba_editions.json` | The FIBA editions crawled |
+| `intl_model.py`, `intl_model.json` | v0.1, kept for comparison |

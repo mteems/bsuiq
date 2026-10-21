@@ -1,5 +1,5 @@
 {
- "_about": "International board. One entry per player; the map, list and card are built from this file. ll = [lon, lat] of where he plays now. Add players with the add-international-player skill. proj = projected first-season Talent / 100 from the international model v0.1 (model/intl_v1).",
+ "_about": "International board. One entry per player; the map, list and card are built from this file. ll = [lon, lat] of where he plays now. Add players with the add-international-player skill. proj = projected first-season Talent / 100 from the international model v1 (model/intl_v1).",
  "players": [
   {
    "name": "Hugo Alonso",
@@ -58,8 +58,8 @@
     }
    ],
    "src": "FIBA, eurobasket.com, staff (Layton Christian)",
-   "proj": -3.69,
-   "projModel": "International model v0.1 (age, height, position, region, path; leave-one-season-out r = .34)"
+   "proj": -2.5,
+   "projModel": "International model v1 (age, height, position, region, path, and FIBA youth-event production; leave-one-season-out r = .43)"
   },
   {
    "name": "Leonard Kroger",
@@ -147,8 +147,8 @@
     }
    ],
    "src": "FIBA (height 6-9 / 205 cm, DOB), DraftExpress (weight), germanhoops.com, flashscore",
-   "proj": -2.0,
-   "projModel": "International model v0.1 (age, height, position, region, path; leave-one-season-out r = .34)"
+   "proj": 2.09,
+   "projModel": "International model v1 (age, height, position, region, path, and FIBA youth-event production; leave-one-season-out r = .43)"
   },
   {
    "name": "Hoani Ifopo-Togia",
@@ -205,8 +205,8 @@
     }
    ],
    "src": "FIBA (DOB, height, club, U17 Oceania Cup 2025 stats, MVP); staff big board (class 2027, W, 6-5, MPJ Elite, Link Christchurch). FIBA lists 6-4.",
-   "proj": -3.07,
-   "projModel": "International model v0.1 (age, height, position, region, path; leave-one-season-out r = .34)"
+   "proj": -1.6,
+   "projModel": "International model v1 (age, height, position, region, path, and FIBA youth-event production; leave-one-season-out r = .43)"
   },
   {
    "name": "Giannis Odzebe",
@@ -227,8 +227,8 @@
    "prev": "Next Generation Team Ulm (ANGT 2024-25: 7.8 pts, 2.8 reb in 14.3 min); Orange1 Bassano U18 (ANGT 2022-23: 6.2 pts, 4.8 reb)",
    "headshot": "https://www.proballers.com/media/cache/torso_player/ul/player/roma-basketball-odzebe-giannis-1f1bcc9d-5dc6-67b2-88e3-fb68f6e0fb40.jpeg",
    "src": "RealGM and Proballers (nationality, DOB, height, weight, clubs, ANGT stats, 2026-27 Roma team photo); staff big board (class 2027, W, Ulm). Moved from Ulm to Roma SPQR for 2026-27.",
-   "proj": -2.95,
-   "projModel": "International model v0.1 (age, height, position, region, path; leave-one-season-out r = .34)"
+   "proj": -2.51,
+   "projModel": "International model v1 (no FIBA youth events found, so age, height, position, region and path only; leave-one-season-out r = .43)"
   }
  ]
 }
