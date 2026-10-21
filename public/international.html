@@ -44,10 +44,14 @@
 .land{fill:#25272b;stroke:#33363b;stroke-width:.6;vector-effect:non-scaling-stroke}
 .land.has{fill:#36373c}
 .land.hot{fill:#45464b}
-.state{fill:transparent;stroke:#3a3d42;stroke-width:.5;vector-effect:non-scaling-stroke}
+.state{fill:transparent;stroke:#3a3d42;stroke-width:.5;vector-effect:non-scaling-stroke;cursor:pointer}.state:hover{fill:rgba(255,255,255,.05)}
+.land{cursor:pointer}
 .state.has{fill:#36373c}.state.hot{fill:#45464b}
 .grat{fill:none;stroke:#1f2124;stroke-width:.6;vector-effect:non-scaling-stroke}
 .sphere{fill:#18191c}
+.cl{cursor:pointer}.cl .core{fill:#232528;stroke:#16171a;stroke-width:1.5}.cl:hover .core{fill:#2e3034}
+.cl text{font:700 12px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.cl.hl .core{stroke:#fff;stroke-width:2}
 .bub circle.bg{fill:#16171a;stroke:#16171a;stroke-width:2}
 .bub text{font:600 11px var(--mono);fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .bub{cursor:pointer}
@@ -131,6 +135,7 @@
 .cnote{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
 .cnote b{display:inline;font-size:inherit;font-weight:650;margin:0}
 .tierchip{font:600 10px var(--mono);border-radius:4px;padding:2px 6px;color:#16171a}
+.tmsg{font:10px var(--mono);color:var(--muted);margin-top:4px;min-height:12px}
 .empty{padding:28px 16px;color:var(--muted);font-size:12.5px}
 @media (max-width:1100px){.igrid{grid-template-columns:1fr}.side{height:auto;max-height:560px}.ikpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:640px){.iwrap{padding:16px 16px 28px}.conts{overflow-x:auto;max-width:100%;scrollbar-width:none}.seg2{margin-left:0}.mapbox{height:420px}.legend{display:none}.where{display:none}.seg2.mode{left:12px;right:auto}.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -146,6 +151,7 @@
     <div class="seg2" id="kinds" style="margin-left:0"><button data-k="all">All</button><button data-k="intl">International</button><button data-k="hs">High school</button></div>
     <div class="conts" id="conts"></div>
     <div class="fgrp" id="fpos"><span class="ddl">Pos</span></div>
+    <div class="fgrp" id="ftier"><span class="ddl">Color</span></div>
   </div>
   <div class="igrid">
     <div class="mapbox" id="mapbox">
@@ -156,15 +162,17 @@
     </div>
     <aside class="side"><div id="card" class="slist" hidden></div><div id="listview" style="display:contents"><div class="shd" id="shd"></div><div class="slist" id="list"></div></div></aside>
   </div>
-  <div class="cap">Each photo sits in the city where the player plays now: international prospects and high school prospects together (use All / International / High school above). Scroll or pinch to zoom, drag to pan, or pick a region. The full high school list is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School</a> page. To add a player, ask Claude to add him by name.</div>
+  <div class="cap">Each photo sits in the city where the player plays now: international prospects and high school prospects together (use All / International / High school above). Players close together are grouped into a numbered circle; its ring shows their colors. Click a circle, a country or a state to zoom in. Scroll or pinch to zoom, drag to pan, or pick a region. To change a player’s color, click him and use the color buttons on his card. The full high school list is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School</a> page. To add a player, ask Claude to add him by name.</div>
 </main>
 <script type="module">
 import { d3, topBar, tipOn, tipOff, esc } from "/assets/core.js";
+import { loadTiers, applyTiers, setTier, tierPicker, TIERS, TIER_CSS } from "/assets/tiers.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${TIER_CSS}</style>`);
 topBar("international");
 
 const DOT = "#e2622a";
 // Staff big-board colors: each player's ring is his color; grey = not colored on the board.
-const TIERC = { green: "#34a853", yellow: "#fbbc04", red: "#ea4335" }, NOC = "#8a8e95";
+const TIERC = { green: "#34a853", yellow: "#fbbc04", red: "#ea4335" }, NOC = "#8a8e95", TORD = { green: 0, yellow: 1, red: 2 };
 const colOf = (p) => TIERC[p.tier] || NOC;
 // Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
 const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
@@ -182,9 +190,10 @@ const ageOf = (p) => (p.born ? (Date.now() - Date.parse(p.born)) / 3.15576e10 : 
 const regionOfLL = (ll) => { for (const [r, b] of REGIONS) if (b && ll[0] >= b[0] && ll[0] <= b[2] && ll[1] >= b[1] && ll[1] <= b[3]) return r; return "World"; };
 // International board + High school board on one map. kind: "intl" | "hs".
 const ALL = [...board.players.map((p) => ({ ...p, kind: "intl" })), ...(HSB.players || []).map((p) => ({ ...p, kind: "hs", nat: "United States", aau: p.club, club: p.school, team: p.school }))];
-const P = ALL.map((p, i) => { const [a3, a2] = C[p.nat] || (p.kind === "hs" ? ["USA", "us"] : ["", ""]); const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos, p.ht), ll, age: ageOf(p), slug: slug(p.name), grp: p.kind === "hs" ? "High school · United States" : p.nat }; });
-const st = { region: "World", pos: new Set(["G", "W", "B"]), sel: null, hover: null, k: 1, kind: "all" };
-const vis = () => P.filter((p) => st.pos.has(p.pg) && (st.kind === "all" || p.kind === st.kind));
+const P = ALL.map((p, i) => { const [a3, a2] = C[p.nat] || (p.kind === "hs" ? ["USA", "us"] : ["", ""]); const ll = p.ll || home(a3); return { ...p, i, a3, a2, reg: regionOfLL(ll), pg: POSG(p.pos, p.ht), ll, age: ageOf(p), slug: slug(p.name), grp: p.kind === "hs" ? "High school · United States" : p.nat, id: p.kind + ":" + slug(p.name) }; });
+await loadTiers(); applyTiers(P);
+const st = { region: "World", pos: new Set(["G", "W", "B"]), tiers: new Set(["green", "yellow", "red", ""]), sel: null, hover: null, k: 1, kind: "all" };
+const vis = () => P.filter((p) => st.pos.has(p.pg) && st.tiers.has(p.tier || "") && (st.kind === "all" || p.kind === st.kind));
 const inRegion = (p, r) => r === "World" || p.reg === r;
 
 // ---------------------------------------------------------------- KPIs + controls
@@ -196,6 +205,11 @@ document.getElementById("kpis").innerHTML = kp("Players", P.length, "on the map"
 document.querySelectorAll("#kinds button").forEach((b) => (b.onclick = () => { st.kind = b.dataset.k; if (st.sel != null && !vis().includes(P[st.sel])) closeCard(); draw(); }));
 document.getElementById("fpos").insertAdjacentHTML("beforeend", ["G", "W", "B"].map((k) => `<button class="fchip" data-k="${k}">${POSL[k]}s</button>`).join(""));
 document.querySelectorAll("#fpos .fchip").forEach((b) => (b.onclick = () => { const k = b.dataset.k; if (st.pos.has(k) && st.pos.size > 1) st.pos.delete(k); else st.pos.add(k); b.classList.toggle("off", !st.pos.has(k)); draw(); }));
+function drawTierChips() {
+  document.getElementById("ftier").innerHTML = `<span class="ddl">Color</span>` + TIERS.map(([k, l, c]) => `<button class="fchip${st.tiers.has(k) ? "" : " off"}" data-t="${k}"><s style="background:${c}"></s>${l} <i style="font-style:normal;color:var(--faint)">${P.filter((p) => (p.tier || "") === k).length}</i></button>`).join("");
+  document.querySelectorAll("#ftier .fchip").forEach((b) => (b.onclick = () => { const k = b.dataset.t; if (st.tiers.has(k) && st.tiers.size > 1) st.tiers.delete(k); else st.tiers.add(k); if (st.sel != null && !vis().includes(P[st.sel])) closeCard(); drawTierChips(); draw(); }));
+}
+drawTierChips();
 function drawConts() {
   const V = vis();
   document.getElementById("conts").innerHTML = REGIONS.map(([r]) => { const n = V.filter((p) => inRegion(p, r)).length; return `<button data-r="${r}" class="${st.region === r ? "on" : ""}" ${n || r === "World" ? "" : "disabled"}>${r}<i>${n}</i></button>`; }).join("");
@@ -214,7 +228,8 @@ let STATES = [];
 fetch("/assets/geo/states.json").then((r) => r.json()).then((j) => { STATES = j.features; drawStates(); }).catch(() => {});
 function drawStates() {
   gStates.selectAll("path").data(STATES, (f) => f.properties.c + f.properties.n).join("path").attr("class", "state").attr("d", path)
-    .on("mousemove", (e, f) => { const n = vis().filter((p) => d3.geoContains(f, p.ll)).length; tipOn(e, `<b>${f.properties.n}</b>${n ? ` · ${n} player${n > 1 ? "s" : ""}` : ""}`); }).on("mouseleave", tipOff);
+    .on("mousemove", (e, f) => { const n = vis().filter((p) => stateHas(f, p)).length; tipOn(e, `<b>${f.properties.n}</b>${n ? ` · ${n} player${n > 1 ? "s" : ""}` : ""}<br><span style="color:var(--muted)">Click to zoom in</span>`); }).on("mouseleave", tipOff)
+    .on("click", (e, f) => zoomTo(f));
   shadeStates();
 }
 function shadeStates() { const on = st.hover ?? st.sel, V = vis(); gStates.selectAll("path").classed("has", (f) => V.some((p) => stateHas(f, p))).classed("hot", (f) => on != null && stateHas(f, P[on])); }
@@ -228,7 +243,7 @@ function drawLand(features) {
   gSphere.attr("d", path({ type: "Sphere" })); gGrat.attr("d", path(d3.geoGraticule10()));
   gLand.selectAll("path").data(features, (f) => f.properties.a).join("path").attr("class", "land").attr("d", path)
     .on("mousemove", (e, f) => { const n = vis().filter((p) => p.a3 === f.properties.a).length; if (n) tipOn(e, `<b>${f.properties.n}</b> · ${n} player${n > 1 ? "s" : ""}`); })
-    .on("mouseleave", tipOff).on("click", (e, f) => { const p = vis().find((q) => q.a3 === f.properties.a); if (p && st.region === "World") goRegion(p.reg); });
+    .on("mouseleave", tipOff).on("click", (e, f) => zoomTo(f));
   shadeLand();
 }
 function shadeLand() { const has = new Set(vis().flatMap((p) => [p.a3, countryAt(p.ll)])), on = st.hover ?? st.sel, hot = on != null ? countryAt(P[on].ll) : null;
@@ -269,54 +284,90 @@ function tFor(bbox) {
   const k = Math.min(24, (Wd < 640 ? 0.8 : 0.92) / Math.max((x1 - x0) / Wd, (y1 - y0) / Ht));
   return d3.zoomIdentity.translate(Wd / 2, Ht / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
 }
+// Zoom to a country or state (for the very large countries, to the part of it that holds players).
+function zoomTo(f) {
+  let b = path.bounds(f); const ps = vis().filter((p) => (f.properties.c ? stateHas(f, p) : p.a3 === f.properties.a || countryAt(p.ll) === f.properties.a));
+  if (["RUS", "USA", "CAN"].includes(f.properties.a) && ps.length) { const xs = ps.map((p) => proj(p.ll)); b = [[d3.min(xs, (d) => d[0]) - 40, d3.min(xs, (d) => d[1]) - 40], [d3.max(xs, (d) => d[0]) + 40, d3.max(xs, (d) => d[1]) + 40]]; }
+  const [[x0, y0], [x1, y1]] = b, k = Math.min(24, 0.86 / Math.max((x1 - x0) / Wd, (y1 - y0) / Ht));
+  svg.transition().duration(850).ease(d3.easeCubicInOut).call(zoom.transform, d3.zoomIdentity.translate(Wd / 2, Ht / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
+}
 function goRegion(r) { st.region = r; drawConts(); drawList(); const b = REGIONS.find((q) => q[0] === r)[1]; svg.transition().duration(950).ease(d3.easeCubicInOut).call(zoom.transform, b ? tFor(b) : d3.zoomIdentity); }
-function flyTo(p) { const [x, y] = proj(p.ll), k = Math.max(st.k, 7); svg.transition().duration(950).ease(d3.easeCubicInOut).call(zoom.transform, d3.zoomIdentity.translate(Wd / 2, Ht / 2).scale(k).translate(-x, -y)); }
+function flyTo(p) { const [x, y] = proj(p.ll), k = Math.max(st.k, 9); svg.transition().duration(950).ease(d3.easeCubicInOut).call(zoom.transform, d3.zoomIdentity.translate(Wd / 2, Ht / 2).scale(k).translate(-x, -y)); }
 function regionFor() { if (T.k < 1.4) return "World"; const c = proj.invert(T.invert([Wd / 2, Ht / 2])); let best = "World", bd = 1e9;
   for (const [r, b] of REGIONS) if (b) { const d = Math.hypot(c[0] - (b[0] + b[2]) / 2, c[1] - (b[1] + b[3]) / 2); if (d < bd) { bd = d; best = r; } } return best; }
 document.getElementById("zin").onclick = () => svg.transition().duration(400).call(zoom.scaleBy, 1.6);
 document.getElementById("zout").onclick = () => svg.transition().duration(400).call(zoom.scaleBy, 1 / 1.6);
 document.getElementById("zreset").onclick = () => goRegion("World");
 
-// One dot per player at his club's city. Players in the same city pack together.
+// Players close together on screen are grouped into one numbered circle (its ring shows their colors).
+// Click a circle to zoom in on its players; players in the same city fan out once zoomed in.
 const xy = (ll) => T.apply(proj(ll));
+const arc = d3.arc(), pie = d3.pie().sort(null).value((d) => d[1]);
 function placePoints(shade = true) {
-  const k = st.k, r = k >= 1.8 ? 6.5 : 5, golden = Math.PI * (3 - Math.sqrt(5));
-  const byCity = d3.group(vis(), (p) => p.city || p.nat);
-  const pts = [];
-  for (const [, ps] of byCity) { const [cx, cy] = xy(ps[0].ll); ps.forEach((p, i) => { const rr = i ? (k >= 1.8 ? 48 : 36) * Math.sqrt(i) : 0, a = i * golden; pts.push({ p, x: cx + rr * Math.cos(a), y: cy + rr * Math.sin(a), r }); }); }
-  // markers: headshot in an orange ring (dot if no photo)
-  const R = k >= 1.8 ? 22 : 16;
+  const k = st.k, R = k >= 1.8 ? 22 : 16, D = 2 * R + 22, golden = Math.PI * (3 - Math.sqrt(5));
+  const V = vis().slice().sort((a, b) => (TORD[a.tier] ?? 3) - (TORD[b.tier] ?? 3) || a.name.localeCompare(b.name));
+  const groups = [];
+  for (const p of V) { const [x, y] = xy(p.ll); const g = groups.find((q) => Math.hypot(q.x0 - x, q.y0 - y) < D); if (g) g.m.push({ p, x, y }); else groups.push({ x0: x, y0: y, m: [{ p, x, y }] }); }
+  const pts = [], cls = [];
+  for (const g of groups) {
+    const sameCity = g.m.every((d) => Math.hypot(d.x - g.m[0].x, d.y - g.m[0].y) < 1);
+    if (g.m.length === 1) pts.push({ p: g.m[0].p, x: g.m[0].x, y: g.m[0].y });
+    else if (sameCity && k >= 6) g.m.forEach((d, i) => { const rr = i ? 48 * Math.sqrt(i) : 0, a = i * golden; pts.push({ p: d.p, x: d.x + rr * Math.cos(a), y: d.y + rr * Math.sin(a) }); });
+    else cls.push({ key: g.m.map((d) => d.p.i).sort((a, b) => a - b).join("-"), x: d3.mean(g.m, (d) => d.x), y: d3.mean(g.m, (d) => d.y), m: g.m.map((d) => d.p), sameCity });
+  }
+  // single players: headshot in a ring of his color (plain dot if no photo)
   const M = gPts.selectAll("g.mk").data(pts, (d) => d.p.i);
   M.exit().remove();
   const me = M.enter().append("g").attr("class", "mk").style("cursor", "pointer")
-    .on("mousemove", (e, d) => { st.hover = d.p.i; highlight(); tipOn(e, tipHTML(d.p)); }).on("mouseleave", () => { st.hover = null; highlight(); tipOff(); })
+    .on("mousemove", (e, d) => { st.hover = d.p.i; highlight(false); tipOn(e, tipHTML(d.p)); }).on("mouseleave", () => { st.hover = null; highlight(false); tipOff(); })
     .on("click", (e, d) => select(d.p.i, true));
   me.append("clipPath").attr("id", (d) => "hc" + d.p.i).append("circle");
-  me.append("circle").attr("class", "halo").attr("fill", (d) => colOf(d.p)).attr("opacity", 0.18);
-  me.append("circle").attr("class", "ring").attr("fill", "#2a2c30").attr("stroke", (d) => colOf(d.p)).attr("stroke-width", 2.5);
+  me.append("circle").attr("class", "halo").attr("opacity", 0.18);
+  me.append("circle").attr("class", "ring").attr("fill", "#2a2c30").attr("stroke-width", 2.5);
   me.filter((d) => d.p.headshot).append("image").attr("href", (d) => d.p.headshot).attr("clip-path", (d) => `url(#hc${d.p.i})`).attr("preserveAspectRatio", "xMidYMin slice");
   me.merge(M).attr("transform", (d) => `translate(${d.x},${d.y})`).each((d) => (d.r = R));
-  // labels: name always (only a few players); club + city when zoomed in
-  // Labels: skip any that would overlap one already placed (crowded areas show names on hover / zoom).
+  // groups: count in the middle, ring split by color
+  const CR = R + 4;
+  const Cg = gPts.selectAll("g.cl").data(cls, (d) => d.key);
+  Cg.exit().remove();
+  const ce = Cg.enter().append("g").attr("class", "cl")
+    .on("mousemove", (e, d) => tipOn(e, `<b>${d.m.length} players</b>${d.sameCity ? ` · ${esc(d.m[0].city)}` : ""}<br>${d.m.slice(0, 8).map((p) => esc(p.name)).join("<br>")}${d.m.length > 8 ? `<br>+${d.m.length - 8} more` : ""}<br><span style="color:var(--muted)">Click to zoom in</span>`)).on("mouseleave", tipOff)
+    .on("click", (e, d) => { tipOff(); openGroup(d); });
+  ce.append("g").attr("class", "arcs"); ce.append("circle").attr("class", "core"); ce.append("text");
+  const CA = ce.merge(Cg).attr("transform", (d) => `translate(${d.x},${d.y})`);
+  CA.select("circle.core").attr("r", CR - 5);
+  CA.select("text").text((d) => d.m.length);
+  CA.select("g.arcs").each(function (d) { const cnt = ["green", "yellow", "red", ""].map((t) => [t, d.m.filter((p) => (p.tier || "") === t).length]).filter((x) => x[1]);
+    d3.select(this).selectAll("path").data(pie(cnt)).join("path").attr("d", arc.innerRadius(CR - 5).outerRadius(CR).padAngle(cnt.length > 1 ? 0.06 : 0)).attr("fill", (a) => colOf({ tier: a.data[0] })); });
+  // labels: single players only; skip any that would overlap a label or marker already placed
   const placed = [], boxOf = (l) => { const w = Math.max(l.name.length * 7.2, l.sub.length * 6.2); return [l.x - 2, l.y - 14, l.x + w, l.y + 16]; };
   const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const blocks = [...pts.map((d) => ({ i: d.p.i, b: [d.x - R, d.y - R, d.x + R, d.y + R] })), ...cls.map((c) => ({ i: -1, b: [c.x - CR, c.y - CR, c.x + CR, c.y + CR] }))];
   const labs = pts.map((d) => ({ k: d.p.i, x: d.x + R + 9, y: d.y, name: d.p.name, sub: k >= 1.8 ? `${d.p.club} · ${d.p.city}` : d.p.kind === "hs" ? d.p.city : `${d.p.city}, ${d.p.nat}` }))
     .sort((a, b) => (a.k === (st.hover ?? st.sel) ? -1 : b.k === (st.hover ?? st.sel) ? 1 : a.y - b.y))
-    .filter((l) => { const bx = boxOf(l); if (placed.some((q) => hit(q, bx)) || pts.some((d) => d.p.i !== l.k && hit([d.x - R, d.y - R, d.x + R, d.y + R], bx))) return false; placed.push(bx); return true; });
+    .filter((l) => { const bx = boxOf(l); if (placed.some((q) => hit(q, bx)) || blocks.some((q) => q.i !== l.k && hit(q.b, bx))) return false; placed.push(bx); return true; });
   const L = gLab.selectAll("g.plab").data(labs, (d) => d.k).join((en) => { const g = en.append("g").attr("class", "plab"); g.append("text").attr("class", "pn"); g.append("text").attr("class", "ps"); return g; })
     .attr("transform", (d) => `translate(${d.x},${d.y})`);
   L.select("text.pn").attr("y", -2).text((d) => d.name);
   L.select("text.ps").attr("y", 11).text((d) => d.sub);
-  document.getElementById("where").innerHTML = `${st.region}<em>${vis().filter((p) => inRegion(p, st.region)).length} player${vis().filter((p) => inRegion(p, st.region)).length === 1 ? "" : "s"}</em>`;
+  const nR = vis().filter((p) => inRegion(p, st.region)).length;
+  document.getElementById("where").innerHTML = `${st.region}<em>${nR} player${nR === 1 ? "" : "s"}</em>`;
   highlight(shade);
+}
+// Zoom so a group's players separate (or fan out, when they all play in the same city).
+function openGroup(g) {
+  const xs = g.m.map((p) => proj(p.ll)), x0 = d3.min(xs, (d) => d[0]), x1 = d3.max(xs, (d) => d[0]), y0 = d3.min(xs, (d) => d[1]), y1 = d3.max(xs, (d) => d[1]);
+  const span = Math.max((x1 - x0) / Wd, (y1 - y0) / Ht), k = Math.min(24, Math.max(st.k * 2.2, span ? 0.6 / span : 8, g.sameCity ? 7 : 0));
+  svg.transition().duration(800).ease(d3.easeCubicInOut).call(zoom.transform, d3.zoomIdentity.translate(Wd / 2, Ht / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
 }
 const fmtAge = (p) => (p.age ? p.age.toFixed(1) : "—");
 function tipHTML(p) { return p.kind === "hs" ? `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""}${p.r247 ? ` · 247 #${p.r247}` : ""}<br>${esc(p.school)} · ${esc(p.city)}` : `<b>${esc(p.name)}</b><br>${p.pos} · ${p.ht}${p.wt ? ` · ${p.wt} lb` : ""} · ${fmtAge(p)} yrs<br>${esc(p.team || p.club)} · ${esc(p.city)}, ${p.nat}`; }
 function highlight(shade = true) {
   const on = st.hover ?? st.sel;
   gPts.selectAll("g.mk").each(function (d) { const rr = (d.r || 16) + (d.p.i === on ? 3 : 0), g = d3.select(this);
-    g.select("clipPath circle").attr("r", rr - 1.5); g.select(".halo").attr("r", rr + 6).attr("opacity", d.p.i === on ? 0.35 : 0.18); g.select(".ring").attr("r", rr).attr("stroke", d.p.i === on ? "#fff" : colOf(d.p));
+    g.select("clipPath circle").attr("r", rr - 1.5); g.select(".halo").attr("r", rr + 6).attr("fill", colOf(d.p)).attr("opacity", d.p.i === on ? 0.35 : 0.18); g.select(".ring").attr("r", rr).attr("stroke", d.p.i === on ? "#fff" : colOf(d.p));
     g.select("image").attr("x", -rr).attr("y", -rr).attr("width", rr * 2).attr("height", rr * 2); if (d.p.i === on) g.raise(); });
+  gPts.selectAll("g.cl").classed("hl", (d) => on != null && d.m.some((p) => p.i === on));
   document.querySelectorAll(".pr").forEach((r) => { r.classList.toggle("hl", +r.dataset.i === st.hover); r.classList.toggle("sel", +r.dataset.i === st.sel); });
   if (shade) shadeLand();
 }
@@ -367,7 +418,7 @@ function hsCard(p) {
   return `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}<div style="min-width:0"><div class="label">High school · ${esc(p.pos)} · Class of ${p.cls}${p.stars ? ` · ${p.stars}★` : ""}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.school)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
     <div class="cgrid"><div><span class="label">Height</span><b>${esc(p.ht || "—")}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">247</span><b>${rk(p.r247)}</b></div><div><span class="label">On3 Ind.</span><b>${rk(p.rOn3)}</b></div></div>
     ${p.rEspn || p.rRivals ? `<div class="cgrid" style="margin-top:8px"><div><span class="label">ESPN</span><b>${rk(p.rEspn)}</b></div><div><span class="label">Rivals</span><b>${rk(p.rRivals)}</b></div><div style="grid-column:span 2"><span class="label">Position</span><b style="font-size:12px">${esc(p.pr || "—")}</b></div></div>` : ""}
-    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.school)} <span>${esc(p.city)}</span></dd>${p.home ? `<dt>Home</dt><dd>${esc(p.home)}</dd>` : ""}${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.aau ? `<dt>Club</dt><dd>${esc(p.aau)}</dd>` : ""}<dt>Status</dt><dd>${esc(p.status || "—")}</dd>${list("Finalists", p.finalists)}${list("Offers", p.offers)}${list("Contacts", p.contacts)}</dl>
+    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.school)} <span>${esc(p.city)}</span></dd>${p.home ? `<dt>Home</dt><dd>${esc(p.home)}</dd>` : ""}${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.aau ? `<dt>Club</dt><dd>${esc(p.aau)}</dd>` : ""}<dt>Status</dt><dd>${esc(p.status || "—")}</dd><dt>Color</dt><dd>${tierPicker(p.tier)}<div class="tmsg"></div></dd>${list("Finalists", p.finalists)}${list("Offers", p.offers)}${list("Contacts", p.contacts)}</dl>
     ${p.notes ? `<div class="cnote">${esc(p.notes)}</div>` : ""}
     <div class="cnote">${Object.entries(p.links || {}).map(([l, u]) => `<a class="flink" style="margin:0 12px 0 0" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join("")}</div>
     <div class="cnote"><a href="/highschool#${p.slug}" style="color:var(--soft);text-decoration:underline">Open on the High School page</a></div></div>`;
@@ -377,12 +428,18 @@ function select(i, fly) {
   st.sel = i; const p = P[i];
   document.getElementById("card").innerHTML = p.kind === "hs" ? hsCard(p) : `<div class="pcard"><div class="ptop">${p.headshot ? `<img class="hs" alt="" src="${p.headshot}">` : ""}<div style="min-width:0"><div class="label">${p.a2 ? `<img class="fl" alt="" src="https://flagcdn.com/w40/${p.a2}.png">` : ""}${p.nat} · ${p.pos} · ${p.cls}</div><h3>${esc(p.name)}</h3><div class="cteam">${esc(p.team || p.club)} · ${esc(p.city)}</div></div><button class="x" title="Back to the list">✕</button></div>
     <div class="cgrid"><div><span class="label">Height</span><b>${p.ht}</b></div><div><span class="label">Weight</span><b>${p.wt ?? "—"}</b></div><div><span class="label">Age</span><b>${fmtAge(p)}</b></div><div><span class="label">Born</span><b style="font-size:12.5px;white-space:nowrap">${p.born ? new Date(p.born + "T12:00").toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"}</b></div></div>
-    <dl class="cinfo"><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
+    <dl class="cinfo"><dt>Color</dt><dd>${tierPicker(p.tier)}<div class="tmsg"></div></dd><dt>Now</dt><dd>${esc(p.team || p.club)}${p.league ? ` <span>${esc(p.league)}</span>` : ""}</dd>${p.prev ? `<dt>Before</dt><dd>${esc(p.prev)}</dd>` : ""}${p.nt ? `<dt>National</dt><dd>${esc(p.nt)}</dd>` : ""}</dl>
     ${fibaHTML(p)}</div>`;
   wireFiba(p);
   document.querySelector("#card .hs")?.style.setProperty("box-shadow", `0 0 0 2.5px ${colOf(p)}`);
   const cardEl = document.getElementById("card"); cardEl.hidden = false; cardEl.scrollTop = 0; document.getElementById("listview").style.display = "none";
   document.querySelector("#card .x").onclick = closeCard;
+  document.querySelectorAll("#card [data-tier-pick]").forEach((b) => (b.onclick = async () => {
+    const t = b.dataset.tierPick, prev = p.tier, msg = document.querySelector("#card .tmsg"); p.tier = t;
+    document.querySelectorAll("#card [data-tier-pick]").forEach((x) => x.classList.toggle("on", x === b)); document.querySelector("#card .hs")?.style.setProperty("box-shadow", `0 0 0 2.5px ${colOf(p)}`);
+    msg.textContent = "Saving…"; drawTierChips(); drawList(); placePoints();
+    try { await setTier(p.id, t); msg.textContent = "Saved for all staff"; } catch (e) { p.tier = prev; msg.textContent = e.message; drawTierChips(); drawList(); placePoints(); }
+  }));
   if (fly) { if (st.region !== p.reg) { st.region = p.reg; drawConts(); drawList(); } flyTo(p); }
   highlight();
 }

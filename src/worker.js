@@ -389,6 +389,24 @@ async function prepBoard(request, env, sess, scope) {
   return json({ ok: true, user, scope, board: out });
 }
 
+// Staff board colors for prep prospects. One KV object "prep:tiers":
+//   { "<hs|intl>:<slug>": { tier: "green"|"yellow"|"red"|"", by, at } }
+//   GET  /api/prep-tiers → { tiers }      POST { id, tier } (tier null = back to the board file's color)
+async function prepTiers(request, env, sess) {
+  const cur = env.STAFF ? (await env.STAFF.get("prep:tiers", "json")) || {} : {};
+  if (request.method === "GET") return json({ tiers: cur });
+  if (request.method !== "POST") return json({ error: "method" }, 405);
+  if (!env.STAFF) return json({ error: "Saving isn't set up on this deployment (no KV)." }, 503);
+  let b; try { b = await request.json(); } catch { return json({ error: "bad_json" }, 400); }
+  const id = String(b?.id || "");
+  if (!/^(hs|intl):[a-z-]{2,80}$/.test(id)) return json({ error: "bad_id" }, 400);
+  if (b.tier == null) delete cur[id];
+  else if (["green", "yellow", "red", ""].includes(b.tier)) cur[id] = { tier: b.tier, by: sess.user || "Staff", at: new Date().toISOString() };
+  else return json({ error: "bad_tier" }, 400);
+  await env.STAFF.put("prep:tiers", JSON.stringify(cur));
+  return json({ ok: true, tiers: cur });
+}
+
 // School roster pages (for players ESPN has no headshot for): returns each roster photo with its
 // alt text. Only https pages whose path is a roster page; only image names/URLs come back.
 async function scrapeRoster(url) {
@@ -587,6 +605,7 @@ export default {
     if (path === "/api/me") return meApi(request, env, sess);
     const fo = path.match(/^\/api\/fo\/(cap|builder)(?:\/(me|staff)\/([\w-]{1,60}))?$/);
     if (fo) return frontOffice(request, env, sess, fo[1], fo[2], fo[3]);
+    if (path === "/api/prep-tiers") return prepTiers(request, env, sess);
     const pb = path.match(/^\/api\/prep(?:\/(me|staff))?$/);
     if (pb) return prepBoard(request, env, sess, pb[1]);
     const tb = path.match(/^\/api\/tb(?:\/(me|staff))?$/);

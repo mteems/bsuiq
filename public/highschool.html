@@ -60,7 +60,9 @@ const TIER = { green: 0, yellow: 1, red: 2 }, TC = { green: "#34a853", yellow: "
 // Position group: C / PF = big; F = big at 6-9+, else wing; W / SF / GF = wing; otherwise guard.
 const POSG = (p, ht) => { p = String(p || "").toUpperCase(); const h = String(ht || "").match(/(\d+)\D+(\d+)/), inches = h ? +h[1] * 12 + +h[2] : 0;
   if (/\bC\b|PF|^C/.test(p) && !/SF\/PF/.test(p)) return "B"; if (p === "F") return inches >= 81 ? "B" : "W"; if (/SF|^W|GF|SG\/SF/.test(p)) return "W"; return "G"; };
-const P = B.players.map((p) => ({ ...p, slug: slug(p.name), pg: POSG(p.pos, p.ht), proj: proj(p), on3r: p.rInd ?? p.rOn3 ?? null, tierN: TIER[p.tier] ?? 3 }));
+const { loadTiers, applyTiers } = await import("/assets/tiers.js");
+await loadTiers();
+const P = applyTiers(B.players.map((p) => ({ ...p, id: "hs:" + slug(p.name) }))).map((p) => ({ ...p, slug: slug(p.name), pg: POSG(p.pos, p.ht), proj: proj(p), on3r: p.rInd ?? p.rOn3 ?? null, tierN: TIER[p.tier] ?? 3 }));
 const st = { q: "", pos: "all", cls: "all", sort: "tierN", dir: 1, open: location.hash.slice(1) || null };
 const classes = [...new Set(P.map((p) => p.cls))].sort();
 const page = document.getElementById("page");

@@ -42,6 +42,13 @@
 .ghost{position:fixed;z-index:1000;pointer-events:none;margin:0;box-shadow:0 18px 40px rgba(0,0,0,.55);transform:scale(1.03) rotate(-1deg);border-color:#8a8e95!important}
 body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!important}
 .msg{font:11px var(--mono);color:var(--muted)}
+.tdot{position:absolute;right:7px;bottom:7px;width:14px;height:14px;border-radius:50%;border:2px solid #1e1f22;box-shadow:0 0 0 1px var(--edge);cursor:pointer;padding:0}
+.tdot:hover{box-shadow:0 0 0 1.5px #d6d8db}
+.tpop{position:absolute;right:6px;bottom:26px;z-index:20;background:#1a1b1e;border:1px solid var(--edge);border-radius:8px;padding:8px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+.tpop .label{margin-bottom:6px}
+.tfil{display:flex;gap:5px;align-items:center}.tfil .ddl{font:10px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-right:2px}
+.tfil button{background:var(--card);border:1px solid var(--edge);color:var(--dim);border-radius:6px;padding:5px 8px;font:10.5px var(--mono);cursor:pointer;display:flex;gap:5px;align-items:center}
+.tfil button s{width:8px;height:8px;border-radius:50%;display:inline-block}.tfil button.off{opacity:.38}.tfil button:hover{color:#fff}
 @media (max-width:1000px){.lanes{grid-template-columns:repeat(3,minmax(260px,1fr));overflow-x:auto}}
 @media (max-width:700px){.pwrap{padding:14px 16px}}
 @media print{.pact{display:none!important}.pcard{break-inside:avoid}}
@@ -51,6 +58,8 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 <main class="pwrap" id="page"><div class="loading">Loading the prep list…</div></main>
 <script type="module">
 import { topBar, esc, me, getJSON, pc } from "/assets/core.js";
+import { loadTiers, applyTiers, setTier, tierPicker, tierColor, TIERS, TIER_CSS } from "/assets/tiers.js";
+document.head.insertAdjacentHTML("beforeend", `<style>${TIER_CSS}</style>`);
 topBar("prep");
 
 const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
@@ -68,10 +77,11 @@ const P = [
   ...intl.players.map((p) => ({ ...p, kind: "intl", id: "intl:" + slug(p.name), href: "/international#" + slug(p.name), where: p.club || p.team, flag: (geo.countries[p.nat] || [])[1], ev: [...(p.fiba || [])].sort((a, b) => b.yr - a.yr)[0] })),
   ...hs.players.map((p) => ({ ...p, kind: "hs", id: "hs:" + slug(p.name), href: "/highschool#" + slug(p.name), where: p.school, proj: proj(p) })),
 ].map((p) => ({ ...p, lane0: POSG(p.pos, p.ht) }));
+await loadTiers(); applyTiers(P);
 const byId = new Map(P.map((p) => [p.id, p]));
 let M = M0, scope = (() => { try { return localStorage.getItem("biq-prep-scope") === "me" ? "me" : "staff"; } catch { return "staff"; } })();
 if (scope === "me" && !M.user) scope = "staff";
-let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", cls = "all", msg = "";
+let SAVED = { me: { lanes: {} }, staff: { lanes: {} } }, kind = "all", cls = "all", msg = "", tierOn = new Set(["green", "yellow", "red", ""]), openTier = null;
 const CLASSES = [...new Set(P.map((p) => String(p.cls)).filter((c) => c && c !== "undefined"))].sort();
 async function load() { try { const r = await getJSON("/api/prep"); SAVED = { me: r.me || { lanes: {} }, staff: r.staff || { lanes: {} } }; } catch { msg = "Couldn't load the saved order."; } }
 await load();
@@ -102,19 +112,22 @@ function stats(p) {
   return [["RANK", `<b${rankOf(p) ? "" : ' class="dim"'}>${rankOf(p) ? "#" + rankOf(p) : "—"}</b>`], ["PROJ FR", prV], ["LEVEL", `<b style="font-size:10.5px">${esc(lvl)}</b>`], ["PPG", `<b${ppg == null ? ' class="dim"' : ""}>${ppg == null ? "—" : f1(ppg)}</b>`]];
 }
 function card(p, i) {
-  return `<article class="pcard" data-id="${esc(p.id)}"${p.tier ? ` data-tier="${p.tier}" title="Staff board: ${p.tier}"` : ""}><div class="rk">${i + 1}</div>
+  return `<article class="pcard" data-id="${esc(p.id)}"${p.tier ? ` data-tier="${p.tier}"` : ""}${openTier === p.id ? ' style="z-index:5"' : ""}><div class="rk">${i + 1}</div>
     <div class="ct"><span class="hs">${p.headshot ? `<img alt="" loading="lazy" src="${esc(p.headshot)}" onerror="this.remove()">` : ""}</span>
       <div class="nm"><a href="${esc(p.href)}" draggable="false">${esc(p.name)}</a><div class="s">${p.flag ? `<img alt="" src="https://flagcdn.com/w40/${p.flag}.png" onerror="this.remove()">` : ""}<span>${esc(p.where || "")}</span></div>
         <div class="f">${[p.pos, p.ht, p.cls ? "'" + String(p.cls).slice(2) : "", p.kind === "hs" ? p.state : p.nat].filter(Boolean).map(esc).join(" · ")}</div></div>
       <span class="kind">${p.kind === "hs" ? "HS" : "INTL"}</span></div>
-    <div class="cs">${stats(p).map(([l, v]) => `<div><span>${l}</span>${v}</div>`).join("")}</div></article>`;
+    <div class="cs">${stats(p).map(([l, v]) => `<div><span>${l}</span>${v}</div>`).join("")}</div>
+    <button class="tdot" data-tdot="${esc(p.id)}" style="background:${tierColor(p.tier)}" title="Board color: ${p.tier || "not colored"} (click to change)"></button>
+    ${openTier === p.id ? `<div class="tpop"><div class="label">Board color</div>${tierPicker(p.tier)}</div>` : ""}</article>`;
 }
 const page = document.getElementById("page");
 function render() {
-  const L = lanesNow(), show = (id) => { const p = byId.get(id); return (kind === "all" || p.kind === kind) && (cls === "all" || String(p.cls) === cls); };
+  const L = lanesNow(), show = (id) => { const p = byId.get(id); return (kind === "all" || p.kind === kind) && (cls === "all" || String(p.cls) === cls) && tierOn.has(p.tier || ""); };
   page.innerHTML = `<div class="ptop">
-    <div><div class="label">Prep</div><h1>Prep List</h1><div class="sub">Every international and high school prospect on one board. The line on each card is the staff board color (green, yellow, red); cards are ordered green, then yellow, then red, and you rank players within their color by dragging a card up or down (or into another lane to change his position group). Players who have committed elsewhere are left off. Click a name for his full card. The full high school table is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School list</a>.</div></div>
+    <div><div class="label">Prep</div><h1>Prep List</h1><div class="sub">Every international and high school prospect on one board. The line on each card is the staff board color (green, yellow, red); click the dot in a card's corner to change it. Cards are ordered green, then yellow, then red, and you rank players within their color by dragging a card up or down (or into another lane to change his position group). Players who have committed elsewhere are left off. Click a name for his full card. The full high school table is on the <a href="/highschool" style="color:var(--soft);text-decoration:underline">High School list</a>.</div></div>
     <div class="pact"><span class="msg" id="msg">${esc(msg)}</span>
+      <div class="tfil"><span class="ddl">Color</span>${TIERS.map(([k, l, c]) => `<button data-tf="${k}" class="${tierOn.has(k) ? "" : "off"}"><s style="background:${c}"></s>${l}</button>`).join("")}</div>
       <div class="seg2">${["all", ...CLASSES].map((c) => `<button data-cls="${c}" class="${cls === c ? "on" : ""}">${c === "all" ? "All classes" : c}</button>`).join("")}</div>
       <div class="seg2"><button data-k="all" class="${kind === "all" ? "on" : ""}">All</button><button data-k="intl" class="${kind === "intl" ? "on" : ""}">International</button><button data-k="hs" class="${kind === "hs" ? "on" : ""}">High school</button></div>
       <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My order${M.user ? ` · ${esc(M.user)}` : ""}</button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff order</button></div>
@@ -129,7 +142,11 @@ async function save(L) {
 }
 addEventListener("biq-me", async () => { M = await me(true); if (scope === "me" && !M.user) scope = "staff"; await load(); render(); });
 page.addEventListener("click", (e) => {
-  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  const b = e.target.closest("button"); if (!b && openTier && !e.target.closest(".tpop")) { openTier = null; render(); return; } if (!b || b.disabled) return;
+  if (b.dataset.tdot) { openTier = openTier === b.dataset.tdot ? null : b.dataset.tdot; render(); return; }
+  if (b.dataset.tierPick != null) { const p = byId.get(openTier), t = b.dataset.tierPick, prev = p.tier; p.tier = t; openTier = null; msg = "Saving color…"; render();
+    setTier(p.id, t).then(() => { msg = `${p.name}: ${t || "no color"} · saved for all staff`; render(); }).catch((err) => { p.tier = prev; msg = err.message; render(); }); return; }
+  if (b.dataset.tf != null) { const k = b.dataset.tf; if (tierOn.has(k) && tierOn.size > 1) tierOn.delete(k); else tierOn.add(k); render(); return; }
   if (b.dataset.k) { kind = b.dataset.k; render(); }
   else if (b.dataset.cls) { cls = b.dataset.cls; render(); }
   else if (b.dataset.scope) { scope = b.dataset.scope; try { localStorage.setItem("biq-prep-scope", scope); } catch {} msg = ""; render(); }
@@ -139,7 +156,7 @@ page.addEventListener("click", (e) => {
 // Pointer drag: the card lifts and follows the pointer; a white line shows where it will land.
 let drag = null;
 page.addEventListener("pointerdown", (e) => {
-  if (e.button !== 0 || e.target.closest("a,button,input")) return;
+  if (e.button !== 0 || e.target.closest("a,button,input,.tpop")) return;
   const c = e.target.closest(".pcard"); if (!c) return; e.preventDefault();
   drag = { id: c.dataset.id, el: c, x0: e.clientX, y0: e.clientY, on: false };
 });
