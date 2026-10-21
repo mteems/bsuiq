@@ -592,7 +592,7 @@ export const defaultSearchColumnOrder= [
   "sk_ov",
 ];
 export const searchColumnWidths= {
-  name: "minmax(275px,1.85fr)",
+  name: "minmax(218px,1.85fr)",
   position: "42px",
   height: "56px",
   class: "72px",

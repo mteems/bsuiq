@@ -99,7 +99,7 @@ function render() {
   const n = (sc) => (TBD[sc] || []).filter((e) => e.target).length;
   page.innerHTML = `
   <div class="ttop">
-    <div><div class="label">Transfer</div><h1>Targets</h1><div class="sub">The players we've identified, by position. Drag rows to set the order, or click a column to sort. Add players from Search or any player page.</div></div>
+    <div><div class="label">Transfer portal</div><h1>Targets</h1><div class="sub">The players we've identified, by position. Drag rows to set the order, or click a column to sort. Add players from Search or any player page.</div></div>
     <div class="tact">
       <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My targets${M.user ? ` · ${esc(M.user)}` : ""}<i>${n("me")}</i></button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff targets<i>${n("staff")}</i></button></div>
       <button class="fbtn" id="add">＋ Add player</button><button class="fbtn" id="csv">Export CSV</button><button class="fbtn" id="print">Print</button>

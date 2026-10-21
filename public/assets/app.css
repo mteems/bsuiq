@@ -54,7 +54,7 @@ tr.total td{border-top:1px solid var(--edge);font-weight:600}
 .brand img{width:24px;height:24px}
 .brand b{font-weight:750;letter-spacing:.02em;font-size:14.5px}
 .nav{display:flex;gap:2px}
-.nav a{font-size:13px;color:var(--muted);padding:6px 10px;border-radius:6px}
+.nav a{font-size:13px;color:var(--muted);padding:6px 10px;border-radius:6px;white-space:nowrap}
 .nav a:hover{color:var(--soft)}
 .nav a.on{color:#fff;background:var(--card)}
 .search{position:relative;margin-left:auto;width:min(280px,24vw)}
@@ -135,7 +135,7 @@ footer{color:var(--muted);font-size:11px;line-height:1.6;margin-top:26px}
 @media (max-width:900px){
   .panel{overflow-x:auto}
   .bar{flex-wrap:wrap;gap:10px;padding:10px 16px}
-  .nav{overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .nav{flex-wrap:wrap;row-gap:8px;max-width:100%}.nav .navsep{display:none}.navg{margin-right:6px}
   .search{order:3;width:100%;margin-left:0}
   .user{margin-left:auto}
   .wrap{padding:0 16px 28px}
@@ -288,3 +288,5 @@ thead tr:last-child th{padding-top:7px;padding-bottom:8px;vertical-align:bottom}
 .seg2 button{background:none;border:0;border-radius:6px;color:var(--muted);font:600 12.5px var(--ui);height:30px;padding:0 12px;cursor:pointer;white-space:nowrap}
 .seg2 button.on{background:#f2f3f4;color:#16171a}.seg2 button:disabled{opacity:.4;cursor:default}
 .seg2 button i{font-style:normal;font:500 10px var(--mono);margin-left:6px;opacity:.75}
+/* Desktop widths where four nav groups get tight: smaller link padding instead of wrapping words. */
+@media (min-width:901px) and (max-width:1360px){.nav a{padding:6px 7px;font-size:12.5px}.nav .navsep{margin:4px 4px}}

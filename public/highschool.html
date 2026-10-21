@@ -93,7 +93,7 @@ function detail(p) {
 }
 function render() {
   const R = rows();
-  page.innerHTML = `<div class="htop"><div><div class="label">Recruiting · High school</div><h1>High School</h1>
+  page.innerHTML = `<div class="htop"><div><div class="label">Prep · High school</div><h1>High School</h1>
       <div class="sub">Every uncommitted high school prospect on our board; the colored line is the staff board color (green, yellow, red), and the list opens sorted that way. Click a row for his schools, offers and links; every player here also shows on the <a href="/international" style="color:var(--soft);text-decoration:underline">Recruit Map</a> with the international prospects. To add a player, ask Claude to add him by name.</div></div></div>
     <div class="hbar"><input id="q" placeholder="Search player, school or city" value="${esc(st.q)}">
       <div class="seg3" id="pos">${[["all", "All"], ["G", "Guards"], ["W", "Wings"], ["B", "Bigs"]].map(([k, l]) => `<button data-k="${k}" class="${st.pos === k ? "on" : ""}">${l}</button>`).join("")}</div>

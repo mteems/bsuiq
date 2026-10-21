@@ -63,7 +63,7 @@ body.dragging .rmzone{opacity:1;transform:translate(-50%,0)}
 .sortb{background:none;border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;padding:0}.sortb:hover{color:#fff}
 .tbl td.nm{display:flex;align-items:center;gap:8px}
 .tbl .fos{width:28px;height:34px;border-radius:4px}
-@media (max-width:1250px){.lay{grid-template-columns:1fr}.side{position:static;grid-template-columns:1fr 1fr}}
+@media (max-width:1250px){.lay{grid-template-columns:minmax(0,1fr)}.side{position:static;grid-template-columns:1fr 1fr}}
 @media (max-width:900px){.dgrid{grid-template-columns:repeat(5,minmax(150px,1fr));overflow-x:auto}.dgrid .dr,.dgrid .corner{display:none}.dc{overflow-x:auto}.side{grid-template-columns:1fr}}
 @media print{.side{position:static}.mins input,.pc .x,.empty{display:none!important}}
 </style>

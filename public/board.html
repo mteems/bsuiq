@@ -79,7 +79,7 @@ function render() {
   const n = (sc) => (TBD[sc] || []).filter((e) => e.lane).length;
   page.innerHTML = `
   <div class="btop">
-    <div><div class="label">Transfer</div><h1>Transfer Board</h1><div class="sub">Rank transfer targets by position and money tier. Drag a card to move it; drop it on another card to put it in front of him. Add players from Search, any player page, or Targets.</div></div>
+    <div><div class="label">Transfer portal</div><h1>Transfer Board</h1><div class="sub">Rank transfer targets by position and money tier. Drag a card to move it; drop it on another card to put it in front of him. Add players from Search, any player page, or Targets.</div></div>
     <div class="bact">
       <div class="seg2"><button data-scope="me" class="${scope === "me" ? "on" : ""}"${M.user ? "" : ` disabled title="Choose your name (top right) first"`}>My board${M.user ? ` · ${esc(M.user)}` : ""}<i>${n("me")}</i></button><button data-scope="staff" class="${scope === "staff" ? "on" : ""}">Staff board<i>${n("staff")}</i></button></div>
       <button class="fbtn" id="add">＋ Add player</button><button class="fbtn" id="print">Print board</button>
